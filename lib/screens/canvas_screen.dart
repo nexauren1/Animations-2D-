@@ -1,19 +1,18 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/project_model.dart';
 import '../services/project_store.dart';
+import 'assets_library_screen.dart';
+import 'export_screen.dart';
 import 'rigging_screen.dart';
 import 'timeline_screen.dart';
 
-enum _DrawingTool { pen, eraser }
+enum _DrawingTool { pen, eraser, line, rectangle, ellipse, ruler }
 
 class CanvasScreen extends StatefulWidget {
-  const CanvasScreen({
-    required this.store,
-    required this.project,
-    super.key,
-  });
-
+  const CanvasScreen({required this.store, required this.project, super.key});
   final ProjectStore store;
   final ProjectModel project;
 
@@ -22,10 +21,23 @@ class CanvasScreen extends StatefulWidget {
 }
 
 class _CanvasScreenState extends State<CanvasScreen> {
+  static const _palette = <Color>[
+    Color(0xFF111111), Color(0xFFE94F64), Color(0xFFFF8B3D),
+    Color(0xFFFFC84D), Color(0xFF32AF78), Color(0xFF37BFD1),
+    Color(0xFF4779E8), Color(0xFF8659E8), Color(0xFFE56FB3), Colors.white,
+  ];
+
   late List<FrameModel> _frames;
   int _currentFrameIndex = 0;
   int _selectedLayerIndex = 0;
   _DrawingTool _tool = _DrawingTool.pen;
+  int _selectedColor = 0xFF111111;
+  double _brushSize = 3;
+  double _opacity = 1;
+  bool _showGrid = false;
+  bool _onionSkin = true;
+  bool _isSaving = false;
+  Size _canvasSize = const Size(320, 420);
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
   final List<List<LayerModel>> _redoStack = <List<LayerModel>>[];
@@ -33,7 +45,20 @@ class _CanvasScreenState extends State<CanvasScreen> {
   FrameModel get _currentFrame => _frames[_currentFrameIndex];
   LayerModel get _activeLayer => _currentFrame.layers[_selectedLayerIndex];
   FrameModel? get _previousFrame =>
-      _currentFrameIndex > 0 ? _frames[_currentFrameIndex - 1] : null;
+      _onionSkin && _currentFrameIndex > 0 ? _frames[_currentFrameIndex - 1] : null;
+
+  String get _strokeKind => switch (_tool) {
+        _DrawingTool.pen => 'pen',
+        _DrawingTool.eraser => 'eraser',
+        _DrawingTool.line => 'line',
+        _DrawingTool.rectangle => 'rectangle',
+        _DrawingTool.ellipse => 'ellipse',
+        _DrawingTool.ruler => 'ruler',
+      };
+
+  int get _activeColor => _tool == _DrawingTool.eraser
+      ? Colors.white.value
+      : Color(_selectedColor).withOpacity(_opacity).value;
 
   @override
   void initState() {
@@ -47,12 +72,13 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
   void _rememberUndo() {
     _undoStack.add(_copyLayers(_currentFrame.layers));
-    if (_undoStack.length > 40) _undoStack.removeAt(0);
+    if (_undoStack.length > 50) _undoStack.removeAt(0);
     _redoStack.clear();
   }
 
   Future<void> _persist() async {
-    // Cada gravação serializa o estado atual; não descartamos saves concorrentes.
+    if (_isSaving) return;
+    _isSaving = true;
     try {
       await widget.store.saveProject(widget.project, frames: _frames);
     } catch (error) {
@@ -61,6 +87,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
           SnackBar(content: Text('Não foi possível guardar o projeto: $error')),
         );
       }
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -71,7 +99,16 @@ class _CanvasScreenState extends State<CanvasScreen> {
   void _updateStroke(DragUpdateDetails details) {
     final points = _draftPoints;
     if (points == null) return;
-    setState(() => points.add(details.localPosition));
+    setState(() {
+      if (_tool == _DrawingTool.line ||
+          _tool == _DrawingTool.rectangle ||
+          _tool == _DrawingTool.ellipse ||
+          _tool == _DrawingTool.ruler) {
+        _draftPoints = <Offset>[points.first, details.localPosition];
+      } else {
+        points.add(details.localPosition);
+      }
+    });
   }
 
   Future<void> _finishStroke(DragEndDetails details) async {
@@ -80,15 +117,13 @@ class _CanvasScreenState extends State<CanvasScreen> {
       setState(() => _draftPoints = null);
       return;
     }
-
     _rememberUndo();
-    _activeLayer.strokes.add(
-      StrokeModel(
-        points: points,
-        color: _tool == _DrawingTool.eraser ? 0xFFFFFFFF : 0xFF111111,
-        width: _tool == _DrawingTool.eraser ? 10 : 3,
-      ),
-    );
+    _activeLayer.strokes.add(StrokeModel(
+      points: List<Offset>.from(points),
+      color: _activeColor,
+      width: (_tool == _DrawingTool.eraser ? math.max(_brushSize, 8) : _brushSize).toDouble(),
+      kind: _strokeKind,
+    ));
     setState(() => _draftPoints = null);
     await _persist();
   }
@@ -122,7 +157,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     await _persist();
   }
 
-  Future<void> _changeLayer(int index) async {
+  void _changeLayer(int index) {
     if (index < 0 || index >= _currentFrame.layers.length) return;
     setState(() {
       _selectedLayerIndex = index;
@@ -164,7 +199,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
         frame: _currentFrame,
         onSavePose: (posedFrame) async {
           final updated = _frames.map((frame) => frame.copy()).toList();
-          final insertAt = (_currentFrameIndex + 1).clamp(0, updated.length);
+          final insertAt = (_currentFrameIndex + 1).clamp(0, updated.length).toInt();
           updated.insert(insertAt, posedFrame);
           setState(() {
             _frames = updated;
@@ -183,6 +218,24 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
+  Future<void> _openAssets() async {
+    final assetId = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(builder: (_) => const AssetsLibraryScreen()),
+    );
+    if (assetId == null || !mounted) return;
+    _insertAsset(assetId);
+  }
+
+  Future<void> _openExport() async {
+    await _persist();
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ExportScreen(project: widget.project, frameIndex: _currentFrameIndex),
+      ),
+    );
+  }
+
   Future<void> _saveAndShowMessage() async {
     await _persist();
     if (!mounted) return;
@@ -191,15 +244,254 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
+  void _chooseTool(_DrawingTool tool) {
+    setState(() {
+      _tool = tool;
+      _draftPoints = null;
+      if (tool == _DrawingTool.eraser && _brushSize < 8) _brushSize = 10;
+      if (tool == _DrawingTool.pen && _brushSize > 6) _brushSize = 3;
+    });
+  }
+
+  Future<void> _openBrushSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+          decoration: const BoxDecoration(
+            color: Color(0xFF202231),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: Container(width: 42, height: 4,
+                      decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8))),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text('Cor e pincel', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  Text('Escolhe a cor, espessura e opacidade do próximo traço.',
+                    style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(.6))),
+                  const SizedBox(height: 17),
+                  const Text('Paleta de cores', style: TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: _palette.map((color) {
+                      final selected = _selectedColor == color.value;
+                      return InkWell(
+                        onTap: () {
+                          setState(() => _selectedColor = color.value);
+                          setSheetState(() {});
+                        },
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          height: 39,
+                          width: 39,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selected ? const Color(0xFF9A8EFF) : Colors.white24,
+                              width: selected ? 3 : 1,
+                            ),
+                          ),
+                          child: selected
+                              ? Icon(Icons.check_rounded, size: 19,
+                                  color: color.computeLuminance() > .5 ? Colors.black : Colors.white)
+                              : null,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 21),
+                  Row(children: [
+                    const Expanded(child: Text('Espessura', style: TextStyle(fontWeight: FontWeight.w800))),
+                    Text('\${_brushSize.round()} px',
+                      style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
+                  ]),
+                  Slider(
+                    value: _brushSize.clamp(1, 40).toDouble(),
+                    min: 1, max: 40, divisions: 39,
+                    activeColor: const Color(0xFF8B70FF),
+                    onChanged: (value) {
+                      setState(() => _brushSize = value);
+                      setSheetState(() {});
+                    },
+                  ),
+                  Row(children: [
+                    const Expanded(child: Text('Opacidade', style: TextStyle(fontWeight: FontWeight.w800))),
+                    Text('\${(_opacity * 100).round()}%',
+                      style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
+                  ]),
+                  Slider(
+                    value: _opacity, min: .1, max: 1, divisions: 9,
+                    activeColor: const Color(0xFF8B70FF),
+                    onChanged: (value) {
+                      setState(() => _opacity = value);
+                      setSheetState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(color: const Color(0xFF171A28), borderRadius: BorderRadius.circular(15)),
+                    child: Row(children: [
+                      Container(
+                        width: 60, height: 45,
+                        decoration: BoxDecoration(color: const Color(0xFFFAFAFF), borderRadius: BorderRadius.circular(10)),
+                        child: Center(
+                          child: Container(
+                            height: _brushSize.clamp(1, 40).toDouble(),
+                            width: _brushSize.clamp(1, 40).toDouble(),
+                            decoration: BoxDecoration(color: Color(_selectedColor).withOpacity(_opacity), shape: BoxShape.circle),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Pré-visualização', style: TextStyle(fontWeight: FontWeight.w800)),
+                          SizedBox(height: 3),
+                          Text('As definições aplicam-se aos novos traços.',
+                            style: TextStyle(fontSize: 11, color: Colors.white60)),
+                        ],
+                      )),
+                    ]),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity, height: 48,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6650DE)),
+                      child: const Text('Aplicar pincel'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _insertAsset(String id) {
+    final center = Offset(_canvasSize.width / 2, _canvasSize.height / 2);
+    final double unit = math.min(_canvasSize.width, _canvasSize.height) * .14;
+    final color = const Color(0xFF1C2940).value;
+    final newStrokes = <StrokeModel>[];
+
+    void add(List<Offset> points, {String kind = 'pen', double width = 3}) {
+      newStrokes.add(StrokeModel(points: points, color: color, width: width, kind: kind));
+    }
+    List<Offset> oval(Offset c, double rx, double ry, {int count = 36}) =>
+        List<Offset>.generate(count + 1, (i) {
+          final angle = i / count * math.pi * 2;
+          return Offset(c.dx + math.cos(angle) * rx, c.dy + math.sin(angle) * ry);
+        });
+    void circle(Offset c, double radius) {
+      add([Offset(c.dx - radius, c.dy - radius), Offset(c.dx + radius, c.dy + radius)], kind: 'ellipse');
+    }
+
+    switch (id) {
+      case 'star':
+        final points = List<Offset>.generate(11, (i) {
+          final angle = -math.pi / 2 + i * math.pi / 5;
+          final radius = i.isEven ? unit : unit * .43;
+          return Offset(center.dx + math.cos(angle) * radius, center.dy + math.sin(angle) * radius);
+        });
+        add([...points, points.first], width: 3.5);
+        break;
+      case 'heart':
+        final heart = List<Offset>.generate(81, (i) {
+          final t = i / 80 * math.pi * 2;
+          final x = 16 * math.pow(math.sin(t), 3).toDouble();
+          final y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t);
+          return Offset(center.dx + x * unit / 18, center.dy - y * unit / 18);
+        });
+        add(heart, width: 3.4);
+        break;
+      case 'face':
+      case 'fox':
+        add([Offset(center.dx - unit * .82, center.dy - unit * .75), Offset(center.dx + unit * .82, center.dy + unit * .75)], kind: 'ellipse', width: 3.2);
+        circle(Offset(center.dx - unit * .28, center.dy - unit * .12), unit * .09);
+        circle(Offset(center.dx + unit * .28, center.dy - unit * .12), unit * .09);
+        add([
+          Offset(center.dx - unit * .28, center.dy + unit * .22),
+          Offset(center.dx - unit * .18, center.dy + unit * .34), center,
+          Offset(center.dx + unit * .18, center.dy + unit * .34),
+          Offset(center.dx + unit * .28, center.dy + unit * .22),
+        ]);
+        if (id == 'fox') {
+          add([
+            Offset(center.dx - unit * .68, center.dy - unit * .55),
+            Offset(center.dx - unit * .52, center.dy - unit * 1.25),
+            Offset(center.dx - unit * .08, center.dy - unit * .72),
+            Offset(center.dx + unit * .08, center.dy - unit * .72),
+            Offset(center.dx + unit * .52, center.dy - unit * 1.25),
+            Offset(center.dx + unit * .68, center.dy - unit * .55),
+          ], width: 3.2);
+        }
+        break;
+      case 'robot':
+        add([Offset(center.dx - unit * .72, center.dy - unit * .85), Offset(center.dx + unit * .72, center.dy + unit * .05)], kind: 'rectangle', width: 3.2);
+        add([Offset(center.dx - unit * .5, center.dy + unit * .15), Offset(center.dx + unit * .5, center.dy + unit * .95)], kind: 'rectangle', width: 3.2);
+        circle(Offset(center.dx - unit * .28, center.dy - unit * .48), unit * .08);
+        circle(Offset(center.dx + unit * .28, center.dy - unit * .48), unit * .08);
+        add([Offset(center.dx, center.dy - unit * .86), Offset(center.dx, center.dy - unit * 1.15)]);
+        circle(Offset(center.dx, center.dy - unit * 1.22), unit * .08);
+        break;
+      case 'tree':
+        add([Offset(center.dx - unit * .18, center.dy + unit * .2), Offset(center.dx + unit * .18, center.dy + unit)], kind: 'rectangle', width: 3.3);
+        add([Offset(center.dx - unit * .78, center.dy - unit * .1), Offset(center.dx + unit * .78, center.dy + unit * .66)], kind: 'ellipse', width: 3.3);
+        add([Offset(center.dx - unit * .58, center.dy - unit * .35), Offset(center.dx + unit * .58, center.dy + unit * .4)], kind: 'ellipse', width: 3.3);
+        break;
+      case 'cloud':
+        add(oval(center, unit, unit * .45), width: 3.2);
+        add(oval(Offset(center.dx - unit * .4, center.dy - unit * .22), unit * .48, unit * .42), width: 3.2);
+        add(oval(Offset(center.dx + unit * .28, center.dy - unit * .28), unit * .55, unit * .48), width: 3.2);
+        break;
+      case 'house':
+        add([Offset(center.dx - unit * .75, center.dy - unit * .1), Offset(center.dx + unit * .75, center.dy + unit * .8)], kind: 'rectangle', width: 3.2);
+        add([
+          Offset(center.dx - unit * .95, center.dy - unit * .1),
+          Offset(center.dx, center.dy - unit * .95),
+          Offset(center.dx + unit * .95, center.dy - unit * .1),
+        ], width: 3.2);
+        add([Offset(center.dx - unit * .17, center.dy + unit * .25), Offset(center.dx + unit * .17, center.dy + unit * .8)], kind: 'rectangle', width: 2.5);
+        break;
+      default:
+        circle(center, unit * .6);
+        break;
+    }
+
+    _rememberUndo();
+    setState(() => _activeLayer.strokes.addAll(newStrokes));
+    _persist();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final previous = _previousFrame;
     final draft = _draftPoints == null
         ? null
         : StrokeModel(
             points: _draftPoints!,
-            color: _tool == _DrawingTool.eraser ? 0xFFFFFFFF : 0xFF111111,
-            width: _tool == _DrawingTool.eraser ? 10 : 3,
+            color: _activeColor,
+            width: (_tool == _DrawingTool.eraser ? math.max(_brushSize, 8) : _brushSize).toDouble(),
+            kind: _strokeKind,
           );
 
     return Scaffold(
@@ -214,81 +506,76 @@ class _CanvasScreenState extends State<CanvasScreen> {
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              widget.project.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-            ),
-            Text(
-              'Frame ${_currentFrameIndex + 1} / ${_frames.length}',
-              style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55)),
-            ),
+          children: [
+            Text(widget.project.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            Text('Frame \${_currentFrameIndex + 1} / \${_frames.length}',
+              style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55))),
           ],
         ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Guardar projeto',
-            onPressed: _saveAndShowMessage,
-            icon: const Icon(Icons.save_outlined),
-          ),
-          const SizedBox(width: 6),
+        actions: [
+          IconButton(tooltip: 'Exportar', onPressed: _openExport, icon: const Icon(Icons.ios_share_rounded)),
+          IconButton(tooltip: 'Guardar projeto', onPressed: _saveAndShowMessage, icon: const Icon(Icons.save_outlined)),
+          const SizedBox(width: 3),
         ],
       ),
       body: Column(
-        children: <Widget>[
+        children: [
           _buildLayerSelector(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 9),
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
             child: Row(
-              children: <Widget>[
-                const Icon(Icons.crop_free_rounded, size: 15, color: Color(0xFF8D83FF)),
-                const SizedBox(width: 6),
-                Text(
-                  'Canvas · 100%',
-                  style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(.65)),
+              children: [
+                InkWell(
+                  onTap: _openBrushSettings,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                    decoration: BoxDecoration(color: const Color(0xFF202332), borderRadius: BorderRadius.circular(10)),
+                    child: Row(children: [
+                      Container(height: 20, width: 20,
+                        decoration: BoxDecoration(color: Color(_selectedColor), shape: BoxShape.circle, border: Border.all(color: Colors.white24))),
+                      const SizedBox(width: 7),
+                      Text('\${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                      const SizedBox(width: 5),
+                      const Icon(Icons.tune_rounded, size: 15),
+                    ]),
+                  ),
                 ),
                 const Spacer(),
-                const Icon(Icons.layers_outlined, size: 15, color: Color(0xFF8D83FF)),
-                const SizedBox(width: 5),
-                Text(
-                  'Onion skin: ${previous == null ? '—' : '30%'}',
-                  style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(.65)),
-                ),
+                _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid,
+                  onTap: () => setState(() => _showGrid = !_showGrid)),
+                const SizedBox(width: 7),
+                _tinyToggle(icon: Icons.layers_outlined, label: 'Onion', selected: _onionSkin,
+                  onTap: () => setState(() => _onionSkin = !_onionSkin)),
               ],
             ),
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 9),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(15),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.black.withOpacity(.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(.2), blurRadius: 12, offset: const Offset(0, 6))],
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanStart: _startStroke,
-                  onPanUpdate: _updateStroke,
-                  onPanEnd: _finishStroke,
-                  onPanCancel: () => setState(() => _draftPoints = null),
-                  child: CustomPaint(
-                    painter: _AnimationCanvasPainter(
-                      frame: _currentFrame,
-                      previousFrame: previous,
-                      draft: draft,
-                    ),
-                    child: const SizedBox.expand(),
-                  ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    _canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanStart: _startStroke,
+                      onPanUpdate: _updateStroke,
+                      onPanEnd: _finishStroke,
+                      onPanCancel: () => setState(() => _draftPoints = null),
+                      child: CustomPaint(
+                        painter: _AnimationCanvasPainter(frame: _currentFrame, previousFrame: _previousFrame, draft: draft, showGrid: _showGrid),
+                        child: const SizedBox.expand(),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -300,57 +587,58 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
+  Widget _tinyToggle({required IconData icon, required String label, required bool selected, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(9),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF373052) : const Color(0xFF202332),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: selected ? const Color(0xFF897CFF) : const Color(0xFF303447)),
+        ),
+        child: Row(children: [
+          Icon(icon, size: 14, color: selected ? const Color(0xFFC4BAFF) : Colors.white60),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 10, color: selected ? const Color(0xFFC4BAFF) : Colors.white60)),
+        ]),
+      ),
+    );
+  }
+
   Widget _buildLayerSelector() {
-    const layerNames = <String>['Linha', 'Cor', 'Fundo'];
-    const layerIcons = <IconData>[
-      Icons.gesture_rounded,
-      Icons.palette_outlined,
-      Icons.wallpaper_rounded,
-    ];
+    const names = <String>['Linha', 'Cor', 'Fundo'];
+    const icons = <IconData>[Icons.gesture_rounded, Icons.palette_outlined, Icons.wallpaper_rounded];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 9, 14, 4),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: Row(
         children: List<Widget>.generate(3, (index) {
+          final layer = _currentFrame.layers[index];
           final selected = _selectedLayerIndex == index;
           return Expanded(
             child: Padding(
-              padding: EdgeInsets.only(right: index == 2 ? 0 : 7),
+              padding: EdgeInsets.only(right: index == 2 ? 0 : 6),
               child: InkWell(
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(10),
                 onTap: () => _changeLayer(index),
+                onLongPress: () => setState(() => layer.visible = !layer.visible),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 3),
                   decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFF343052)
-                        : const Color(0xFF1A1D2B),
-                    borderRadius: BorderRadius.circular(11),
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFF8C7DFF)
-                          : const Color(0xFF2D3143),
-                    ),
+                    color: selected ? const Color(0xFF343052) : const Color(0xFF1A1D2B),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: selected ? const Color(0xFF8C7DFF) : const Color(0xFF2D3143)),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(layerIcons[index],
-                          size: 15,
-                          color: selected ? const Color(0xFFB9AEFF) : Colors.white60),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          layerNames[index],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(icons[index], size: 14, color: selected ? const Color(0xFFB9AEFF) : Colors.white60),
+                    const SizedBox(width: 4),
+                    Flexible(child: Text(names[index], maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w800 : FontWeight.w500))),
+                    const SizedBox(width: 3),
+                    Icon(layer.visible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                      size: 12, color: layer.visible ? Colors.white38 : const Color(0xFFE67A8B)),
+                  ]),
                 ),
               ),
             ),
@@ -361,86 +649,62 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Widget _buildToolBar() {
+    final tools = <({IconData icon, String label, _DrawingTool tool})>[
+      (icon: Icons.edit_rounded, label: 'Caneta', tool: _DrawingTool.pen),
+      (icon: Icons.auto_fix_normal_rounded, label: 'Borracha', tool: _DrawingTool.eraser),
+      (icon: Icons.show_chart_rounded, label: 'Linha', tool: _DrawingTool.line),
+      (icon: Icons.crop_square_rounded, label: 'Retângulo', tool: _DrawingTool.rectangle),
+      (icon: Icons.circle_outlined, label: 'Elipse', tool: _DrawingTool.ellipse),
+      (icon: Icons.straighten_rounded, label: 'Régua', tool: _DrawingTool.ruler),
+    ];
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B1E2C),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFF303447)),
-      ),
-      child: Row(
-        children: <Widget>[
-          _toolButton(
-            icon: Icons.edit_rounded,
-            label: 'Caneta',
-            selected: _tool == _DrawingTool.pen,
-            onPressed: () => setState(() => _tool = _DrawingTool.pen),
-          ),
-          _toolButton(
-            icon: Icons.auto_fix_normal_rounded,
-            label: 'Borracha',
-            selected: _tool == _DrawingTool.eraser,
-            onPressed: () => setState(() => _tool = _DrawingTool.eraser),
-          ),
-          const SizedBox(width: 2),
-          _toolButton(
-            icon: Icons.undo_rounded,
-            label: 'Desfazer',
-            onPressed: _undo,
-          ),
-          _toolButton(
-            icon: Icons.redo_rounded,
-            label: 'Refazer',
-            onPressed: _redo,
-          ),
-          _toolButton(
-            icon: Icons.delete_sweep_outlined,
-            label: 'Limpar',
-            onPressed: _clearLayer,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _toolButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    bool selected = false,
-  }) {
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 1),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFF363052) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(
-                icon,
-                size: 21,
-                color: selected ? const Color(0xFFB7ACFF) : Colors.white70,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 9,
-                  color: selected ? const Color(0xFFB7ACFF) : Colors.white60,
-                ),
-              ),
+      height: 74,
+      margin: const EdgeInsets.fromLTRB(10, 0, 10, 7),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(color: const Color(0xFF1B1E2C), borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xFF303447))),
+      child: Row(children: [
+        Expanded(
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            children: [
+              for (final item in tools)
+                _toolButton(icon: item.icon, label: item.label, selected: item.tool == _tool, onPressed: () => _chooseTool(item.tool)),
+              _toolButton(icon: Icons.undo_rounded, label: 'Desfazer', onPressed: _undo),
+              _toolButton(icon: Icons.redo_rounded, label: 'Refazer', onPressed: _redo),
+              _toolButton(icon: Icons.delete_sweep_outlined, label: 'Limpar', onPressed: _clearLayer),
             ],
           ),
         ),
+        Container(width: 1, height: 43, color: const Color(0xFF36394B)),
+        InkWell(
+          onTap: _openBrushSettings,
+          child: const SizedBox(width: 52, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.tune_rounded, color: Color(0xFFB7ACFF), size: 21),
+            SizedBox(height: 4),
+            Text('Pincel', style: TextStyle(fontSize: 9, color: Color(0xFFB7ACFF))),
+          ])),
+        ),
+      ]),
+    );
+  }
+
+  Widget _toolButton({required IconData icon, required String label, required VoidCallback onPressed, bool selected = false}) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onPressed,
+      child: Container(
+        width: 61,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 1),
+        decoration: BoxDecoration(color: selected ? const Color(0xFF363052) : Colors.transparent, borderRadius: BorderRadius.circular(10)),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, size: 21, color: selected ? const Color(0xFFB7ACFF) : Colors.white70),
+          const SizedBox(height: 3),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 9, color: selected ? const Color(0xFFB7ACFF) : Colors.white60)),
+        ]),
       ),
     );
   }
@@ -449,92 +713,60 @@ class _CanvasScreenState extends State<CanvasScreen> {
     return SafeArea(
       top: false,
       child: Container(
-        height: 67,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: const BoxDecoration(
-          color: Color(0xFF11131F),
-          border: Border(top: BorderSide(color: Color(0xFF292D40))),
-        ),
-        child: Row(
-          children: <Widget>[
-            _bottomItem(
-              icon: Icons.layers_outlined,
-              label: 'Camadas',
-              onPressed: () => _changeLayer((_selectedLayerIndex + 1) % 3),
-            ),
-            _bottomItem(
-              icon: Icons.view_timeline_rounded,
-              label: 'Timeline',
-              onPressed: _openTimeline,
-              color: const Color(0xFF9D91FF),
-            ),
-            _bottomItem(
-              icon: Icons.hub_rounded,
-              label: 'Rigging',
-              onPressed: _openRigging,
-              color: const Color(0xFF39D8E9),
-            ),
-            _bottomItem(
-              icon: Icons.save_outlined,
-              label: 'Guardar',
-              onPressed: _saveAndShowMessage,
-            ),
-          ],
-        ),
+        height: 63,
+        padding: const EdgeInsets.symmetric(horizontal: 7),
+        decoration: const BoxDecoration(color: Color(0xFF11131F), border: Border(top: BorderSide(color: Color(0xFF292D40)))),
+        child: Row(children: [
+          _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings),
+          _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
+          _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
+          _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
+          _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
+        ]),
       ),
     );
   }
 
-  Widget _bottomItem({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    Color color = Colors.white70,
-  }) {
+  Widget _bottomItem({required IconData icon, required String label, required VoidCallback onPressed, Color color = Colors.white70}) {
     return Expanded(
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 10)),
-          ],
-        ),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, color: color, size: 21),
+          const SizedBox(height: 3),
+          Text(label, style: TextStyle(color: color, fontSize: 9.5)),
+        ]),
       ),
     );
   }
 }
 
-/// Desenha frame anterior com 30% de opacidade, traços do frame atual e o
-/// traço temporário que ainda está a ser desenhado pelo dedo.
 class _AnimationCanvasPainter extends CustomPainter {
-  _AnimationCanvasPainter({
-    required this.frame,
-    required this.previousFrame,
-    required this.draft,
-  });
-
+  _AnimationCanvasPainter({required this.frame, required this.previousFrame, required this.draft, required this.showGrid});
   final FrameModel frame;
   final FrameModel? previousFrame;
   final StrokeModel? draft;
+  final bool showGrid;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
-
-    final previous = previousFrame;
-    if (previous != null) _paintFrame(canvas, previous, .30);
+    if (showGrid) {
+      final gridPaint = Paint()..color = const Color(0xFFEDEFF4)..strokeWidth = .7;
+      for (double x = 0; x < size.width; x += 24) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      }
+      for (double y = 0; y < size.height; y += 24) {
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      }
+    }
+    if (previousFrame != null) _paintFrame(canvas, previousFrame!, .30);
     _paintFrame(canvas, frame, 1);
-
-    final activeStroke = draft;
-    if (activeStroke != null) _paintStroke(canvas, activeStroke, 1);
+    if (draft != null) _paintStroke(canvas, draft!, 1);
   }
 
   void _paintFrame(Canvas canvas, FrameModel target, double opacity) {
-    // A camada Fundo é pintada primeiro, depois Cor e Linha.
     for (final layer in target.layers.reversed) {
       if (!layer.visible) continue;
       for (final stroke in layer.strokes) {
@@ -545,27 +777,32 @@ class _AnimationCanvasPainter extends CustomPainter {
 
   void _paintStroke(Canvas canvas, StrokeModel stroke, double opacity) {
     if (stroke.points.isEmpty) return;
+    final baseColor = Color(stroke.color);
     final paint = Paint()
-      ..color = Color(stroke.color).withOpacity(opacity)
+      ..color = baseColor.withOpacity(baseColor.opacity * opacity)
       ..strokeWidth = stroke.width
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
-
     if (stroke.points.length == 1) {
-      canvas.drawCircle(
-        stroke.points.first,
-        stroke.width / 2,
-        paint..style = PaintingStyle.fill,
-      );
+      canvas.drawCircle(stroke.points.first, stroke.width / 2, paint..style = PaintingStyle.fill);
       return;
     }
-
-    final path = Path()..moveTo(stroke.points.first.dx, stroke.points.first.dy);
-    for (final point in stroke.points.skip(1)) {
-      path.lineTo(point.dx, point.dy);
+    final first = stroke.points.first;
+    final last = stroke.points.last;
+    if (stroke.kind == 'line' || stroke.kind == 'ruler') {
+      canvas.drawLine(first, last, paint);
+    } else if (stroke.kind == 'rectangle') {
+      canvas.drawRect(Rect.fromPoints(first, last), paint);
+    } else if (stroke.kind == 'ellipse') {
+      canvas.drawOval(Rect.fromPoints(first, last), paint);
+    } else {
+      final path = Path()..moveTo(first.dx, first.dy);
+      for (final point in stroke.points.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      canvas.drawPath(path, paint);
     }
-    canvas.drawPath(path, paint);
   }
 
   @override
