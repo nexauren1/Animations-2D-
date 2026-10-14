@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import 'assets_library_screen.dart';
+import 'audio_lip_sync_screen.dart';
 import 'export_screen.dart';
 import 'rigging_screen.dart';
 import 'timeline_screen.dart';
@@ -230,6 +231,31 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
     if (assetId == null || !mounted) return;
     await _insertAsset(assetId);
+  }
+
+  Future<void> _openAudioLipSync() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AudioLipSyncScreen(
+          frames: _frames,
+          canvasSize: _canvasSize,
+          onApplyFrames: (updatedFrames) async {
+            setState(() {
+              _frames = updatedFrames;
+              _currentFrameIndex = _currentFrameIndex.clamp(0, _frames.length - 1).toInt();
+              _undoStack.clear();
+              _redoStack.clear();
+            });
+            await _persist();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Mapa labial aplicado à timeline.')),
+              );
+            }
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _openExport() async {
@@ -750,6 +776,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings),
           _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
           _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
+          _bottomItem(icon: Icons.graphic_eq_rounded, label: 'Áudio', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
           _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
           _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
         ]),

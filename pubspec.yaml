@@ -4,17 +4,19 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  isar: 3.1.0+1
-  isar_flutter_libs: 3.1.0+1
+  isar_community: ^3.4.1
+  isar_community_flutter_libs: ^3.4.1
   path_provider: ^2.1.4
   share_plus: ^10.1.4
   archive: ^3.6.1
   ffmpeg_kit_flutter_new_video: ^2.5.7
+  file_picker: ^11.0.3
+  audioplayers: ^6.8.1
   shared_preferences: ^2.3.2
 
 dev_dependencies:
@@ -22,7 +24,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   build_runner: ^2.4.13
-  isar_generator: 3.1.0+1
+  isar_community_generator: ^3.4.1
 
 flutter:
   uses-material-design: true
