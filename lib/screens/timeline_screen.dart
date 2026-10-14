@@ -1,10 +1,8 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import '../models/project_model.dart';
 
-/// Bottom sheet da timeline, com duplicação de frame e reprodução em loop.
+/// Bottom sheet da timeline, com duplicação e playback em loop.
 class TimelineScreen extends StatefulWidget {
   const TimelineScreen({
     required this.frames,
@@ -26,12 +24,39 @@ class TimelineScreen extends StatefulWidget {
 class _TimelineScreenState extends State<TimelineScreen> {
   Timer? _timer;
   bool _isPlaying = false;
-  int _playIndex = 0;
+  late List<FrameModel> _frames;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _frames = widget.frames.map((frame) => frame.copy()).toList();
+    _selectedIndex = widget.currentFrameIndex.clamp(0, _frames.length - 1).toInt();
+  }
+
+  @override
+  void didUpdateWidget(covariant TimelineScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.frames.length != _frames.length) {
+      _frames = widget.frames.map((frame) => frame.copy()).toList();
+    }
+    if (widget.currentFrameIndex != oldWidget.currentFrameIndex &&
+        widget.currentFrameIndex >= 0 &&
+        widget.currentFrameIndex < _frames.length) {
+      _selectedIndex = widget.currentFrameIndex;
+    }
+  }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  void _selectFrame(int index) {
+    if (index < 0 || index >= _frames.length) return;
+    setState(() => _selectedIndex = index);
+    widget.onFrameSelected(index);
   }
 
   void _togglePlayback() {
@@ -40,31 +65,35 @@ class _TimelineScreenState extends State<TimelineScreen> {
       setState(() => _isPlaying = false);
       return;
     }
-    if (widget.frames.isEmpty) return;
+    if (_frames.isEmpty) return;
 
-    _playIndex = widget.currentFrameIndex;
     setState(() => _isPlaying = true);
     _timer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      if (!mounted || widget.frames.isEmpty) return;
-      _playIndex = (_playIndex + 1) % widget.frames.length;
-      widget.onFrameSelected(_playIndex);
+      if (!mounted || _frames.isEmpty) return;
+      _selectedIndex = (_selectedIndex + 1) % _frames.length;
+      widget.onFrameSelected(_selectedIndex);
       setState(() {});
     });
   }
 
   void _addFrame() {
-    final newFrames = widget.frames.map((frame) => frame.copy()).toList();
-    final safeIndex = widget.currentFrameIndex.clamp(0, newFrames.length - 1);
-    final duplicate = newFrames[safeIndex].copy();
-    newFrames.insert(safeIndex + 1, duplicate);
-    widget.onFramesChanged(newFrames);
-    widget.onFrameSelected(safeIndex + 1);
-    setState(() {});
+    if (_frames.isEmpty) {
+      _frames = <FrameModel>[FrameModel.blank()];
+    }
+    final selected = _selectedIndex.clamp(0, _frames.length - 1).toInt();
+    final newFrames = _frames.map((frame) => frame.copy()).toList();
+    newFrames.insert(selected + 1, newFrames[selected].copy());
+    setState(() {
+      _frames = newFrames;
+      _selectedIndex = selected + 1;
+    });
+    widget.onFramesChanged(newFrames.map((frame) => frame.copy()).toList());
+    widget.onFrameSelected(_selectedIndex);
   }
 
   @override
   Widget build(BuildContext context) {
-    final frames = widget.frames;
+    final frames = _frames;
     return Container(
       height: 390,
       decoration: const BoxDecoration(
@@ -99,10 +128,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                     ),
                   ),
-                  Text(
-                    '${frames.length} frames',
-                    style: TextStyle(color: Colors.white.withOpacity(.55)),
-                  ),
+                  Text('${frames.length} frames',
+                      style: TextStyle(color: Colors.white.withOpacity(.55))),
                 ],
               ),
               const SizedBox(height: 18),
@@ -112,17 +139,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   itemCount: frames.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 9),
                   itemBuilder: (context, index) {
-                    final selected = index == widget.currentFrameIndex;
+                    final selected = index == _selectedIndex;
                     return InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () => widget.onFrameSelected(index),
+                      onTap: () => _selectFrame(index),
                       child: Container(
                         width: 76,
                         padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: selected
-                              ? const Color(0xFF2C2850)
-                              : const Color(0xFF202333),
+                          color: selected ? const Color(0xFF2C2850) : const Color(0xFF202333),
                           border: Border.all(
                             color: selected
                                 ? const Color(0xFF8C7CFF)
@@ -202,11 +227,7 @@ class _FramePreviewPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = const Color(0xFFF5F6FC),
-    );
-
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFF5F6FC));
     final strokes = frame.layers
         .where((layer) => layer.visible)
         .expand((layer) => layer.strokes)
