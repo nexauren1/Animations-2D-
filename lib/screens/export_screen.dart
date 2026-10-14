@@ -30,7 +30,7 @@ class _ExportScreenState extends State<ExportScreen> {
   List<FrameModel> get _frames => widget.project.frames;
   FrameModel get _frame => _frames.isEmpty
       ? FrameModel.blank()
-      : _frames[widget.frameIndex.clamp(0, _frames.length - 1)];
+      : _frames[widget.frameIndex.clamp(0, _frames.length - 1).toInt()];
 
   Future<Uint8List> _renderPng(FrameModel frame, int targetResolution) async {
     final strokes = frame.layers
@@ -200,11 +200,11 @@ class _ExportScreenState extends State<ExportScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _choice('540p', 540, _resolution == 540, () => setState(() => _resolution = 540)),
+              _choice('540p', _resolution == 540, () => setState(() => _resolution = 540)),
               const SizedBox(width: 9),
-              _choice('720p', 720, _resolution == 720, () => setState(() => _resolution = 720)),
+              _choice('720p', _resolution == 720, () => setState(() => _resolution = 720)),
               const SizedBox(width: 9),
-              _choice('1080p', 1080, _resolution == 1080, () => setState(() => _resolution = 1080)),
+              _choice('1080p', _resolution == 1080, () => setState(() => _resolution = 1080)),
             ],
           ),
           const SizedBox(height: 24),
@@ -215,7 +215,6 @@ class _ExportScreenState extends State<ExportScreen> {
             runSpacing: 8,
             children: ['MP4', 'GIF', 'PNG', 'PNG Sequence'].map((format) {
               final selected = _format == format;
-              final ready = format == 'PNG' || format == 'PNG Sequence';
               return ChoiceChip(
                 selected: selected,
                 label: Text(format),
@@ -292,7 +291,7 @@ class _ExportScreenState extends State<ExportScreen> {
     );
   }
 
-  Widget _choice(String label, int value, bool selected, VoidCallback onTap) {
+  Widget _choice(String label, bool selected, VoidCallback onTap) {
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
