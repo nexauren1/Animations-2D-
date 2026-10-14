@@ -1,0 +1,265 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../models/project_model.dart';
+
+/// Bottom sheet da timeline, com duplicação de frame e reprodução em loop.
+class TimelineScreen extends StatefulWidget {
+  const TimelineScreen({
+    required this.frames,
+    required this.currentFrameIndex,
+    required this.onFrameSelected,
+    required this.onFramesChanged,
+    super.key,
+  });
+
+  final List<FrameModel> frames;
+  final int currentFrameIndex;
+  final ValueChanged<int> onFrameSelected;
+  final ValueChanged<List<FrameModel>> onFramesChanged;
+
+  @override
+  State<TimelineScreen> createState() => _TimelineScreenState();
+}
+
+class _TimelineScreenState extends State<TimelineScreen> {
+  Timer? _timer;
+  bool _isPlaying = false;
+  int _playIndex = 0;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _togglePlayback() {
+    if (_isPlaying) {
+      _timer?.cancel();
+      setState(() => _isPlaying = false);
+      return;
+    }
+    if (widget.frames.isEmpty) return;
+
+    _playIndex = widget.currentFrameIndex;
+    setState(() => _isPlaying = true);
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted || widget.frames.isEmpty) return;
+      _playIndex = (_playIndex + 1) % widget.frames.length;
+      widget.onFrameSelected(_playIndex);
+      setState(() {});
+    });
+  }
+
+  void _addFrame() {
+    final newFrames = widget.frames.map((frame) => frame.copy()).toList();
+    final safeIndex = widget.currentFrameIndex.clamp(0, newFrames.length - 1);
+    final duplicate = newFrames[safeIndex].copy();
+    newFrames.insert(safeIndex + 1, duplicate);
+    widget.onFramesChanged(newFrames);
+    widget.onFrameSelected(safeIndex + 1);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final frames = widget.frames;
+    return Container(
+      height: 390,
+      decoration: const BoxDecoration(
+        color: Color(0xFF151725),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(.25),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
+              Row(
+                children: <Widget>[
+                  const Icon(Icons.view_timeline_rounded, color: Color(0xFF8B80FF)),
+                  const SizedBox(width: 9),
+                  const Expanded(
+                    child: Text(
+                      'Timeline',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  Text(
+                    '${frames.length} frames',
+                    style: TextStyle(color: Colors.white.withOpacity(.55)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: frames.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 9),
+                  itemBuilder: (context, index) {
+                    final selected = index == widget.currentFrameIndex;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => widget.onFrameSelected(index),
+                      child: Container(
+                        width: 76,
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? const Color(0xFF2C2850)
+                              : const Color(0xFF202333),
+                          border: Border.all(
+                            color: selected
+                                ? const Color(0xFF8C7CFF)
+                                : const Color(0xFF383B4E),
+                            width: selected ? 2 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(7),
+                                child: CustomPaint(
+                                  painter: _FramePreviewPainter(frames[index]),
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              'F${index + 1}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                                color: selected ? const Color(0xFFB8AEFF) : Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: <Widget>[
+                  IconButton.filledTonal(
+                    tooltip: 'Reproduzir em loop',
+                    onPressed: _togglePlayback,
+                    icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _addFrame,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Novo Frame (duplicar atual)'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFC2BAFF),
+                        side: const BorderSide(color: Color(0xFF6358B2)),
+                        minimumSize: const Size(0, 48),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Text(
+                _isPlaying
+                    ? 'Reprodução ativa · 500 ms por frame'
+                    : 'Seleciona um quadrado ou duplica o frame atual.',
+                style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.5)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FramePreviewPainter extends CustomPainter {
+  _FramePreviewPainter(this.frame);
+  final FrameModel frame;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFFF5F6FC),
+    );
+
+    final strokes = frame.layers
+        .where((layer) => layer.visible)
+        .expand((layer) => layer.strokes)
+        .where((stroke) => stroke.points.isNotEmpty)
+        .toList();
+    final points = strokes.expand((stroke) => stroke.points).toList();
+    if (points.isEmpty) return;
+
+    var left = points.first.dx;
+    var right = left;
+    var top = points.first.dy;
+    var bottom = top;
+    for (final point in points) {
+      if (point.dx < left) left = point.dx;
+      if (point.dx > right) right = point.dx;
+      if (point.dy < top) top = point.dy;
+      if (point.dy > bottom) bottom = point.dy;
+    }
+
+    final width = (right - left).abs().clamp(1.0, double.infinity).toDouble();
+    final height = (bottom - top).abs().clamp(1.0, double.infinity).toDouble();
+    final scale = (size.width * .72 / width < size.height * .72 / height)
+        ? size.width * .72 / width
+        : size.height * .72 / height;
+    final offsetX = (size.width - width * scale) / 2 - left * scale;
+    final offsetY = (size.height - height * scale) / 2 - top * scale;
+
+    for (final stroke in strokes) {
+      final paint = Paint()
+        ..color = Color(stroke.color)
+        ..strokeWidth = (stroke.width * scale).clamp(1.0, 3.0).toDouble()
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+      if (stroke.points.length == 1) {
+        canvas.drawCircle(
+          Offset(stroke.points.first.dx * scale + offsetX,
+              stroke.points.first.dy * scale + offsetY),
+          paint.strokeWidth / 2,
+          paint..style = PaintingStyle.fill,
+        );
+      } else {
+        final path = Path()
+          ..moveTo(stroke.points.first.dx * scale + offsetX,
+              stroke.points.first.dy * scale + offsetY);
+        for (final point in stroke.points.skip(1)) {
+          path.lineTo(point.dx * scale + offsetX, point.dy * scale + offsetY);
+        }
+        canvas.drawPath(path, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FramePreviewPainter oldDelegate) => true;
+}
