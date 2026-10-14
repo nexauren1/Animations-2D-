@@ -5,8 +5,9 @@ import 'package:isar_community/isar_community.dart';
 
 part 'project_model.g.dart';
 
-/// Projeto persistido localmente no Isar.
-/// Os frames são guardados em JSON para manter Offset simples e portátil.
+/// Dados que o Isar persiste diretamente.
+/// Os frames são guardados como JSON porque Offset/traços são objetos do editor,
+/// e não propriedades nativas que o Isar precise conhecer.
 @collection
 class ProjectModel {
   Id id = Isar.autoIncrement;
@@ -15,17 +16,27 @@ class ProjectModel {
   late String name;
   late DateTime createdAt;
   late DateTime updatedAt;
-
-  /// Reservado para o caminho de uma miniatura exportada, se for adicionada.
   String thumbnailPath = '';
-
-  /// Armazenamento serializado dos frames; Isar mantém este campo como texto.
   String framesJson = '[]';
 
   ProjectModel();
 
-  /// Campo de conveniência usado pelo editor; não é persistido diretamente.
-  @ignore
+  static ProjectModel create(String projectName) {
+    final now = DateTime.now();
+    return ProjectModel()
+      ..uid = now.microsecondsSinceEpoch.toString()
+      ..name = projectName
+      ..createdAt = now
+      ..updatedAt = now
+      ..framesJson = jsonEncode(<Map<String, dynamic>>[
+        FrameModel.blank().toJson(),
+      ]);
+  }
+}
+
+/// Mantém a sintaxe project.frames fora da classe anotada.
+/// Assim, o gerador Isar só vê tipos de dados suportados.
+extension ProjectFrames on ProjectModel {
   List<FrameModel> get frames {
     try {
       final decoded = jsonDecode(framesJson) as List<dynamic>;
@@ -43,20 +54,9 @@ class ProjectModel {
   set frames(List<FrameModel> value) {
     framesJson = jsonEncode(value.map((frame) => frame.toJson()).toList());
   }
-
-  /// Cria um projeto com um frame vazio e as três camadas padrão.
-  static ProjectModel create(String projectName) {
-    final now = DateTime.now();
-    return ProjectModel()
-      ..uid = now.microsecondsSinceEpoch.toString()
-      ..name = projectName
-      ..createdAt = now
-      ..updatedAt = now
-      ..frames = <FrameModel>[FrameModel.blank()];
-  }
 }
 
-/// Frame da animação. A estrutura é serializada dentro de ProjectModel.
+/// Um frame contém as três camadas editáveis da animação.
 class FrameModel {
   FrameModel({String? uid, List<LayerModel>? layers})
       : uid = uid ?? DateTime.now().microsecondsSinceEpoch.toString(),
@@ -73,19 +73,15 @@ class FrameModel {
   factory FrameModel.blank() => FrameModel();
 
   factory FrameModel.fromJson(Map<String, dynamic> json) {
-    final rawLayers = (json['layers'] as List<dynamic>? ?? <dynamic>[]);
+    final rawLayers = json['layers'] as List<dynamic>? ?? <dynamic>[];
     final layers = rawLayers
-        .map((item) =>
-            LayerModel.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) => LayerModel.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
     while (layers.length < 3) {
       const names = <String>['Linha', 'Cor', 'Fundo'];
       layers.add(LayerModel(name: names[layers.length]));
     }
-    return FrameModel(
-      uid: json['uid'] as String?,
-      layers: layers,
-    );
+    return FrameModel(uid: json['uid'] as String?, layers: layers);
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -93,11 +89,10 @@ class FrameModel {
         'layers': layers.map((layer) => layer.toJson()).toList(),
       };
 
-  /// Faz uma cópia profunda para duplicar frames sem partilhar listas de traços.
   FrameModel copy() => FrameModel.fromJson(toJson());
 }
 
-/// Uma camada pode ser mostrada/ocultada e contém os seus próprios traços.
+/// Camada editável. A visibilidade e os traços vivem dentro do JSON dos frames.
 class LayerModel {
   LayerModel({
     required this.name,
@@ -113,9 +108,7 @@ class LayerModel {
         name: json['name'] as String? ?? 'Camada',
         visible: json['visible'] as bool? ?? true,
         strokes: (json['strokes'] as List<dynamic>? ?? <dynamic>[])
-            .map((item) => StrokeModel.fromJson(
-                  Map<String, dynamic>.from(item as Map),
-                ))
+            .map((item) => StrokeModel.fromJson(Map<String, dynamic>.from(item as Map)))
             .toList(),
       );
 
@@ -128,7 +121,7 @@ class LayerModel {
   LayerModel copy() => LayerModel.fromJson(toJson());
 }
 
-/// Um traço é uma lista de Offset, cor ARGB e espessura.
+/// Cada traço tem os pontos Offset, cor ARGB, espessura, geometria e pincel.
 class StrokeModel {
   StrokeModel({
     required List<Offset> points,
@@ -141,9 +134,7 @@ class StrokeModel {
   final List<Offset> points;
   final int color;
   final double width;
-  /// Tipo do traço: pen, eraser, line, rectangle, ellipse ou ruler.
   final String kind;
-  /// Estilo do pincel: lápis, tinta, marcador, aerógrafo, giz, marca-texto, pastel ou pixel.
   final String brushStyle;
 
   factory StrokeModel.fromJson(Map<String, dynamic> json) => StrokeModel(
