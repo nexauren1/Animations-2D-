@@ -59,3 +59,8 @@ A compilação Android requer API 24 ou superior devido ao codificador FFmpeg in
 - `lib/screens/audio_lip_sync_screen.dart` — áudio e marcações de boca.
 - `lib/screens/assets_library_screen.dart` — biblioteca de assets.
 - `lib/screens/export_screen.dart` — render de imagens e codificação de vídeo/GIF.
+
+
+## Assinatura e validação Android
+
+O workflow **Android APK** executa a geração Isar, a análise estática, a compilação release e a verificação criptográfica do APK. O artefacto `AnimPro-test-signed.apk` usa uma chave temporária criada no runner para testes internos; não é uma chave de publicação Google Play. Como a chave temporária muda entre execuções, desinstala a versão de teste anterior antes de instalar um APK gerado numa execução diferente. Para distribuição pública e atualizações sem reinstalação, configura-se uma chave privada permanente, mantida fora do repositório.
