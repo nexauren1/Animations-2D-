@@ -14,6 +14,7 @@ dependencies:
   path_provider: ^2.1.4
   share_plus: ^10.1.4
   archive: ^3.6.1
+  ffmpeg_kit_flutter_new_video: ^2.5.7
   shared_preferences: ^2.3.2
 
 dev_dependencies:
