@@ -134,7 +134,7 @@ class OnboardingScreen extends StatelessWidget {
                             bottom: 58,
                             child: Icon(Icons.circle, size: 16, color: ink),
                           ),
-                          const Positioned(
+                          Positioned(
                             top: -3,
                             right: 4,
                             child: Transform.rotate(
