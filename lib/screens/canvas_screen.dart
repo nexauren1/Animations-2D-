@@ -29,7 +29,6 @@ class _CanvasScreenState extends State<CanvasScreen> {
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
   final List<List<LayerModel>> _redoStack = <List<LayerModel>>[];
-  bool _isSaving = false;
 
   FrameModel get _currentFrame => _frames[_currentFrameIndex];
   LayerModel get _activeLayer => _currentFrame.layers[_selectedLayerIndex];
@@ -53,8 +52,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _persist() async {
-    if (_isSaving) return;
-    _isSaving = true;
+    // Cada gravação serializa o estado atual; não descartamos saves concorrentes.
     try {
       await widget.store.saveProject(widget.project, frames: _frames);
     } catch (error) {
@@ -63,8 +61,6 @@ class _CanvasScreenState extends State<CanvasScreen> {
           SnackBar(content: Text('Não foi possível guardar o projeto: $error')),
         );
       }
-    } finally {
-      _isSaving = false;
     }
   }
 
