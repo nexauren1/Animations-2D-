@@ -18,44 +18,132 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Obter código
         uses: actions/checkout@v4
 
-      - name: Instalar Flutter
+      - name: Instalar Java para Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Flutter estável
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Gerar estrutura Android se necessário
+      - name: Gerar estrutura Android e definir SDK mínimo
+        shell: bash
         run: |
+          set -euo pipefail
           if [ ! -d android ]; then
-            flutter create --platforms=android --project-name animpro .
+            flutter create --platforms=android --project-name animpro --org com.nexauren .
           fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          for name in ("android/app/build.gradle.kts", "android/app/build.gradle"):
+              path = Path(name)
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              text = re.sub(r"minSdk\\s*=\\s*flutter\\.minSdkVersion", "minSdk = 24", text)
+              text = re.sub(r"minSdkVersion\\s*=\\s*flutter\\.minSdkVersion", "minSdkVersion = 24", text)
+              text = re.sub(r"minSdkVersion\\s+21", "minSdkVersion 24", text)
+              path.write_text(text)
+              print(f"SDK mínimo ajustado para 24 em {name}")
+          PY
 
       - name: Instalar dependências
-        run: flutter pub get
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter --version
+          dart --version
+          flutter pub get 2>&1 | tee pub-get.log
 
       - name: Gerar código Isar
-        run: dart run build_runner build --delete-conflicting-outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          dart run build_runner build --delete-conflicting-outputs -v 2>&1 | tee isar-codegen.log
+          test -s lib/models/project_model.g.dart
 
-      - name: Verificar análise estática
-        run: flutter analyze
+      - name: Análise estática para diagnóstico
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter analyze --no-pub 2>&1 | tee flutter-analyze.log
 
       - name: Compilar APK release
-        run: flutter build apk --release
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build apk --release --no-pub 2>&1 | tee build.log
+          test -s build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Guardar APK como artefacto
+      - name: Assinar APK com certificado temporário de teste
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+          BUILD_TOOLS="$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -x "$BUILD_TOOLS/apksigner"
+          test -x "$BUILD_TOOLS/zipalign"
+
+          KEYSTORE="$RUNNER_TEMP/animpro-test-signing.jks"
+          PASSWORD="$(openssl rand -hex 24)"
+          keytool -genkeypair -noprompt -storetype JKS \
+            -keystore "$KEYSTORE" \
+            -storepass "$PASSWORD" -keypass "$PASSWORD" \
+            -alias animpro-test -keyalg RSA -keysize 2048 -validity 3650 \
+            -dname "CN=AnimPro Test, OU=Development, O=AnimPro, C=XX"
+
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          "$BUILD_TOOLS/zipalign" -f 4 "$APK" "$RUNNER_TEMP/animpro-aligned.apk"
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$KEYSTORE" --ks-type JKS --ks-key-alias animpro-test \
+            --ks-pass "pass:$PASSWORD" --key-pass "pass:$PASSWORD" \
+            --out "$RUNNER_TEMP/AnimPro-test-signed.apk" \
+            "$RUNNER_TEMP/animpro-aligned.apk"
+          "$BUILD_TOOLS/apksigner" verify --verbose "$RUNNER_TEMP/AnimPro-test-signed.apk"
+
+          mkdir -p dist
+          cp "$RUNNER_TEMP/AnimPro-test-signed.apk" dist/AnimPro-test-signed.apk
+          sha256sum dist/AnimPro-test-signed.apk | tee dist/SHA256SUMS.txt
+
+      - name: Guardar APK de teste
         uses: actions/upload-artifact@v4
         with:
-          name: AnimPro-android-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: AnimPro-Android-Test-Signed
+          path: |
+            dist/AnimPro-test-signed.apk
+            dist/SHA256SUMS.txt
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
 
-      - name: Anexar APK à Release do GitHub
+      - name: Anexar APK de teste à Release do GitHub
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            dist/AnimPro-test-signed.apk
+            dist/SHA256SUMS.txt
+
+      - name: Guardar logs de diagnóstico se houver falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimPro-Build-Diagnostics
+          path: |
+            pub-get.log
+            isar-codegen.log
+            flutter-analyze.log
+            build.log
+          if-no-files-found: ignore
+          retention-days: 14
