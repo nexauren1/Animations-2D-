@@ -445,7 +445,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
   Future<void> _insertAsset(String id) async {
     final center = Offset(_canvasSize.width / 2, _canvasSize.height / 2);
-    final double unit = math.min(_canvasSize.width, _canvasSize.height) * .14;
+    final double unit = math.min(_canvasSize.width, _canvasSize.height).toDouble() * .14;
     final color = const Color(0xFF1C2940).value;
     final newStrokes = <StrokeModel>[];
 
