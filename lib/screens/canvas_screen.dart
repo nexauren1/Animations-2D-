@@ -33,6 +33,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   _DrawingTool _tool = _DrawingTool.pen;
   int _selectedColor = 0xFF111111;
   double _brushSize = 3;
+  String _brushStyle = 'lápis';
   double _opacity = 1;
   bool _showGrid = false;
   bool _onionSkin = true;
@@ -123,6 +124,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
       color: _activeColor,
       width: (_tool == _DrawingTool.eraser ? math.max(_brushSize, 8) : _brushSize).toDouble(),
       kind: _strokeKind,
+      brushStyle: _tool == _DrawingTool.eraser ? 'borracha' : _brushStyle,
     ));
     setState(() => _draftPoints = null);
     await _persist();
@@ -281,6 +283,29 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   const SizedBox(height: 6),
                   Text('Escolhe a cor, espessura e opacidade do próximo traço.',
                     style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(.6))),
+                  const SizedBox(height: 17),
+                  const Text('Estilo do pincel', style: TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 9),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 6,
+                    children: ['Lápis', 'Tinta', 'Marcador', 'Aerógrafo', 'Giz de cera', 'Marca-texto', 'Pastel', 'Pixel'].map((style) {
+                      final value = style.toLowerCase();
+                      final selected = value == _brushStyle;
+                      return ChoiceChip(
+                        label: Text(style),
+                        selected: selected,
+                        onSelected: (_) {
+                          setState(() => _brushStyle = value);
+                          setSheetState(() {});
+                        },
+                        selectedColor: const Color(0xFF5445C6),
+                        backgroundColor: const Color(0xFF292C3D),
+                        labelStyle: TextStyle(color: selected ? Colors.white : Colors.white70, fontSize: 11),
+                        side: BorderSide(color: selected ? const Color(0xFF897CFF) : const Color(0xFF42465A)),
+                      );
+                    }).toList(),
+                  ),
                   const SizedBox(height: 17),
                   const Text('Paleta de cores', style: TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 12),
@@ -492,6 +517,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
             color: _activeColor,
             width: (_tool == _DrawingTool.eraser ? math.max(_brushSize, 8) : _brushSize).toDouble(),
             kind: _strokeKind,
+            brushStyle: _tool == _DrawingTool.eraser ? 'borracha' : _brushStyle,
           );
 
     return Scaffold(
@@ -778,20 +804,72 @@ class _AnimationCanvasPainter extends CustomPainter {
   void _paintStroke(Canvas canvas, StrokeModel stroke, double opacity) {
     if (stroke.points.isEmpty) return;
     final baseColor = Color(stroke.color);
+    var width = stroke.width;
+    var alpha = baseColor.opacity * opacity;
     final paint = Paint()
-      ..color = baseColor.withOpacity(baseColor.opacity * opacity)
-      ..strokeWidth = stroke.width
+      ..color = baseColor.withOpacity(alpha)
+      ..strokeWidth = width
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
+
+    switch (stroke.brushStyle) {
+      case 'tinta':
+        width *= .85;
+        break;
+      case 'marcador':
+        width *= 2.5;
+        alpha *= .55;
+        break;
+      case 'aerógrafo':
+        width *= 2.3;
+        paint.maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(1.0, width * .24).toDouble());
+        break;
+      case 'giz de cera':
+        width *= 1.25;
+        paint.strokeCap = StrokeCap.square;
+        break;
+      case 'marca-texto':
+        width *= 3.2;
+        alpha *= .32;
+        paint.strokeCap = StrokeCap.square;
+        break;
+      case 'pastel':
+        width *= 1.8;
+        paint.maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(1.0, width * .12).toDouble());
+        break;
+      case 'pixel':
+        paint.strokeCap = StrokeCap.square;
+        paint.strokeJoin = StrokeJoin.miter;
+        break;
+      default:
+        break;
+    }
+    paint
+      ..color = baseColor.withOpacity(alpha)
+      ..strokeWidth = width;
+
     if (stroke.points.length == 1) {
-      canvas.drawCircle(stroke.points.first, stroke.width / 2, paint..style = PaintingStyle.fill);
+      canvas.drawCircle(stroke.points.first, width / 2, paint..style = PaintingStyle.fill);
       return;
     }
     final first = stroke.points.first;
     final last = stroke.points.last;
-    if (stroke.kind == 'line' || stroke.kind == 'ruler') {
+    if (stroke.kind == 'line') {
       canvas.drawLine(first, last, paint);
+    } else if (stroke.kind == 'ruler') {
+      canvas.drawLine(first, last, paint);
+      final delta = last - first;
+      final length = delta.distance;
+      if (length > 1) {
+        final perpendicular = Offset(-delta.dy / length, delta.dx / length);
+        for (var tick = 0; tick <= 20; tick++) {
+          final t = tick / 20;
+          final point = first + delta * t;
+          final tickSize = tick % 5 == 0 ? 8.0 : 4.0;
+          canvas.drawLine(point - perpendicular * tickSize, point + perpendicular * tickSize, paint);
+        }
+      }
     } else if (stroke.kind == 'rectangle') {
       canvas.drawRect(Rect.fromPoints(first, last), paint);
     } else if (stroke.kind == 'ellipse') {
