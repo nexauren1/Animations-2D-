@@ -37,7 +37,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   double _opacity = 1;
   bool _showGrid = false;
   bool _onionSkin = true;
-  bool _isSaving = false;
+  Future<void> _saveQueue = Future<void>.value();
   Size _canvasSize = const Size(320, 420);
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
@@ -77,20 +77,24 @@ class _CanvasScreenState extends State<CanvasScreen> {
     _redoStack.clear();
   }
 
-  Future<void> _persist() async {
-    if (_isSaving) return;
-    _isSaving = true;
-    try {
-      await widget.store.saveProject(widget.project, frames: _frames);
-    } catch (error) {
+  Future<void> _persist() {
+    // Serializa as gravações para que um desenho rápido não perca o último frame.
+    final snapshot = _frames.map((frame) => frame.copy()).toList();
+    _saveQueue = _saveQueue.then((_) async {
+      await widget.store.saveProject(widget.project, frames: snapshot);
+    }).catchError((Object error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Não foi possível guardar o projeto: $error')),
         );
       }
-    } finally {
-      _isSaving = false;
-    }
+    });
+    return _saveQueue;
+  }
+
+  Future<void> _toggleLayerVisibility(int index) async {
+    setState(() => _currentFrame.layers[index].visible = !_currentFrame.layers[index].visible);
+    await _persist();
   }
 
   void _startStroke(DragStartDetails details) {
@@ -225,7 +229,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
       MaterialPageRoute<String>(builder: (_) => const AssetsLibraryScreen()),
     );
     if (assetId == null || !mounted) return;
-    _insertAsset(assetId);
+    await _insertAsset(assetId);
   }
 
   Future<void> _openExport() async {
@@ -413,7 +417,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  void _insertAsset(String id) {
+  Future<void> _insertAsset(String id) async {
     final center = Offset(_canvasSize.width / 2, _canvasSize.height / 2);
     final double unit = math.min(_canvasSize.width, _canvasSize.height) * .14;
     final color = const Color(0xFF1C2940).value;
@@ -505,7 +509,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
     _rememberUndo();
     setState(() => _activeLayer.strokes.addAll(newStrokes));
-    _persist();
+    await _persist();
   }
 
   @override
@@ -648,7 +652,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => _changeLayer(index),
-                onLongPress: () => setState(() => layer.visible = !layer.visible),
+                onLongPress: () => _toggleLayerVisibility(index),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 3),
                   decoration: BoxDecoration(
