@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:ui' show Offset;
 
-import 'package:isar_community/isar_community.dart';
+import 'package:isar_community/isar.dart';
 
 part 'project_model.g.dart';
 
