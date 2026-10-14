@@ -78,12 +78,9 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
   Future<void> _importAudio() async {
     setState(() => _isImporting = true);
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.audio,
-        allowMultiple: false,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.single;
+      // file_picker v12+ devolve PlatformFile diretamente ao escolher um só ficheiro.
+      final file = await FilePicker.pickFile(type: FileType.audio);
+      if (file == null) return;
       final path = file.path;
       if (path == null || path.isEmpty) {
         throw StateError('Não foi possível obter o caminho do áudio selecionado.');
