@@ -1,17 +1,14 @@
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import 'canvas_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({required this.store, super.key});
-
   final ProjectStore store;
 
-  Future<void> _newProject(BuildContext context) async {
+  Future<void> _create(BuildContext context) async {
     final controller = TextEditingController(text: 'Minha animação');
     final name = await showDialog<String>(
       context: context,
@@ -21,13 +18,10 @@ class HomeScreen extends StatelessWidget {
           controller: controller,
           autofocus: true,
           maxLength: 48,
-          decoration: const InputDecoration(
-            labelText: 'Nome do projeto',
-            hintText: 'Ex.: Raposa a correr',
-          ),
+          decoration: const InputDecoration(labelText: 'Nome do projeto'),
           onSubmitted: (_) => Navigator.pop(dialogContext, controller.text),
         ),
-        actions: <Widget>[
+        actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
@@ -40,25 +34,19 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
-
     if (name == null || name.trim().isEmpty || !context.mounted) return;
     final project = await store.createProject(name);
     if (!context.mounted) return;
-    await _openProject(context, project);
+    await _open(context, project);
   }
 
-  Future<void> _openProject(BuildContext context, ProjectModel project) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => CanvasScreen(store: store, project: project),
-      ),
-    );
+  Future<void> _open(BuildContext context, ProjectModel project) async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => CanvasScreen(store: store, project: project),
+    ));
   }
 
-  Future<void> _renameProject(
-    BuildContext context,
-    ProjectModel project,
-  ) async {
+  Future<void> _rename(BuildContext context, ProjectModel project) async {
     final controller = TextEditingController(text: project.name);
     final name = await showDialog<String>(
       context: context,
@@ -68,10 +56,10 @@ class HomeScreen extends StatelessWidget {
           controller: controller,
           autofocus: true,
           maxLength: 48,
-          onSubmitted: (_) => Navigator.pop(dialogContext, controller.text),
           decoration: const InputDecoration(labelText: 'Nome'),
+          onSubmitted: (_) => Navigator.pop(dialogContext, controller.text),
         ),
-        actions: <Widget>[
+        actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
@@ -83,28 +71,23 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
-    if (name == null || name.trim().isEmpty) return;
-    await store.renameProject(project, name);
+    if (name != null && name.trim().isNotEmpty) {
+      await store.renameProject(project, name);
+    }
   }
 
-  Future<void> _deleteProject(
-    BuildContext context,
-    ProjectModel project,
-  ) async {
+  Future<void> _delete(BuildContext context, ProjectModel project) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Apagar projeto?'),
-        content: Text('O projeto “${project.name}” será removido deste dispositivo.'),
-        actions: <Widget>[
+        content: Text('“${project.name}” será removido deste dispositivo.'),
+        actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD9485F),
-            ),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Apagar'),
           ),
@@ -114,35 +97,43 @@ class HomeScreen extends StatelessWidget {
     if (confirmed == true) await store.deleteProject(project);
   }
 
+  Future<void> _action(
+    BuildContext context,
+    ProjectModel project,
+    String action,
+  ) async {
+    if (action == 'rename') {
+      await _rename(context, project);
+    } else if (action == 'duplicate') {
+      await store.duplicateProject(project);
+    } else if (action == 'delete') {
+      await _delete(context, project);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 20,
         title: const Row(
-          children: <Widget>[
-            _AnimProMark(),
+          children: [
+            _BrandMark(),
             SizedBox(width: 10),
-            Text(
-              'AnimPro',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
-            ),
+            Text('AnimPro', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
           ],
         ),
-        actions: <Widget>[
+        actions: [
           IconButton(
-            tooltip: 'Ajuda',
+            tooltip: 'Sobre o AnimPro',
             onPressed: () => showAboutDialog(
               context: context,
               applicationName: 'AnimPro',
               applicationVersion: '1.0.0',
-              children: const <Widget>[
-                Text('Desenha, cria frames e experimenta poses de animação 2D.'),
-              ],
+              children: const [Text('Desenha, cria frames e experimenta poses 2D.')],
             ),
             icon: const Icon(Icons.help_outline_rounded),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ],
       ),
       body: AnimatedBuilder(
@@ -150,35 +141,31 @@ class HomeScreen extends StatelessWidget {
         builder: (context, _) {
           final projects = store.projects;
           return CustomScrollView(
-            slivers: <Widget>[
+            slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
+                    children: [
                       Text(
                         'Vamos animar?',
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'Transforma os teus desenhos em movimento.',
-                        style: TextStyle(color: Colors.white.withOpacity(.62)),
-                      ),
+                      const SizedBox(height: 6),
+                      Text('Transforma os teus desenhos em movimento.',
+                          style: TextStyle(color: Colors.white.withOpacity(.62))),
                       const SizedBox(height: 22),
                       SizedBox(
                         width: double.infinity,
                         height: 58,
                         child: FilledButton.icon(
-                          onPressed: () => _newProject(context),
+                          onPressed: () => _create(context),
                           icon: const Icon(Icons.add_circle_outline_rounded, size: 25),
-                          label: const Text(
-                            'Novo Projeto',
-                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                          ),
+                          label: const Text('Novo Projeto',
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF6757F5),
                             shape: RoundedRectangleBorder(
@@ -189,17 +176,13 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
                       Row(
-                        children: <Widget>[
+                        children: [
                           const Expanded(
-                            child: Text(
-                              'Projetos recentes',
-                              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
-                            ),
+                            child: Text('Projetos recentes',
+                                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
                           ),
-                          Text(
-                            '${projects.length} projeto(s)',
-                            style: TextStyle(color: Colors.white.withOpacity(.5)),
-                          ),
+                          Text('${projects.length} projeto(s)',
+                              style: TextStyle(color: Colors.white.withOpacity(.5))),
                         ],
                       ),
                     ],
@@ -211,35 +194,28 @@ class HomeScreen extends StatelessWidget {
                   hasScrollBody: false,
                   child: Center(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(34, 0, 34, 90),
+                      padding: const EdgeInsets.fromLTRB(34, 0, 34, 70),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
+                        children: [
                           Container(
-                            height: 104,
-                            width: 104,
+                            height: 100,
+                            width: 100,
                             decoration: BoxDecoration(
                               color: const Color(0xFF1E2030),
                               borderRadius: BorderRadius.circular(28),
                             ),
-                            child: const Icon(
-                              Icons.draw_rounded,
-                              size: 48,
-                              color: Color(0xFF8F83FF),
-                            ),
+                            child: const Icon(Icons.draw_rounded,
+                                size: 48, color: Color(0xFF8F83FF)),
                           ),
                           const SizedBox(height: 18),
-                          const Text(
-                            'O teu primeiro projeto começa aqui',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                          ),
+                          const Text('O teu primeiro projeto começa aqui',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 8),
-                          Text(
-                            'Cria um projeto e desenha o primeiro frame.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white.withOpacity(.58)),
-                          ),
+                          Text('Cria um projeto e desenha o primeiro frame.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white.withOpacity(.58))),
                         ],
                       ),
                     ),
@@ -247,7 +223,7 @@ class HomeScreen extends StatelessWidget {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
                   sliver: SliverGrid(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
@@ -260,17 +236,8 @@ class HomeScreen extends StatelessWidget {
                         final project = projects[index];
                         return _ProjectCard(
                           project: project,
-                          onTap: () => _openProject(context, project),
-                          onAction: (action) async {
-                            switch (action) {
-                              case 'rename':
-                                await _renameProject(context, project);
-                              case 'duplicate':
-                                await store.duplicateProject(project);
-                              case 'delete':
-                                await _deleteProject(context, project);
-                            }
-                          },
+                          onTap: () => _open(context, project),
+                          onAction: (action) => _action(context, project, action),
                         );
                       },
                       childCount: projects.length,
@@ -285,8 +252,8 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _AnimProMark extends StatelessWidget {
-  const _AnimProMark();
+class _BrandMark extends StatelessWidget {
+  const _BrandMark();
 
   @override
   Widget build(BuildContext context) => Container(
@@ -294,7 +261,7 @@ class _AnimProMark extends StatelessWidget {
         width: 38,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF6555F5), Color(0xFF8D50E8)],
+            colors: [Color(0xFF6555F5), Color(0xFF8D50E8)],
           ),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -308,38 +275,35 @@ class _ProjectCard extends StatelessWidget {
     required this.onTap,
     required this.onAction,
   });
-
   final ProjectModel project;
   final VoidCallback onTap;
   final ValueChanged<String> onAction;
 
   @override
   Widget build(BuildContext context) {
-    final frame = project.frames.isEmpty ? FrameModel.blank() : project.frames.first;
-    final date = project.updatedAt;
-    final dateLabel =
-        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-
+    final frames = project.frames;
+    final frame = frames.isEmpty ? FrameModel.blank() : frames.first;
+    final date = project.updatedAt.toString().split(' ').first;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
+          children: [
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
-                children: <Widget>[
+                children: [
                   CustomPaint(painter: _ThumbnailPainter(frame)),
                   Positioned(
-                    top: 7,
-                    right: 7,
+                    top: 4,
+                    right: 4,
                     child: PopupMenuButton<String>(
                       tooltip: 'Opções do projeto',
                       color: const Color(0xFF25283A),
                       onSelected: onAction,
-                      itemBuilder: (_) => const <PopupMenuEntry<String>>[
+                      itemBuilder: (_) => const [
                         PopupMenuItem(value: 'rename', child: Text('Renomear')),
                         PopupMenuItem(value: 'duplicate', child: Text('Duplicar')),
                         PopupMenuItem(value: 'delete', child: Text('Apagar')),
@@ -356,10 +320,8 @@ class _ProjectCard extends StatelessWidget {
                         color: Colors.black.withOpacity(.55),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        '${project.frames.length} frames',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                      ),
+                      child: Text('${frames.length} frames',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],
@@ -369,24 +331,20 @@ class _ProjectCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 11, 12, 13),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    project.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                  ),
+                children: [
+                  Text(project.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   const SizedBox(height: 5),
                   Row(
-                    children: <Widget>[
+                    children: [
                       Icon(Icons.access_time, size: 13, color: Colors.white.withOpacity(.5)),
                       const SizedBox(width: 5),
                       Expanded(
-                        child: Text(
-                          dateLabel,
-                          maxLines: 1,
-                          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55)),
-                        ),
+                        child: Text(date,
+                            maxLines: 1,
+                            style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55))),
                       ),
                     ],
                   ),
@@ -400,73 +358,68 @@ class _ProjectCard extends StatelessWidget {
   }
 }
 
-/// Pré-visualização simples dos traços na grelha de projetos.
 class _ThumbnailPainter extends CustomPainter {
   _ThumbnailPainter(this.frame);
   final FrameModel frame;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()..color = const Color(0xFF292D48);
-    canvas.drawRect(Offset.zero & size, backgroundPaint);
-    final allPoints = frame.layers.expand((layer) => layer.strokes).expand((s) => s.points).toList();
-    if (allPoints.isEmpty) {
-      final iconPaint = Paint()..color = const Color(0xFF8D86FF).withOpacity(.8);
-      canvas.drawCircle(Offset(size.width / 2, size.height / 2), 23, iconPaint);
-      final linePaint = Paint()
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF292D48));
+    final layers = frame.layers.where((layer) => layer.visible).toList().reversed;
+    final points = layers.expand((layer) => layer.strokes)
+        .expand((stroke) => stroke.points).toList();
+    if (points.isEmpty) {
+      canvas.drawCircle(Offset(size.width / 2, size.height / 2), 23,
+          Paint()..color = const Color(0xFF8D86FF).withOpacity(.8));
+      final path = Path()
+        ..moveTo(size.width / 2 - 7, size.height / 2 - 11)
+        ..lineTo(size.width / 2 + 10, size.height / 2)
+        ..lineTo(size.width / 2 - 7, size.height / 2 + 11)
+        ..close();
+      canvas.drawPath(path, Paint()
         ..color = Colors.white
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke;
-      canvas.drawPath(
-        Path()
-          ..moveTo(size.width / 2 - 8, size.height / 2 - 12)
-          ..lineTo(size.width / 2 + 11, size.height / 2)
-          ..lineTo(size.width / 2 - 8, size.height / 2 + 12)
-          ..close(),
-        linePaint,
-      );
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3);
       return;
     }
 
-    var left = allPoints.first.dx;
+    var left = points.first.dx;
     var right = left;
-    var top = allPoints.first.dy;
+    var top = points.first.dy;
     var bottom = top;
-    for (final point in allPoints) {
-      left = math.min(left, point.dx);
-      right = math.max(right, point.dx);
-      top = math.min(top, point.dy);
-      bottom = math.max(bottom, point.dy);
+    for (final point in points) {
+      if (point.dx < left) left = point.dx;
+      if (point.dx > right) right = point.dx;
+      if (point.dy < top) top = point.dy;
+      if (point.dy > bottom) bottom = point.dy;
     }
-    final w = math.max(right - left, 1.0);
-    final h = math.max(bottom - top, 1.0);
-    final scale = math.min((size.width - 24) / w, (size.height - 24) / h);
-    final dx = (size.width - w * scale) / 2 - left * scale;
-    final dy = (size.height - h * scale) / 2 - top * scale;
+    final double width = math.max(right - left, 1.0).toDouble();
+    final double height = math.max(bottom - top, 1.0).toDouble();
+    final double scale = math.min((size.width - 24) / width, (size.height - 24) / height).toDouble();
+    final dx = (size.width - width * scale) / 2 - left * scale;
+    final dy = (size.height - height * scale) / 2 - top * scale;
 
-    for (final layer in frame.layers.reversed) {
-      if (!layer.visible) continue;
+    for (final layer in layers) {
       for (final stroke in layer.strokes) {
         if (stroke.points.isEmpty) continue;
         final paint = Paint()
           ..color = Color(stroke.color)
-          ..strokeWidth = math.max(1.0, stroke.width * scale)
+          ..strokeWidth = math.max(1.0, stroke.width * scale).toDouble()
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
           ..style = PaintingStyle.stroke;
-        final path = Path()
-          ..moveTo(stroke.points.first.dx * scale + dx, stroke.points.first.dy * scale + dy);
-        for (final point in stroke.points.skip(1)) {
-          path.lineTo(point.dx * scale + dx, point.dy * scale + dy);
-        }
         if (stroke.points.length == 1) {
           canvas.drawCircle(
             Offset(stroke.points.first.dx * scale + dx, stroke.points.first.dy * scale + dy),
-            math.max(1.5, stroke.width * scale / 2),
+            math.max(1.5, stroke.width * scale / 2).toDouble(),
             paint..style = PaintingStyle.fill,
           );
         } else {
+          final path = Path()
+            ..moveTo(stroke.points.first.dx * scale + dx, stroke.points.first.dy * scale + dy);
+          for (final point in stroke.points.skip(1)) {
+            path.lineTo(point.dx * scale + dx, point.dy * scale + dy);
+          }
           canvas.drawPath(path, paint);
         }
       }
@@ -474,5 +427,5 @@ class _ThumbnailPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ThumbnailPainter oldDelegate) => oldDelegate.frame != frame;
+  bool shouldRepaint(covariant _ThumbnailPainter oldDelegate) => true;
 }
