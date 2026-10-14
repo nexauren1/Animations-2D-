@@ -8,23 +8,18 @@ import 'services/project_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // O banco fica no diretório privado da aplicação; não precisa de conta.
-  final documentsDirectory = await getApplicationDocumentsDirectory();
+  final documents = await getApplicationDocumentsDirectory();
   final isar = await Isar.open(
-    <CollectionSchema<dynamic>>[ProjectModelSchema],
-    directory: documentsDirectory.path,
+    [ProjectModelSchema],
+    directory: documents.path,
   );
-
   final store = ProjectStore(isar);
   await store.load();
-
   runApp(AnimProApp(store: store));
 }
 
 class AnimProApp extends StatelessWidget {
   const AnimProApp({required this.store, super.key});
-
   final ProjectStore store;
 
   @override
@@ -47,14 +42,6 @@ class AnimProApp extends StatelessWidget {
           foregroundColor: Colors.white,
           centerTitle: false,
           elevation: 0,
-        ),
-        cardTheme: CardTheme(
-          color: const Color(0xFF202332),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: Color(0xFF34384C)),
-          ),
         ),
       ),
       home: HomeScreen(store: store),
