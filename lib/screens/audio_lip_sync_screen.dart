@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
@@ -20,7 +19,7 @@ class AudioLipSyncScreen extends StatefulWidget {
 
   final List<FrameModel> frames;
   final Size canvasSize;
-  final ValueChanged<List<FrameModel>> onApplyFrames;
+  final Future<void> Function(List<FrameModel>) onApplyFrames;
 
   @override
   State<AudioLipSyncScreen> createState() => _AudioLipSyncScreenState();
@@ -233,7 +232,7 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
     return strokes;
   }
 
-  void _applyToTimeline() {
+  Future<void> _applyToTimeline() async {
     if (_events.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Adiciona fonemas ou cria um mapa aproximado antes de aplicar.')),
@@ -258,8 +257,8 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
       layer.strokes.addAll(_mouthFor(event.label, center));
     }
 
-    widget.onApplyFrames(updated);
-    Navigator.of(context).pop();
+    await widget.onApplyFrames(updated);
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -477,7 +476,7 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
             ..._events.asMap().entries.map((entry) {
               final index = entry.key;
               final event = entry.value;
-              final phonemeIndex = _phonemes.indexOf(event.label).clamp(0, _phonemes.length - 1);
+              final phonemeIndex = _phonemes.indexOf(event.label).clamp(0, _phonemes.length - 1).toInt();
               return Container(
                 margin: const EdgeInsets.only(bottom: 7),
                 padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
