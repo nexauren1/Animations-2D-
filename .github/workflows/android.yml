@@ -1,0 +1,55 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/android.yml'
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Gerar estrutura Android se necessário
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name animpro .
+          fi
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Gerar código Isar
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Verificar análise estática
+        run: flutter analyze
+
+      - name: Compilar APK release
+        run: flutter build apk --release
+
+      - name: Guardar APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimPro-android-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
