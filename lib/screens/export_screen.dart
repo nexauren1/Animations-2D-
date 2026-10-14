@@ -27,6 +27,8 @@ class _ExportScreenState extends State<ExportScreen> {
   String _format = 'PNG';
   int _resolution = 1080;
   int _fps = 24;
+  String _aspectRatio = '16:9';
+  String _shareTarget = 'Geral';
   bool _isExporting = false;
 
   List<FrameModel> get _frames => widget.project.frames;
@@ -53,8 +55,14 @@ class _ExportScreenState extends State<ExportScreen> {
         maxY = math.max(maxY, point.dy).toDouble();
       }
     }
-    final int outputHeight = targetResolution;
-    final int outputWidth = (targetResolution * 16 / 9).round();
+    final int outputWidth = _aspectRatio == '9:16'
+        ? targetResolution
+        : _aspectRatio == '1:1'
+            ? targetResolution
+            : (targetResolution * 16 / 9).round();
+    final int outputHeight = _aspectRatio == '9:16'
+        ? (targetResolution * 16 / 9).round()
+        : targetResolution;
     const double margin = 28;
     final double sourceWidth = math.max(maxX - minX, 1.0).toDouble();
     final double sourceHeight = math.max(maxY - minY, 1.0).toDouble();
@@ -226,11 +234,17 @@ class _ExportScreenState extends State<ExportScreen> {
       await Share.shareXFiles(
         [XFile(exported.path)],
         subject: 'Exportação AnimPro',
-        text: switch (_format) {
-          'PNG' => 'Frame exportado do AnimPro.',
-          'PNG Sequence' => 'Sequência de frames PNG exportada do AnimPro.',
-          'MP4' => 'Vídeo MP4 exportado do AnimPro a $_fps FPS.',
-          _ => 'GIF animado exportado do AnimPro.',
+        text: switch (_shareTarget) {
+          'TikTok' => 'Vídeo criado no AnimPro, pronto para publicar no TikTok.',
+          'Instagram Reels' => 'Vídeo criado no AnimPro para Instagram Reels.',
+          'YouTube Shorts' => 'Vídeo criado no AnimPro para YouTube Shorts.',
+          'WhatsApp' => 'Criado com AnimPro — partilhado pelo WhatsApp.',
+          _ => switch (_format) {
+            'PNG' => 'Frame exportado do AnimPro.',
+            'PNG Sequence' => 'Sequência de frames PNG exportada do AnimPro.',
+            'MP4' => 'Vídeo MP4 exportado do AnimPro a $_fps FPS.',
+            _ => 'GIF animado exportado do AnimPro.',
+          },
         },
       );
     } catch (error) {
@@ -332,6 +346,54 @@ class _ExportScreenState extends State<ExportScreen> {
                     ? 'Exporta todos os frames para ficheiros PNG dentro de um ZIP.'
                     : 'Será codificado a partir de todos os frames do projeto e partilhado para guardar no telefone.',
             style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 24),
+          const Text('Formato do vídeo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 7),
+          Text('Escolhe a proporção adequada à plataforma de destino.',
+              style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _choice('16:9 Horizontal', _aspectRatio == '16:9',
+                  () => setState(() => _aspectRatio = '16:9')),
+              const SizedBox(width: 8),
+              _choice('9:16 Vertical', _aspectRatio == '9:16',
+                  () => setState(() => _aspectRatio = '9:16')),
+              const SizedBox(width: 8),
+              _choice('1:1 Quadrado', _aspectRatio == '1:1',
+                  () => setState(() => _aspectRatio = '1:1')),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Text('Partilhar para', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 7),
+          Text('Depois da exportação, o Android mostra as aplicações compatíveis instaladas no telefone.',
+              style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12, height: 1.4)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ('Geral', Icons.share_rounded),
+              ('TikTok', Icons.music_note_rounded),
+              ('Instagram Reels', Icons.camera_alt_outlined),
+              ('YouTube Shorts', Icons.smart_display_outlined),
+              ('WhatsApp', Icons.chat_rounded),
+            ].map((item) {
+              final selected = _shareTarget == item.$1;
+              return ChoiceChip(
+                avatar: Icon(item.$2, size: 17),
+                label: Text(item.$1),
+                selected: selected,
+                onSelected: (_) => setState(() => _shareTarget = item.$1),
+                selectedColor: const Color(0xFF5445C6),
+                backgroundColor: const Color(0xFF242737),
+                labelStyle: TextStyle(color: selected ? Colors.white : Colors.white70,
+                    fontWeight: FontWeight.w700),
+                side: BorderSide(color: selected ? const Color(0xFF897CFF) : const Color(0xFF3B4054)),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 24),
           const Text('Frame rate (FPS)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
