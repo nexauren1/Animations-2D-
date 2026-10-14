@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar_community/isar_community.dart';
+import 'package:isar_community/isar.dart';
 
 import '../models/project_model.dart';
 
