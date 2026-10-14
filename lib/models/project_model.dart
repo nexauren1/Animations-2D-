@@ -134,11 +134,14 @@ class StrokeModel {
     required List<Offset> points,
     this.color = 0xFF111111,
     this.width = 3,
+    this.kind = 'pen',
   }) : points = List<Offset>.from(points);
 
   final List<Offset> points;
   final int color;
   final double width;
+  /// Tipo do traço: pen, eraser, line, rectangle, ellipse ou ruler.
+  final String kind;
 
   factory StrokeModel.fromJson(Map<String, dynamic> json) => StrokeModel(
         points: (json['points'] as List<dynamic>? ?? <dynamic>[])
@@ -151,6 +154,7 @@ class StrokeModel {
             }).toList(),
         color: (json['color'] as num?)?.toInt() ?? 0xFF111111,
         width: (json['width'] as num?)?.toDouble() ?? 3,
+        kind: json['kind'] as String? ?? 'pen',
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -159,11 +163,13 @@ class StrokeModel {
             .toList(),
         'color': color,
         'width': width,
+        'kind': kind,
       };
 
   StrokeModel copy() => StrokeModel(
         points: points,
         color: color,
         width: width,
+        kind: kind,
       );
 }
