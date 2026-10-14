@@ -1,0 +1,69 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: animpro-android-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Flutter stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Android platform files if missing
+        shell: bash
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name animpro --org com.nexauren.animpro /tmp/animpro-platform
+            cp -a /tmp/animpro-platform/android ./android
+          fi
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Generate Isar model
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Static analysis
+        run: flutter analyze --no-pub
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Store APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: animpro-android-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Replace phone-download release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release delete mobile-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create mobile-latest \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --target "${GITHUB_SHA}" \
+            --title "AnimPro Android APK (latest)" \
+            --notes "Compilação automática da branch main. Descarrega app-release.apk, instala no Android e aceita a instalação desta origem quando o telefone pedir."
