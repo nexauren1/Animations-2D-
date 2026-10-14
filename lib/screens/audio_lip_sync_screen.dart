@@ -78,7 +78,7 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
   Future<void> _importAudio() async {
     setState(() => _isImporting = true);
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.audio,
         allowMultiple: false,
       );
