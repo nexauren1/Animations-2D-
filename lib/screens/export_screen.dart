@@ -231,21 +231,23 @@ class _ExportScreenState extends State<ExportScreen> {
       }
 
       if (!mounted) return;
-      await Share.shareXFiles(
-        [XFile(exported.path)],
-        subject: 'Exportação AnimPro',
-        text: switch (_shareTarget) {
-          'TikTok' => 'Vídeo criado no AnimPro, pronto para publicar no TikTok.',
-          'Instagram Reels' => 'Vídeo criado no AnimPro para Instagram Reels.',
-          'YouTube Shorts' => 'Vídeo criado no AnimPro para YouTube Shorts.',
-          'WhatsApp' => 'Criado com AnimPro — partilhado pelo WhatsApp.',
-          _ => switch (_format) {
-            'PNG' => 'Frame exportado do AnimPro.',
-            'PNG Sequence' => 'Sequência de frames PNG exportada do AnimPro.',
-            'MP4' => 'Vídeo MP4 exportado do AnimPro a $_fps FPS.',
-            _ => 'GIF animado exportado do AnimPro.',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: <XFile>[XFile(exported.path)],
+          subject: 'Exportação AnimPro',
+          text: switch (_shareTarget) {
+            'TikTok' => 'Vídeo criado no AnimPro, pronto para publicar no TikTok.',
+            'Instagram Reels' => 'Vídeo criado no AnimPro para Instagram Reels.',
+            'YouTube Shorts' => 'Vídeo criado no AnimPro para YouTube Shorts.',
+            'WhatsApp' => 'Criado com AnimPro — partilhado pelo WhatsApp.',
+            _ => switch (_format) {
+              'PNG' => 'Frame exportado do AnimPro.',
+              'PNG Sequence' => 'Sequência de frames PNG exportada do AnimPro.',
+              'MP4' => 'Vídeo MP4 exportado do AnimPro a $_fps FPS.',
+              _ => 'GIF animado exportado do AnimPro.',
+            },
           },
-        },
+        ),
       );
     } catch (error) {
       if (mounted) {
