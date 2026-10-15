@@ -155,6 +155,25 @@ class HomeScreen extends StatelessWidget {
             _BrandMark(),
             SizedBox(width: 10),
             Text('AnimPro', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
+            if (const bool.fromEnvironment('ANIMPRO_TEST_BUILD')) ...[
+              SizedBox(width: 8),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Color(0xFF4A3B13),
+                  borderRadius: BorderRadius.all(Radius.circular(7)),
+                  border: Border.fromBorderSide(BorderSide(color: Color(0xFFD6A842))),
+                ),
+                child: Text(
+                  'TESTE',
+                  style: TextStyle(
+                    color: Color(0xFFFFD979),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         actions: [
