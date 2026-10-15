@@ -16,8 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      GH_TOKEN: ${{ secrets.GH_VARIABLES_TOKEN }}
-      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      # Actions variables API is covered by actions:write. A dedicated PAT is optional.
+      GH_TOKEN: ${{ secrets.GH_VARIABLES_TOKEN || github.token }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
       PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
       PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
       PAYPAL_API_BASE: https://api-m.sandbox.paypal.com
@@ -34,12 +35,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ -n "$FIREBASE_PROJECT_ID" ]] || { echo "::error::Define a variável FIREBASE_PROJECT_ID em Settings → Secrets and variables → Actions → Variables."; exit 1; }
+          [[ -n "$FIREBASE_PROJECT_ID" ]] || { echo "::error::Define FIREBASE_PROJECT_ID como Actions Variable ou Secret."; exit 1; }
           [[ -n "$PAYPAL_CLIENT_ID" ]] || { echo "::error::Define o secret PAYPAL_CLIENT_ID."; exit 1; }
           [[ -n "$PAYPAL_CLIENT_SECRET" ]] || { echo "::error::Define o secret PAYPAL_CLIENT_SECRET."; exit 1; }
-          [[ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]] || { echo "::error::Define o secret FIREBASE_SERVICE_ACCOUNT_JSON com a conta de serviço para deploy Firebase/GCP."; exit 1; }
-          [[ -n "$GH_TOKEN" ]] || { echo "::error::Define GH_VARIABLES_TOKEN como token limitado à escrita de Actions Variables deste repositório."; exit 1; }
-          echo "Configuração básica encontrada. O modo PayPal selecionado é $PAYPAL_API_BASE."
+          [[ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]] || { echo "::error::Falta o secret FIREBASE_SERVICE_ACCOUNT_JSON. Cola nele o JSON completo de uma conta de serviço com permissões de deploy no projeto certo."; exit 1; }
+          python3 - <<'PY'
+          import json, os, sys
+          try:
+              account = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"])
+          except (KeyError, json.JSONDecodeError):
+              print("::error::FIREBASE_SERVICE_ACCOUNT_JSON não contém JSON válido.")
+              sys.exit(1)
+          if account.get("type") != "service_account" or not account.get("client_email"):
+              print("::error::O JSON não parece ser uma chave de conta de serviço Google.")
+              sys.exit(1)
+          if account.get("project_id") != os.environ.get("FIREBASE_PROJECT_ID"):
+              print("::error::O project_id da conta de serviço não corresponde a FIREBASE_PROJECT_ID.")
+              sys.exit(1)
+          print("Conta de serviço validada para o projeto Firebase selecionado.")
+          PY
+          [[ -n "$GH_TOKEN" ]] || { echo "::error::O token automático do GitHub não está disponível para gerir Actions Variables."; exit 1; }
+          echo "Configuração básica validada. Ambiente PayPal: Sandbox."
 
       - name: Install Node.js
         uses: actions/setup-node@v4

@@ -18,11 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
-      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
-      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
-      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
-      GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+      # Support values saved as either repository Variables or Secrets.
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || secrets.FIREBASE_APP_ID }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID || secrets.GOOGLE_WEB_CLIENT_ID }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
@@ -53,6 +54,24 @@ jobs:
 
       - name: Configure optional google-services.json
         run: python3 .github/scripts/configure_firebase_android.py
+
+      - name: Validate Firebase release configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${FIREBASE_NATIVE_CONFIG:-false}" != "true" ]]; then
+            missing=()
+            for name in FIREBASE_API_KEY FIREBASE_APP_ID FIREBASE_MESSAGING_SENDER_ID FIREBASE_PROJECT_ID; do
+              if [[ -z "${!name:-}" ]]; then missing+=("$name"); fi
+            done
+            if (( ${#missing[@]} > 0 )); then
+              printf '::error::Configuração Firebase incompleta. Adiciona os valores como Actions Variables ou Secrets: %s\n' "${missing[*]}"
+              exit 1
+            fi
+          fi
+          if [[ -z "${GOOGLE_WEB_CLIENT_ID:-}" && "${FIREBASE_NATIVE_CONFIG:-false}" != "true" ]]; then
+            echo "::warning::GOOGLE_WEB_CLIENT_ID não está definido. O login com Google ficará desativado; confirma a configuração OAuth se precisares dessa opção."
+          fi
 
       - name: Resolve packages and generate Isar model
         shell: bash
