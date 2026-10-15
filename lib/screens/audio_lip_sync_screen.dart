@@ -450,7 +450,7 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
               child: FilledButton.icon(
                 onPressed: _audioPath == null ? null : _generateApproximateMap,
                 icon: const Icon(Icons.auto_awesome_rounded),
-                label: const Text('Auto map (beta)'),
+                label: const Text('Gerar mapa aproximado'),
                 style: FilledButton.styleFrom(backgroundColor: const Color(0xFF5146B7)),
               ),
             ),
