@@ -78,3 +78,19 @@ flutter build apk --release
 ```
 
 A compilação Android exige API 24 ou superior devido ao encoder de vídeo integrado.
+
+## Firebase Authentication (Android)
+
+O projeto já inclui ecrã de conta com criação de conta e início de sessão por e-mail/palavra-passe, redefinição da palavra-passe, verificação do e-mail e início de sessão com Google.
+
+Este repositório gera a pasta `android/` durante o GitHub Actions, em vez de a manter no código-fonte. Para adicionar o ficheiro de configuração Android do Firebase, coloca `google-services.json` na **raiz do repositório**, ao lado de `pubspec.yaml`. O script `.github/scripts/configure_firebase_android.py` valida o package `com.nexauren.animpro`, copia o ficheiro para `android/app/google-services.json` durante a compilação e ativa o plugin Google Services.
+
+No Firebase Console:
+1. Regista uma aplicação Android com o package exato `com.nexauren.animpro`.
+2. Adiciona o SHA-1 e o SHA-256 do certificado de release em Project settings → Your apps.
+3. Em Authentication → Sign-in method, ativa **Email/Password** e **Google**.
+4. Descarrega um novo `google-services.json` depois de ativares Google Sign-In e coloca-o na raiz do repositório.
+5. Confirma que as GitHub Actions Variables `FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_PROJECT_ID` e `GOOGLE_WEB_CLIENT_ID` estão preenchidas. O ID de cliente Web é usado no fluxo Google do Flutter.
+
+O `google-services.json` é configuração de cliente Firebase, não uma chave de conta de serviço. Nunca coloques chaves privadas de servidor ou ficheiros de service account no repositório. Restringe a chave de API conforme os serviços que a aplicação usa.
+
