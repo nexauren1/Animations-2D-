@@ -2,15 +2,6 @@ name: Configure PayPal Pro and deploy Firebase backend
 
 on:
   workflow_dispatch:
-    inputs:
-      paypal_environment:
-        description: PayPal environment
-        type: choice
-        required: true
-        default: sandbox
-        options:
-          - sandbox
-          - live
 
 permissions:
   contents: read
@@ -29,7 +20,7 @@ jobs:
       FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
       PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
       PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
-      PAYPAL_API_BASE: ${{ inputs.paypal_environment == 'live' && 'https://api-m.paypal.com' || 'https://api-m.sandbox.paypal.com' }}
+      PAYPAL_API_BASE: https://api-m.sandbox.paypal.com
       PAYPAL_PRODUCT_ID: ${{ vars.PAYPAL_PRODUCT_ID }}
       PAYPAL_MONTHLY_PLAN_ID: ${{ vars.PAYPAL_MONTHLY_PLAN_ID }}
       PAYPAL_WEBHOOK_ID: ${{ vars.PAYPAL_WEBHOOK_ID }}
