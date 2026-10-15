@@ -26,7 +26,7 @@ class ExportScreen extends StatefulWidget {
 class _ExportScreenState extends State<ExportScreen> {
   static const MethodChannel _nativeVideoChannel = MethodChannel('animpro/native_video_export');
   String _format = 'PNG';
-  int _resolution = 1080;
+  int _resolution = 720;
   late int _fps;
   String _aspectRatio = '16:9';
   String _shareTarget = 'Geral';
@@ -45,17 +45,22 @@ class _ExportScreenState extends State<ExportScreen> {
 
   /// Gera imagens 16:9 fixas para garantir que os frames podem ser combinados em vídeo.
   Future<Uint8List> _renderPng(FrameModel frame, int targetResolution) async {
-    final strokes = frame.layers
+    // Use one shared camera/bounds for the whole animation. Calculating bounds
+    // independently per frame makes every frame recenter and rescale, so MP4
+    // playback looks like a zooming/jittering still image instead of motion.
+    final projectFrames = _frames;
+    final points = projectFrames
+        .expand((projectFrame) => projectFrame.layers)
         .where((layer) => layer.visible)
         .expand((layer) => layer.strokes)
         .where((stroke) => stroke.points.isNotEmpty)
-        .toList();
-    final points = strokes.expand((stroke) => stroke.points).toList();
+        .expand((stroke) => stroke.points)
+        .toList(growable: false);
     double minX = 0, minY = 0, maxX = 640, maxY = 640;
     if (points.isNotEmpty) {
       minX = maxX = points.first.dx;
       minY = maxY = points.first.dy;
-      for (final point in points) {
+      for (final point in points.skip(1)) {
         minX = math.min(minX, point.dx).toDouble();
         maxX = math.max(maxX, point.dx).toDouble();
         minY = math.min(minY, point.dy).toDouble();
