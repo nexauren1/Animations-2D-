@@ -1,0 +1,187 @@
+{
+  "project_info": {
+    "project_number": "1062438516387",
+    "project_id": "nexauren-story",
+    "storage_bucket": "nexauren-story.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062438516387:android:f7b1dc24dde7186b287116",
+        "android_client_info": {
+          "package_name": "com.nexauren.animpro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062438516387-2dsf5i737osnab8l26j6nlcfvmb719o6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nexauren.animpro",
+            "certificate_hash": "affc8e389400f458b571ba61861f7b8161ce2e6b"
+          }
+        },
+        {
+          "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtO5UOedU4qtdZBgQERMhygWYLUxybVTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062438516387:android:dc508be8c2edee65287116",
+        "android_client_info": {
+          "package_name": "com.nexauren.docpilot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062438516387-h8h7lsan97o89af48f1qbi7210lvqfl7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nexauren.docpilot",
+            "certificate_hash": "b0abc000ad64d64c70ec192a80cc02656f95871b"
+          }
+        },
+        {
+          "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtO5UOedU4qtdZBgQERMhygWYLUxybVTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062438516387:android:44e59a6d93f353a1287116",
+        "android_client_info": {
+          "package_name": "com.nexauren.imagetools"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062438516387-fvqmmsdlnetqhv60peo6ptkpe5ricgr3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nexauren.imagetools",
+            "certificate_hash": "205f06b7edb67ebdf5b6c923b7876f74b1e7dc6f"
+          }
+        },
+        {
+          "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtO5UOedU4qtdZBgQERMhygWYLUxybVTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062438516387:android:650d199bdab99d57287116",
+        "android_client_info": {
+          "package_name": "com.nexauren.musicplayer2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062438516387-3pvd3rhq5uca2l8l6vqk8pelsfljhmii.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nexauren.musicplayer2",
+            "certificate_hash": "33a0bbd964c338e3bf8245410f110c8f3167d3a8"
+          }
+        },
+        {
+          "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtO5UOedU4qtdZBgQERMhygWYLUxybVTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062438516387:android:d7afe7177d3c4cd1287116",
+        "android_client_info": {
+          "package_name": "nexaurenstory.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtO5UOedU4qtdZBgQERMhygWYLUxybVTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
