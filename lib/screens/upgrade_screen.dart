@@ -1,0 +1,432 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../services/firebase_bootstrap.dart';
+import 'account_screen.dart';
+
+class UpgradeScreen extends StatefulWidget {
+  const UpgradeScreen({super.key, this.requiredFeature});
+
+  final String? requiredFeature;
+
+  @override
+  State<UpgradeScreen> createState() => _UpgradeScreenState();
+}
+
+class _UpgradeScreenState extends State<UpgradeScreen> {
+  bool _launching = false;
+
+  static const _site = 'https://nexauren1.github.io/Animations-2D-/';
+  static const _privacy = '${_site}privacy.html';
+  static const _terms = '${_site}terms.html';
+
+  void _message(String text, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: error ? const Color(0xFF963D4A) : null,
+      ),
+    );
+  }
+
+  Future<void> _openAccount() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
+    );
+  }
+
+  Future<void> _openLink(String value) async {
+    final uri = Uri.parse(value);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      _message('Não foi possível abrir o link. Tenta novamente.', error: true);
+    }
+  }
+
+  Future<void> _buy(String plan) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _message('Inicia sessão ou cria uma conta antes de comprar.', error: true);
+      await _openAccount();
+      return;
+    }
+    if (!FirebaseBootstrap.isInitialized) {
+      _message(
+        'O Firebase ainda não está configurado. Define as variáveis de Firebase no GitHub Actions e publica uma nova versão.',
+        error: true,
+      );
+      return;
+    }
+    if (_launching) return;
+    setState(() => _launching = true);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'startPayPalCheckout',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 45)),
+      );
+      final response = await callable.call(<String, Object>{'plan': plan});
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final approval = data['approvalUrl'] as String?;
+      final url = approval == null ? null : Uri.tryParse(approval);
+      if (url == null || !url.hasAuthority || url.scheme != 'https') {
+        throw StateError('O PayPal não devolveu um link de pagamento válido.');
+      }
+      final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!opened) {
+        throw StateError('Não foi possível abrir a página segura do PayPal.');
+      }
+      if (mounted) {
+        _message(
+          'Conclui o pagamento no PayPal e regressa aqui. A ativação é confirmada pelo servidor.',
+        );
+      }
+    } on FirebaseFunctionsException catch (error) {
+      final message = switch (error.code) {
+        'unauthenticated' => 'Inicia sessão novamente antes de comprar.',
+        'failed-precondition' =>
+          'O pagamento ainda não está configurado. Executa o workflow PayPal no GitHub Actions.',
+        'unavailable' =>
+          'O serviço de pagamentos não está disponível. Tenta novamente mais tarde.',
+        _ => 'Não foi possível iniciar o pagamento (${error.code}).',
+      };
+      _message(message, error: true);
+    } catch (_) {
+      _message(
+        'Não foi possível iniciar o checkout. Verifica a ligação ou a configuração PayPal.',
+        error: true,
+      );
+    } finally {
+      if (mounted) setState(() => _launching = false);
+    }
+  }
+
+  bool _isEntitled(Map<String, dynamic>? data) {
+    if (data == null || data['active'] != true) return false;
+    final expires = data['expiresAt'];
+    if (expires == null) return true;
+    if (expires is Timestamp) return expires.toDate().isAfter(DateTime.now());
+    if (expires is DateTime) return expires.isAfter(DateTime.now());
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final canReadEntitlement = Firebase.apps.isNotEmpty && user != null;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('AnimPro Pro'),
+        actions: [
+          IconButton(
+            tooltip: 'Política de Privacidade',
+            onPressed: () => _openLink(_privacy),
+            icon: const Icon(Icons.shield_outlined),
+          ),
+          IconButton(
+            tooltip: 'Termos de Utilização',
+            onPressed: () => _openLink(_terms),
+            icon: const Icon(Icons.description_outlined),
+          ),
+        ],
+      ),
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: canReadEntitlement
+            ? FirebaseFirestore.instance
+                .collection('proEntitlements')
+                .doc(user.uid)
+                .snapshots()
+            : null,
+        builder: (context, snapshot) {
+          final data = snapshot.data?.data();
+          final active = _isEntitled(data);
+          final planName = data?['type'] == 'lifetime'
+              ? 'Pro permanente'
+              : 'Pro ativo';
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 36),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF3E347F), Color(0xFF171B30)],
+                  ),
+                  border: Border.all(color: const Color(0xFF7165C8)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.workspace_premium_rounded,
+                        size: 44, color: Color(0xFFFFD36A)),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Cria sem limites criativos',
+                      style: TextStyle(fontSize: 28, height: 1.08, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      widget.requiredFeature == null
+                          ? 'Desbloqueia ferramentas avançadas de animação com o AnimPro Pro.'
+                          : '${widget.requiredFeature} faz parte do AnimPro Pro. Escolhe um plano para desbloquear este recurso.',
+                      style: const TextStyle(color: Colors.white70, height: 1.45),
+                    ),
+                    if (active) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C6B53),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.check_circle, size: 18),
+                            const SizedBox(width: 8),
+                            Text(planName, style: const TextStyle(fontWeight: FontWeight.w800)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text('O que está incluído',
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              const _ProFeature(
+                icon: Icons.movie_creation_outlined,
+                title: 'Exportação de vídeo MP4',
+                detail: 'Gera vídeos com os frames do projeto e a taxa de FPS escolhida.',
+              ),
+              const _ProFeature(
+                icon: Icons.hub_outlined,
+                title: 'Rigging e poses',
+                detail: 'Ajusta poses com controlos de rigging e guarda-as como frames.',
+              ),
+              const _ProFeature(
+                icon: Icons.graphic_eq_outlined,
+                title: 'Áudio e marcação de boca',
+                detail: 'Importa áudio e marca manualmente as poses para lip sync.',
+              ),
+              const _ProFeature(
+                icon: Icons.speed_rounded,
+                title: 'Exportação até 60 FPS',
+                detail: 'Controla a fluidez da animação em exportações de vídeo.',
+              ),
+              const _ProFeature(
+                icon: Icons.auto_awesome_outlined,
+                title: 'Ferramentas Pro futuras',
+                detail: 'Novas funções avançadas serão disponibilizadas quando estiverem prontas.',
+              ),
+              const SizedBox(height: 22),
+              if (user == null) ...[
+                const Text(
+                  'Para associar a compra à tua licença, inicia sessão ou cria uma conta AnimPro. Os teus projetos locais continuam no dispositivo.',
+                  style: TextStyle(color: Colors.white70, height: 1.45),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: _openAccount,
+                    icon: const Icon(Icons.login_rounded),
+                    label: const Text('Entrar ou criar conta'),
+                  ),
+                ),
+              ] else ...[
+                _PlanCard(
+                  title: 'Pro Mensal',
+                  price: r'$5',
+                  cadence: '/ mês',
+                  description: 'Acesso Pro enquanto a subscrição estiver ativa.',
+                  buttonLabel: active && data?['type'] == 'monthly'
+                      ? 'Subscrição ativa'
+                      : 'Assinar mensalmente',
+                  recommended: true,
+                  busy: _launching,
+                  disabled: active && data?['type'] == 'monthly',
+                  onPressed: () => _buy('monthly'),
+                ),
+                const SizedBox(height: 12),
+                _PlanCard(
+                  title: 'Pro Permanente',
+                  price: r'$50',
+                  cadence: 'pagamento único',
+                  description: 'Uma compra, acesso vitalício à versão Pro atual e às funcionalidades Pro incluídas.',
+                  buttonLabel: active && data?['type'] == 'lifetime'
+                      ? 'Licença permanente ativa'
+                      : 'Comprar permanentemente',
+                  busy: _launching,
+                  disabled: active && data?['type'] == 'lifetime',
+                  onPressed: () => _buy('lifetime'),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'O plano mensal renova-se automaticamente até ser cancelado no PayPal. O plano permanente é uma compra única, não uma subscrição anual. Confirma o preço final e as condições no checkout antes de pagar.',
+                  style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.45),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 18,
+                runSpacing: 10,
+                children: [
+                  TextButton(
+                    onPressed: () => _openLink(_site),
+                    child: const Text('Site oficial'),
+                  ),
+                  TextButton(
+                    onPressed: () => _openLink(_privacy),
+                    child: const Text('Privacidade'),
+                  ),
+                  TextButton(
+                    onPressed: () => _openLink(_terms),
+                    child: const Text('Termos'),
+                  ),
+                ],
+              ),
+              if (snapshot.hasError)
+                const Text(
+                  'Não foi possível atualizar o estado Pro. Verifica a ligação ao Firestore.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ProFeature extends StatelessWidget {
+  const _ProFeature({
+    required this.icon,
+    required this.title,
+    required this.detail,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 11),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xFF272442),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: const Color(0xFFB9AEFF)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text(detail, style: const TextStyle(color: Colors.white60, height: 1.4)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.title,
+    required this.price,
+    required this.cadence,
+    required this.description,
+    required this.buttonLabel,
+    required this.onPressed,
+    required this.busy,
+    this.recommended = false,
+    this.disabled = false,
+  });
+
+  final String title;
+  final String price;
+  final String cadence;
+  final String description;
+  final String buttonLabel;
+  final VoidCallback onPressed;
+  final bool busy;
+  final bool recommended;
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF171A29),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: recommended ? const Color(0xFF8879FF) : const Color(0xFF33384F),
+            width: recommended ? 1.6 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                ),
+                if (recommended)
+                  const Icon(Icons.star_rounded, color: Color(0xFFFFD36A)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(price, style: const TextStyle(fontSize: 35, fontWeight: FontWeight.w900, height: 1)),
+                const SizedBox(width: 8),
+                Expanded(child: Padding(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  child: Text(cadence, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                )),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(description, style: const TextStyle(color: Colors.white60, height: 1.4)),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: busy || disabled ? null : onPressed,
+                child: busy
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(buttonLabel),
+              ),
+            ),
+          ],
+        ),
+      );
+}
