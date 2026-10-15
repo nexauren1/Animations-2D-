@@ -1,7 +1,7 @@
 'use strict';
 
-const fs = require('node:fs');
-const crypto = require('node:crypto');
+import fs from 'node:fs';
+import crypto from 'node:crypto';
 
 const base = (process.env.PAYPAL_API_BASE || 'https://api-m.sandbox.paypal.com').replace(/\/$/, '');
 const clientId = process.env.PAYPAL_CLIENT_ID || '';
