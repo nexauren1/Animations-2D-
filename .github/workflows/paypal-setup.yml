@@ -46,6 +46,11 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Validate backend JavaScript before creating PayPal catalog
+        run: |
+          node --check functions/index.js
+          node --check .github/scripts/paypal_catalog.mjs
+
       - name: Authenticate Google Cloud
         uses: google-github-actions/auth@v2
         with:
