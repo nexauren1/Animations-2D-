@@ -46,9 +46,9 @@ Nas definições do repositório GitHub, em **Settings → Secrets and variables
 - `FIREBASE_APP_ID`
 - `FIREBASE_MESSAGING_SENDER_ID`
 - `FIREBASE_PROJECT_ID`
-- `GOOGLE_WEB_CLIENT_ID` — o OAuth Client ID do tipo **Web application**, necessário para o fluxo de login Google.
+- `GOOGLE_WEB_CLIENT_ID` — o OAuth Client ID do tipo **Web application**. Se `google-services.json` já incluir um cliente OAuth com `client_type: 3`, o Android pode lê-lo da configuração nativa; nesse caso, esta variável pode ficar vazia. Caso contrário, preenche-a.
 
-Os identificadores do Firebase são valores de configuração, não a chave privada de assinatura. Obtém-nos nas definições do teu projeto Firebase. Depois de criares ou alterares estas variáveis, executa novamente o workflow **Build Android APK** para incluir a configuração no APK. Se os identificadores estiverem em falta, o editor local continua a funcionar, mas o ecrã de conta informa que a autenticação ainda não está configurada.
+Os identificadores do Firebase são valores de configuração, não a chave privada de assinatura. Obtém-os nas definições do teu projeto Firebase. Depois de criares ou alterares variáveis, executa novamente o workflow **Build Android APK** para incluir a configuração no APK. Para o login Google no Android, confirma que `google-services.json` contém um cliente OAuth do tipo Web (`client_type: 3`); se não contiver, define `GOOGLE_WEB_CLIENT_ID` com o ID de cliente Web do mesmo projeto Firebase. Se não houver configuração Firebase válida, o editor local continua a funcionar e o ecrã de conta informa que a autenticação ainda não está configurada.
 
 ## GitHub Actions Secrets de assinatura
 
@@ -90,7 +90,7 @@ No Firebase Console:
 2. Adiciona o SHA-1 e o SHA-256 do certificado de release em Project settings → Your apps.
 3. Em Authentication → Sign-in method, ativa **Email/Password** e **Google**.
 4. Descarrega um novo `google-services.json` depois de ativares Google Sign-In e coloca-o na raiz do repositório.
-5. Confirma que as GitHub Actions Variables `FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_PROJECT_ID` e `GOOGLE_WEB_CLIENT_ID` estão preenchidas. O ID de cliente Web é usado no fluxo Google do Flutter.
+5. Confirma que as GitHub Actions Variables `FIREBASE_API_KEY`, `FIREBASE_APP_ID`, `FIREBASE_MESSAGING_SENDER_ID` e `FIREBASE_PROJECT_ID` estão preenchidas se estiveres a usar a configuração por variáveis. Para o login Google, usa o cliente OAuth Web incluído no `google-services.json` ou define `GOOGLE_WEB_CLIENT_ID` com um ID do tipo Web do mesmo projeto Firebase.
 
 O `google-services.json` é configuração de cliente Firebase, não uma chave de conta de serviço. Nunca coloques chaves privadas de servidor ou ficheiros de service account no repositório. Restringe a chave de API conforme os serviços que a aplicação usa.
 
