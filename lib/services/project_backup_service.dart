@@ -56,6 +56,9 @@ class ProjectBackupService {
       throw const BackupCancelledException();
     }
     final file = picked.files.single;
+    if (file.size > 30 * 1024 * 1024) {
+      throw const FormatException('O backup excede o limite de 30 MB.');
+    }
     final bytes = file.bytes ??
         (file.path == null ? null : await File(file.path!).readAsBytes());
     if (bytes == null || bytes.isEmpty) {
@@ -97,7 +100,7 @@ class ProjectBackupService {
 
     final name = (decoded['name'] as String? ?? 'Projeto importado').trim();
     final fpsValue = decoded['fps'];
-    final fps = fpsValue is num ? fpsValue.toInt().clamp(1, 120) : 12;
+    final fps = fpsValue is num ? fpsValue.toInt().clamp(1, 60).toInt() : 12;
     return ImportedProject(
       name: name.isEmpty ? 'Projeto importado' : name,
       fps: fps,
