@@ -249,6 +249,12 @@ async function handleSubscriptionEvent(event) {
   if (type === 'BILLING.SUBSCRIPTION.ACTIVATED' ||
       type === 'BILLING.SUBSCRIPTION.UPDATED' ||
       type === 'PAYMENT.SALE.COMPLETED') {
+    const currentEntitlement = await db.collection('proEntitlements').doc(uid).get();
+    if (currentEntitlement.exists &&
+        currentEntitlement.data().active === true &&
+        currentEntitlement.data().type === 'lifetime') {
+      return; // A recurring webhook must never downgrade a lifetime licence.
+    }
     const expiresAt = timestampOrGracePeriod(
       resource.billing_info && resource.billing_info.next_billing_time,
     );
