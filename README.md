@@ -22,17 +22,17 @@ Aplicação Flutter com interface escura de estúdio, canvas de desenho, animaç
 ## Instalar o APK diretamente no telefone
 
 1. Abre [Releases](https://github.com/nexauren1/Animations-2D-/releases/tag/mobile-latest) no Android.
-2. Descarrega `app-release.apk`.
+2. Descarrega `AnimPro-release-signed.apk`.
 3. Abre o ficheiro transferido e segue a confirmação de instalação do Android. Instala apenas o APK deste repositório que reconheces.
 
-O GitHub Actions compila o APK de release sempre que há alterações na branch `main). O mesmo fluxo guarda um artefacto de build durante 30 dias.
+O GitHub Actions compila um APK de release assinado sempre que há alterações na branch `main`. O fluxo guarda um artefacto de build durante 30 dias.
 
 ## Executar o projeto num computador
 
 Requisitos: Flutter SDK estável e Android SDK.
 
 ```bash
-flutter create --platforms=android --project-name animpro .
+flutter create --platforms=android --project-name animpro --org com.nexauren .
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter run
@@ -61,6 +61,14 @@ A compilação Android requer API 24 ou superior devido ao codificador FFmpeg in
 - `lib/screens/export_screen.dart` — render de imagens e codificação de vídeo/GIF.
 
 
-## Assinatura e validação Android
+## Assinatura permanente Android
 
-O workflow **Android APK** executa a geração Isar, a análise estática, a compilação release e a verificação criptográfica do APK. O artefacto `AnimPro-test-signed.apk` usa uma chave temporária criada no runner para testes internos; não é uma chave de publicação Google Play. Como a chave temporária muda entre execuções, desinstala a versão de teste anterior antes de instalar um APK gerado numa execução diferente. Para distribuição pública e atualizações sem reinstalação, configura-se uma chave privada permanente, mantida fora do repositório.
+O identificador Android desta aplicação é `com.nexauren.animpro`. Os workflows de compilação usam a chave de release permanente e verificam a assinatura do APK.
+
+Antes de executar os workflows, cria estes quatro repository secrets em **Settings → Secrets and variables → Actions**:
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+O ficheiro `.github/scripts/prepare_android_signing.py` valida o keystore e configura a assinatura durante a compilação. Nunca guardes os valores dos secrets, o ficheiro `.jks` ou `android/key.properties` no repositório. Mantém uma cópia de segurança privada do keystore e das palavras-passe: as versões futuras têm de reutilizar a mesma chave de assinatura.
