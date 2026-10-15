@@ -54,8 +54,8 @@ class ProjectBackupService {
     if (file == null) {
       throw const BackupCancelledException();
     }
-    final byteLength = file.lengthSync() ?? await file.length();
-    if (byteLength == null || byteLength > 30 * 1024 * 1024) {
+    final byteLength = file.lengthSync();
+    if (byteLength > 30 * 1024 * 1024) {
       throw const FormatException('O backup excede o limite de 30 MB ou não pode ser lido.');
     }
     final bytes = await file.readAsBytes();
