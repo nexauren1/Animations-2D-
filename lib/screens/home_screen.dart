@@ -5,6 +5,7 @@ import '../services/project_store.dart';
 import '../services/project_backup_service.dart';
 import 'canvas_screen.dart';
 import 'account_screen.dart';
+import 'upgrade_screen.dart';
 import 'resource_center_screen.dart';
 import 'template_gallery_screen.dart';
 import '../services/template_catalog.dart';
@@ -210,6 +211,13 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'AnimPro Pro — planos e funções avançadas',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const UpgradeScreen()),
+            ),
+            icon: const Icon(Icons.workspace_premium_outlined, color: Color(0xFFFFD36A)),
+          ),
           IconButton(
             tooltip: 'Centro de recursos e downloads',
             onPressed: () => _openResourceCenter(context),
