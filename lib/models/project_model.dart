@@ -18,6 +18,7 @@ class ProjectModel {
   late DateTime updatedAt;
   String thumbnailPath = '';
   String framesJson = '[]';
+  int fps = 12;
 
   ProjectModel();
 
@@ -28,6 +29,7 @@ class ProjectModel {
       ..name = projectName
       ..createdAt = now
       ..updatedAt = now
+      ..fps = 12
       ..framesJson = jsonEncode(<Map<String, dynamic>>[
         FrameModel.blank().toJson(),
       ]);
