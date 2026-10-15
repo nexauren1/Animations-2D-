@@ -263,7 +263,7 @@ async function queryDocByField(env, collection, fieldName, value) {
 }
 
 function paypalApiBase(env) {
-  const configured = (env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com").replace(/\\/$/, "");
+  const configured = (env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com").replace(/\/$/, "");
   // This build is deliberately Sandbox-only to prevent accidental live charges.
   if (configured !== "https://api-m.sandbox.paypal.com") {
     throw new HttpError(503, "O ambiente de pagamentos está configurado incorretamente.");
