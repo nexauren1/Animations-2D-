@@ -13,7 +13,7 @@ dependencies:
   isar_community_flutter_libs: ^3.4.1
   path_provider: ^2.1.4
   share_plus: ^13.3.1
-  archive: ^3.6.1
+  archive: ^4.5.2
   image: 4.10.0
   file_picker: ^13.1.0
   audioplayers: ^6.8.1
