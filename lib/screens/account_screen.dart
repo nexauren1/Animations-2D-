@@ -134,10 +134,20 @@ class _AccountScreenState extends State<AccountScreen> {
     }
 
     await _runBusy(() async {
-      _googleInitialization ??= GoogleSignIn.instance.initialize(
-        serverClientId: FirebaseBootstrap.googleWebClientId,
+      final clientId = FirebaseBootstrap.googleWebClientId.trim();
+      final initialization = _googleInitialization ??=
+          GoogleSignIn.instance.initialize(
+        // Android can read this value from google-services.json. Passing an
+        // empty string overrides that configuration, so use null when absent.
+        serverClientId: clientId.isEmpty ? null : clientId,
       );
-      await _googleInitialization;
+      try {
+        await initialization;
+      } catch (_) {
+        // Allow a later tap to retry if the first initialization failed.
+        _googleInitialization = null;
+        rethrow;
+      }
       final googleUser = await GoogleSignIn.instance.authenticate();
       final idToken = googleUser.authentication.idToken;
       if (idToken == null || idToken.isEmpty) {
@@ -170,6 +180,21 @@ class _AccountScreenState extends State<AccountScreen> {
     });
   }
 
+  Future<void> _refreshVerification(User user) async {
+    await _runBusy(() async {
+      await user.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+      if (refreshedUser?.emailVerified == true) {
+        _message('E-mail verificado com sucesso.');
+      } else {
+        _message(
+          'Ainda não foi detetada a verificação. Abre o link recebido por e-mail e tenta novamente.',
+          error: true,
+        );
+      }
+    });
+  }
+
   Future<void> _signOut() async {
     await _runBusy(() async {
       await FirebaseAuth.instance.signOut();
@@ -190,7 +215,7 @@ class _AccountScreenState extends State<AccountScreen> {
         child: !FirebaseBootstrap.isInitialized
             ? _buildSetupRequired()
             : StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
+                stream: FirebaseAuth.instance.userChanges(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&
                       !snapshot.hasData) {
@@ -331,7 +356,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
                 validator: (value) {
                   final email = (value ?? '').trim();
-                  if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+                  if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
                     return 'Introduz um e-mail válido.';
                   }
                   return null;
@@ -480,13 +505,23 @@ class _AccountScreenState extends State<AccountScreen> {
                 subtitle: user.emailVerified
                     ? const Text('O endereço foi confirmado.')
                     : const Text('Confirma o endereço para proteger a conta.'),
-                trailing: user.emailVerified
-                    ? null
-                    : IconButton(
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Verificar novamente',
+                      onPressed:
+                          _busy ? null : () => _refreshVerification(user),
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                    if (!user.emailVerified)
+                      IconButton(
                         tooltip: 'Enviar verificação',
                         onPressed: _busy ? null : () => _sendVerification(user),
                         icon: const Icon(Icons.send_rounded),
                       ),
+                  ],
+                ),
               ),
               const Divider(height: 1),
               const ListTile(
