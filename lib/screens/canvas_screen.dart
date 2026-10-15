@@ -271,6 +271,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
         builder: (_) => ExportScreen(project: widget.project, frameIndex: _currentFrameIndex),
       ),
     );
+    await _persist();
   }
 
   Future<void> _saveAndShowMessage() async {
