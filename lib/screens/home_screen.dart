@@ -15,38 +15,53 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({required this.store, super.key});
   final ProjectStore store;
 
-  Future<void> _create(BuildContext context) async {
-    final controller = TextEditingController(text: 'Minha animação');
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Novo projeto'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 48,
-          decoration: const InputDecoration(labelText: 'Nome do projeto'),
-          onSubmitted: (_) => Navigator.pop(dialogContext, controller.text),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton.icon(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            icon: const Icon(Icons.add),
-            label: const Text('Criar'),
-          ),
-        ],
-      ),
-    );
-    if (name == null || name.trim().isEmpty || !context.mounted) return;
-    final project = await store.createProject(name);
+  void _showActionError(BuildContext context, String message) {
     if (!context.mounted) return;
-    await _open(context, project);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _create(BuildContext context) async {
+    final controller = TextEditingController(text: 'Minha animação');
+    String? name;
+    try {
+      name = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Novo projeto'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 48,
+            decoration: const InputDecoration(labelText: 'Nome do projeto'),
+            onSubmitted: (_) => Navigator.pop(dialogContext, controller.text),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, controller.text),
+              icon: const Icon(Icons.add),
+              label: const Text('Criar'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+    if (name == null || name.trim().isEmpty || !context.mounted) return;
+    try {
+      final project = await store.createProject(name);
+      if (!context.mounted) return;
+      await _open(context, project);
+    } catch (_) {
+      _showActionError(context, 'Não foi possível criar o projeto. Tenta novamente.');
+    }
+  }
   Future<void> _open(BuildContext context, ProjectModel project) async {
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => CanvasScreen(store: store, project: project),
@@ -55,34 +70,38 @@ class HomeScreen extends StatelessWidget {
 
   Future<void> _rename(BuildContext context, ProjectModel project) async {
     final controller = TextEditingController(text: project.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Renomear projeto'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 48,
-          decoration: const InputDecoration(labelText: 'Nome'),
-          onSubmitted: (_) => Navigator.pop(dialogContext, controller.text),
+    String? name;
+    try {
+      name = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Renomear projeto'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 48,
+            decoration: const InputDecoration(labelText: 'Nome'),
+            onSubmitted: (_) => Navigator.pop(dialogContext, controller.text),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, controller.text),
+              child: const Text('Guardar'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
-    );
+      );
+    } finally {
+      controller.dispose();
+    }
     if (name != null && name.trim().isNotEmpty) {
       await store.renameProject(project, name);
     }
   }
-
   Future<void> _delete(BuildContext context, ProjectModel project) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -158,29 +177,35 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future<void> _useTemplate(BuildContext context, AnimationTemplate template) async {
-    final project = await store.createProject(template.title);
-    project.fps = template.fps;
-    await store.saveProject(project, frames: template.createFrames());
-    if (!context.mounted) return;
-    await _open(context, project);
+    try {
+      final project = await store.createProject(template.title);
+      project.fps = template.fps;
+      await store.saveProject(project, frames: template.createFrames());
+      if (!context.mounted) return;
+      await _open(context, project);
+    } catch (_) {
+      _showActionError(context, 'Não foi possível criar um projeto com este modelo. Tenta novamente.');
+    }
   }
-
   Future<void> _action(
     BuildContext context,
     ProjectModel project,
     String action,
   ) async {
-    if (action == 'rename') {
-      await _rename(context, project);
-    } else if (action == 'duplicate') {
-      await store.duplicateProject(project);
-    } else if (action == 'delete') {
-      await _delete(context, project);
-    } else if (action == 'export') {
-      await _exportBackup(context, project);
+    try {
+      if (action == 'rename') {
+        await _rename(context, project);
+      } else if (action == 'duplicate') {
+        await store.duplicateProject(project);
+      } else if (action == 'delete') {
+        await _delete(context, project);
+      } else if (action == 'export') {
+        await _exportBackup(context, project);
+      }
+    } catch (_) {
+      _showActionError(context, 'Não foi possível concluir esta ação. Tenta novamente.');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,25 +215,7 @@ class HomeScreen extends StatelessWidget {
             _BrandMark(),
             SizedBox(width: 10),
             Text('AnimPro', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
-            if (const bool.fromEnvironment('ANIMPRO_TEST_BUILD')) ...[
-              SizedBox(width: 8),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Color(0xFF4A3B13),
-                  borderRadius: BorderRadius.all(Radius.circular(7)),
-                  border: Border.fromBorderSide(BorderSide(color: Color(0xFFD6A842))),
-                ),
-                child: Text(
-                  'TESTE',
-                  style: TextStyle(
-                    color: Color(0xFFFFD979),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
+
           ],
         ),
         actions: [
