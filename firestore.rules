@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Payment entitlements are written only by the trusted Firebase Admin SDK
+    // after the PayPal webhook has been cryptographically verified.
+    match /proEntitlements/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // Public leaderboard entries are owned by the corresponding Firebase UID.
+    // Do not store email addresses or other private details in this collection.
+    match /leaderboard/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'score', 'updatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 48
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 1000000000
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'score', 'updatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 48
+        && request.resource.data.score is int
+        && request.resource.data.score >= resource.data.score
+        && request.resource.data.score <= 1000000000
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // Deny access to collections until an explicit least-privilege rule exists.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
