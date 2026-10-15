@@ -9,6 +9,8 @@ class TimelineScreen extends StatefulWidget {
     required this.currentFrameIndex,
     required this.onFrameSelected,
     required this.onFramesChanged,
+    required this.fps,
+    required this.onFpsChanged,
     super.key,
   });
 
@@ -16,6 +18,8 @@ class TimelineScreen extends StatefulWidget {
   final int currentFrameIndex;
   final ValueChanged<int> onFrameSelected;
   final ValueChanged<List<FrameModel>> onFramesChanged;
+  final int fps;
+  final ValueChanged<int> onFpsChanged;
 
   @override
   State<TimelineScreen> createState() => _TimelineScreenState();
@@ -26,12 +30,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
   bool _isPlaying = false;
   late List<FrameModel> _frames;
   late int _selectedIndex;
+  late int _fps;
 
   @override
   void initState() {
     super.initState();
     _frames = widget.frames.map((frame) => frame.copy()).toList();
     _selectedIndex = widget.currentFrameIndex.clamp(0, _frames.length - 1).toInt();
+    _fps = widget.fps.clamp(1, 60).toInt();
   }
 
   @override
@@ -40,6 +46,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     if (widget.frames.length != _frames.length) {
       _frames = widget.frames.map((frame) => frame.copy()).toList();
     }
+    if (widget.fps != oldWidget.fps) _fps = widget.fps.clamp(1, 60).toInt();
     if (widget.currentFrameIndex != oldWidget.currentFrameIndex &&
         widget.currentFrameIndex >= 0 &&
         widget.currentFrameIndex < _frames.length) {
@@ -59,16 +66,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
     widget.onFrameSelected(index);
   }
 
-  void _togglePlayback() {
-    if (_isPlaying) {
-      _timer?.cancel();
-      setState(() => _isPlaying = false);
-      return;
-    }
-    if (_frames.isEmpty) return;
-
-    setState(() => _isPlaying = true);
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+  void _startPlaybackTimer() {
+    _timer?.cancel();
+    final milliseconds = (1000 / _fps).round().clamp(1, 1000).toInt();
+    _timer = Timer.periodic(Duration(milliseconds: milliseconds), (_) {
       if (!mounted || _frames.isEmpty) return;
       _selectedIndex = (_selectedIndex + 1) % _frames.length;
       widget.onFrameSelected(_selectedIndex);
@@ -76,16 +77,62 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
   }
 
-  void _addFrame() {
-    if (_frames.isEmpty) {
-      _frames = <FrameModel>[FrameModel.blank()];
+  void _setFps(int? value) {
+    if (value == null || value == _fps) return;
+    setState(() => _fps = value.clamp(1, 60).toInt());
+    widget.onFpsChanged(_fps);
+    if (_isPlaying) _startPlaybackTimer();
+  }
+
+  void _togglePlayback() {
+    if (_isPlaying) {
+      _timer?.cancel();
+      setState(() => _isPlaying = false);
+      return;
     }
+    if (_frames.isEmpty) return;
+    setState(() => _isPlaying = true);
+    _startPlaybackTimer();
+  }
+
+  void _addFrame() {
+    if (_frames.isEmpty) _frames = <FrameModel>[FrameModel.blank()];
     final selected = _selectedIndex.clamp(0, _frames.length - 1).toInt();
     final newFrames = _frames.map((frame) => frame.copy()).toList();
     newFrames.insert(selected + 1, newFrames[selected].copy());
     setState(() {
       _frames = newFrames;
       _selectedIndex = selected + 1;
+    });
+    widget.onFramesChanged(newFrames.map((frame) => frame.copy()).toList());
+    widget.onFrameSelected(_selectedIndex);
+  }
+
+  void _addBlankFrame() {
+    final newFrames = _frames.map((frame) => frame.copy()).toList();
+    final insertion = _selectedIndex.clamp(0, newFrames.length - 1).toInt() + 1;
+    newFrames.insert(insertion, FrameModel.blank());
+    setState(() {
+      _frames = newFrames;
+      _selectedIndex = insertion;
+    });
+    widget.onFramesChanged(newFrames.map((frame) => frame.copy()).toList());
+    widget.onFrameSelected(_selectedIndex);
+  }
+
+  void _deleteSelectedFrame() {
+    if (_frames.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('O projeto precisa de pelo menos um frame.')),
+      );
+      return;
+    }
+    final newFrames = _frames.map((frame) => frame.copy()).toList()
+      ..removeAt(_selectedIndex);
+    final nextIndex = _selectedIndex.clamp(0, newFrames.length - 1).toInt();
+    setState(() {
+      _frames = newFrames;
+      _selectedIndex = nextIndex;
     });
     widget.onFramesChanged(newFrames.map((frame) => frame.copy()).toList());
     widget.onFrameSelected(_selectedIndex);
@@ -130,6 +177,22 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   ),
                   Text('${frames.length} frames',
                       style: TextStyle(color: Colors.white.withOpacity(.55))),
+                  const SizedBox(width: 10),
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _fps,
+                      dropdownColor: const Color(0xFF25283A),
+                      icon: const Icon(Icons.speed_rounded, size: 17),
+                      style: const TextStyle(fontSize: 12, color: Color(0xFFC2BAFF)),
+                      items: <int>[6, 12, 24, 30, 60]
+                          .map((value) => DropdownMenuItem<int>(
+                                value: value,
+                                child: Text('${value} FPS'),
+                              ))
+                          .toList(),
+                      onChanged: _setFps,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 18),
@@ -191,26 +254,38 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     onPressed: _togglePlayback,
                     icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 5),
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _addFrame,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Novo Frame (duplicar atual)'),
+                      icon: const Icon(Icons.copy_rounded, size: 18),
+                      label: const Text('Duplicar'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFC2BAFF),
                         side: const BorderSide(color: Color(0xFF6358B2)),
-                        minimumSize: const Size(0, 48),
+                        minimumSize: const Size(0, 46),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 5),
+                  IconButton.filledTonal(
+                    tooltip: 'Novo frame em branco',
+                    onPressed: _addBlankFrame,
+                    icon: const Icon(Icons.note_add_rounded),
+                  ),
+                  IconButton.filledTonal(
+                    tooltip: 'Apagar frame selecionado',
+                    onPressed: _deleteSelectedFrame,
+                    icon: const Icon(Icons.delete_outline_rounded),
                   ),
                 ],
               ),
               const SizedBox(height: 5),
               Text(
                 _isPlaying
-                    ? 'Reprodução ativa · 500 ms por frame'
-                    : 'Seleciona um quadrado ou duplica o frame atual.',
+                    ? 'Reprodução ativa · $_fps FPS'
+                    : 'Escolhe a velocidade, duplica um frame ou cria um frame vazio.',
                 style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.5)),
               ),
             ],
