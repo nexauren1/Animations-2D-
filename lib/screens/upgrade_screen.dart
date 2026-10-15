@@ -48,6 +48,8 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
     );
+    // Refresh the account and entitlement stream after returning from sign-in.
+    if (mounted) setState(() {});
   }
 
   Future<void> _openLink(String value) async {
@@ -106,6 +108,8 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         final message = switch (response.statusCode) {
           HttpStatus.unauthorized || HttpStatus.forbidden =>
             'A tua sessão expirou. Entra novamente na tua conta.',
+          HttpStatus.conflict =>
+            'A tua licença Pro já está ativa. Não precisas de comprar novamente.',
           HttpStatus.badRequest =>
             'Não foi possível iniciar esta compra. Seleciona um plano e tenta novamente.',
           HttpStatus.tooManyRequests =>
@@ -195,6 +199,9 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 .snapshots()
             : null,
         builder: (context, snapshot) {
+          final entitlementPending = canReadEntitlement && !snapshot.hasData && !snapshot.hasError;
+          final entitlementUnavailable = canReadEntitlement && snapshot.hasError;
+          final purchasesBlocked = entitlementPending || entitlementUnavailable;
           final data = snapshot.data?.data();
           final active = _isEntitled(data);
           final planName = data?['type'] == 'lifetime'
@@ -276,11 +283,6 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 title: 'Exportação até 60 FPS',
                 detail: 'Controla a fluidez da animação em exportações de vídeo.',
               ),
-              const _ProFeature(
-                icon: Icons.auto_awesome_outlined,
-                title: 'Ferramentas Pro futuras',
-                detail: 'Novas funções avançadas serão disponibilizadas quando estiverem prontas.',
-              ),
               const SizedBox(height: 22),
               if (user == null) ...[
                 const Text(
@@ -302,12 +304,16 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   price: r'$5',
                   cadence: '/ mês',
                   description: 'Acesso Pro enquanto a subscrição estiver ativa.',
-                  buttonLabel: active && data?['type'] == 'monthly'
-                      ? 'Subscrição ativa'
-                      : 'Assinar mensalmente',
+                  buttonLabel: entitlementPending
+                      ? 'A verificar licença…'
+                      : entitlementUnavailable
+                          ? 'Licença não verificada'
+                          : active && data?['type'] == 'monthly'
+                              ? 'Subscrição ativa'
+                              : 'Assinar mensalmente',
                   recommended: true,
                   busy: _launching,
-                  disabled: active && data?['type'] == 'monthly',
+                  disabled: purchasesBlocked || (active && data?['type'] == 'monthly'),
                   onPressed: () => _buy('monthly'),
                 ),
                 const SizedBox(height: 12),
@@ -316,11 +322,15 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   price: r'$50',
                   cadence: 'pagamento único',
                   description: 'Uma compra, acesso vitalício à versão Pro atual e às funcionalidades Pro incluídas.',
-                  buttonLabel: active && data?['type'] == 'lifetime'
-                      ? 'Licença permanente ativa'
-                      : 'Comprar permanentemente',
+                  buttonLabel: entitlementPending
+                      ? 'A verificar licença…'
+                      : entitlementUnavailable
+                          ? 'Licença não verificada'
+                          : active && data?['type'] == 'lifetime'
+                              ? 'Licença permanente ativa'
+                              : 'Comprar permanentemente',
                   busy: _launching,
-                  disabled: active && data?['type'] == 'lifetime',
+                  disabled: purchasesBlocked || (active && data?['type'] == 'lifetime'),
                   onPressed: () => _buy('lifetime'),
                 ),
                 const SizedBox(height: 8),
