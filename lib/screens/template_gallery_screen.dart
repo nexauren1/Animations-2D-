@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/project_model.dart';
@@ -221,16 +223,39 @@ class _TemplateFramePainter extends CustomPainter {
       end: Alignment.bottomRight,
       colors: [Color(0xFF272A41), Color(0xFF151725)],
     ).createShader(bounds));
-    final scale = (size.width / 320).clamp(0.05, 2.0).toDouble();
-    final verticalScale = (size.height / 420).clamp(0.05, 2.0).toDouble();
+    // Keep the stage proportions intact; stretching a portrait drawing into a
+    // landscape card made circles oval and characters look amateurish.
+    final scale = math.min(size.width / 320, size.height / 420)
+        .clamp(0.05, 2.0).toDouble();
     canvas.save();
-    canvas.translate((size.width - 320 * scale) / 2, (size.height - 420 * verticalScale) / 2);
-    canvas.scale(scale, verticalScale);
-    canvas.drawRect(
+    canvas.translate((size.width - 320 * scale) / 2, (size.height - 420 * scale) / 2);
+    canvas.scale(scale, scale);
+    final stage = RRect.fromRectAndRadius(
       const Rect.fromLTWH(18, 18, 284, 384),
+      const Radius.circular(13),
+    );
+    canvas.drawRRect(
+      stage,
       Paint()
-        ..color = Colors.white.withOpacity(.025)
-        ..style = PaintingStyle.fill,
+        ..color = const Color(0xFF202337)
+        ..style = PaintingStyle.fill
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    canvas.drawRRect(
+      stage,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF30334D), Color(0xFF171A2A)],
+        ).createShader(const Rect.fromLTWH(18, 18, 284, 384)),
+    );
+    canvas.drawRRect(
+      stage,
+      Paint()
+        ..color = Colors.white.withOpacity(.10)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
     );
     final step = 24.0;
     final gridPaint = Paint()
