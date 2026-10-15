@@ -107,7 +107,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   bool _isEntitled(Map<String, dynamic>? data) {
     if (data == null || data['active'] != true) return false;
     final expires = data['expiresAt'];
-    if (expires == null) return true;
+    if (data?['type'] == 'lifetime' && expires == null) return true;
     if (expires is Timestamp) return expires.toDate().isAfter(DateTime.now());
     if (expires is DateTime) return expires.isAfter(DateTime.now());
     return false;
@@ -138,7 +138,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         stream: canReadEntitlement
             ? FirebaseFirestore.instance
                 .collection('proEntitlements')
-                .doc(user.uid)
+                .doc(user!.uid)
                 .snapshots()
             : null,
         builder: (context, snapshot) {
