@@ -180,6 +180,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
       builder: (_) => TimelineScreen(
         frames: _frames,
         currentFrameIndex: _currentFrameIndex,
+        fps: widget.project.fps,
+        onFpsChanged: (fps) {
+          widget.project.fps = fps;
+          _persist();
+        },
         onFrameSelected: (index) {
           if (index < 0 || index >= _frames.length) return;
           setState(() {
