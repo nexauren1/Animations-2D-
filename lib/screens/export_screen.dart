@@ -4,8 +4,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:archive/archive.dart';
-import 'package:ffmpeg_kit_flutter_new_video/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_video/return_code.dart';
+import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -24,6 +24,7 @@ class ExportScreen extends StatefulWidget {
 }
 
 class _ExportScreenState extends State<ExportScreen> {
+  static const MethodChannel _nativeVideoChannel = MethodChannel('animpro/native_video_export');
   String _format = 'PNG';
   int _resolution = 1080;
   late int _fps;
@@ -205,34 +206,44 @@ class _ExportScreenState extends State<ExportScreen> {
           await File('${framesDirectory.path}/${filename}').writeAsBytes(bytes, flush: true);
         }
 
-        final inputPattern = "'${framesDirectory.path}/frame_%05d.png'";
+        final framePaths = List<String>.generate(
+          frames.length,
+          (index) => '${framesDirectory!.path}/frame_${index.toString().padLeft(5, '0')}.png',
+        );
         if (_format == 'MP4') {
           exported = File('${directory.path}/animpro_${time}.mp4');
-          final h264Command = "-y -framerate $_fps -start_number 0 -i ${inputPattern} "
-              "-c:v h264_mediacodec -b:v 4M -pix_fmt yuv420p -movflags +faststart '${exported.path}'";
-          var session = await FFmpegKit.execute(h264Command);
-          var code = await session.getReturnCode();
-
-          // Se a ROM não oferecer codificador H.264 via MediaCodec, usa MPEG-4 como fallback.
-          if (!ReturnCode.isSuccess(code)) {
-            if (await exported.exists()) await exported.delete();
-            final fallback = "-y -framerate $_fps -start_number 0 -i ${inputPattern} "
-                "-c:v mpeg4 -q:v 3 -pix_fmt yuv420p -movflags +faststart '${exported.path}'";
-            session = await FFmpegKit.execute(fallback);
-            code = await session.getReturnCode();
-          }
-          if (!ReturnCode.isSuccess(code) || !await exported.exists() || await exported.length() == 0) {
-            throw StateError('Não foi possível codificar o MP4. ${await session.getOutput()}');
+          await _nativeVideoChannel.invokeMethod<String>('exportMp4', <String, Object>{
+            'framePaths': framePaths,
+            'outputPath': exported.path,
+            'fps': _fps,
+          });
+          if (!await exported.exists() || await exported.length() == 0) {
+            throw StateError('O codificador Android não criou um MP4 válido.');
           }
         } else {
           exported = File('${directory.path}/animpro_${time}.gif');
-          final gifCommand = "-y -framerate $_fps -start_number 0 -i ${inputPattern} "
-              "-vf 'fps=$_fps,scale=640:-1:flags=lanczos' -loop 0 '${exported.path}'";
-          final session = await FFmpegKit.execute(gifCommand);
-          final code = await session.getReturnCode();
-          if (!ReturnCode.isSuccess(code) || !await exported.exists() || await exported.length() == 0) {
-            throw StateError('Não foi possível codificar o GIF. ${await session.getOutput()}');
+          final encoder = img.GifEncoder(
+            repeat: 0,
+            samplingFactor: 20,
+            dither: img.DitherKernel.none,
+          );
+          final durationCentiseconds = (100 / _fps).round().clamp(2, 100);
+          for (final framePath in framePaths) {
+            final pngBytes = await File(framePath).readAsBytes();
+            final decoded = img.decodePng(pngBytes);
+            if (decoded == null) {
+              throw StateError('Não foi possível ler um frame para o GIF.');
+            }
+            final gifFrame = decoded.width > 480
+                ? img.copyResize(decoded, width: 480)
+                : decoded;
+            encoder.addFrame(gifFrame, duration: durationCentiseconds);
           }
+          final gifBytes = encoder.finish();
+          if (gifBytes == null || gifBytes.isEmpty) {
+            throw StateError('Não foi possível codificar o GIF.');
+          }
+          await exported.writeAsBytes(gifBytes, flush: true);
         }
       }
 
