@@ -46,6 +46,7 @@ class ProjectStore extends ChangeNotifier {
       ..name = '${source.name} (cópia)'
       ..createdAt = now
       ..updatedAt = now
+      ..fps = source.fps
       ..thumbnailPath = source.thumbnailPath
       ..frames = source.frames.map((frame) => frame.copy()).toList();
 
