@@ -178,6 +178,8 @@ async function registerWebhook(token) {
       { name: 'PAYMENT.SALE.COMPLETED' },
       { name: 'PAYMENT.SALE.REFUNDED' },
       { name: 'PAYMENT.SALE.REVERSED' },
+      { name: 'PAYMENT.CAPTURE.REFUNDED' },
+      { name: 'PAYMENT.CAPTURE.REVERSED' },
     ],
   }, 'animpro-webhook-' + crypto.randomUUID());
   if (!created.id) throw new Error('PayPal não devolveu o ID do webhook.');
