@@ -55,6 +55,7 @@ class MainActivity : FlutterActivity() {
 
 private object NativeMp4Encoder {
     private const val MIME = MediaFormat.MIMETYPE_VIDEO_AVC
+    private const val COLOR_FLEXIBLE = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
     private const val COLOR_PLANAR = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar
     private const val COLOR_SEMIPLANAR = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
 
@@ -72,14 +73,18 @@ private object NativeMp4Encoder {
             info.isEncoder &&
                 info.supportedTypes.any { it.equals(MIME, ignoreCase = true) } &&
                 runCatching {
-                    info.getCapabilitiesForType(MIME).colorFormats.any {
-                        it == COLOR_PLANAR || it == COLOR_SEMIPLANAR
-                    }
+                    val caps = info.getCapabilitiesForType(MIME)
+                    caps.colorFormats.any {
+                        it == COLOR_FLEXIBLE || it == COLOR_PLANAR || it == COLOR_SEMIPLANAR
+                    } && caps.videoCapabilities.areSizeAndRateSupported(width, height, fps.toDouble())
                 }.getOrDefault(false)
         } ?: throw IllegalStateException("Este dispositivo não disponibiliza um codificador H.264 compatível.")
 
         val capabilities = codecInfo.getCapabilitiesForType(MIME)
+        // Flexible YUV is the most interoperable input format on modern Android codecs.
+        // Some devices expose only this format; the previous implementation rejected them.
         val colorFormat = when {
+            capabilities.colorFormats.contains(COLOR_FLEXIBLE) -> COLOR_FLEXIBLE
             capabilities.colorFormats.contains(COLOR_SEMIPLANAR) -> COLOR_SEMIPLANAR
             capabilities.colorFormats.contains(COLOR_PLANAR) -> COLOR_PLANAR
             else -> throw IllegalStateException("Formato de cor H.264 não suportado.")
@@ -109,8 +114,12 @@ private object NativeMp4Encoder {
             var frameIndex = 0
             var eosQueued = false
             var outputDone = false
+            var idleLoops = 0
 
             while (!outputDone) {
+                if (idleLoops > 3000) {
+                    throw IllegalStateException("O codificador demorou demasiado tempo. Tenta 540p ou menos frames.")
+                }
                 if (frameIndex < framePaths.size) {
                     val inputIndex = codec.dequeueInputBuffer(10_000)
                     if (inputIndex >= 0) {
@@ -121,22 +130,36 @@ private object NativeMp4Encoder {
                                 if (it !== bitmapOriginal) bitmapOriginal.recycle()
                             }
                         } else bitmapOriginal
-                        val yuv = try {
-                            bitmapToYuv420(bitmap, colorFormat)
+                        try {
+                            if (colorFormat == COLOR_FLEXIBLE) {
+                                val inputImage = codec.getInputImage(inputIndex)
+                                    ?: throw IllegalStateException("Imagem de entrada H.264 indisponível.")
+                                try {
+                                    bitmapToInputImage(bitmap, inputImage)
+                                } finally {
+                                    inputImage.close()
+                                }
+                                codec.queueInputBuffer(
+                                    inputIndex, 0, inputImageWidthBytes(width, height),
+                                    frameIndex * 1_000_000L / fps, 0
+                                )
+                            } else {
+                                val yuv = bitmapToYuv420(bitmap, colorFormat)
+                                val input = codec.getInputBuffer(inputIndex)
+                                    ?: throw IllegalStateException("Buffer de entrada H.264 indisponível.")
+                                input.clear()
+                                require(yuv.size <= input.remaining()) { "Frame maior que o buffer H.264." }
+                                input.put(yuv)
+                                codec.queueInputBuffer(
+                                    inputIndex, 0, yuv.size,
+                                    frameIndex * 1_000_000L / fps, 0
+                                )
+                            }
                         } finally {
                             bitmap.recycle()
                         }
-                        val input = codec.getInputBuffer(inputIndex)
-                            ?: throw IllegalStateException("Buffer de entrada H.264 indisponível.")
-                        input.clear()
-                        require(yuv.size <= input.remaining()) { "Frame maior que o buffer H.264." }
-                        input.put(yuv)
-                        codec.queueInputBuffer(
-                            inputIndex, 0, yuv.size,
-                            frameIndex * 1_000_000L / fps,
-                            0
-                        )
                         frameIndex++
+                        idleLoops = 0
                     }
                 } else if (!eosQueued) {
                     val inputIndex = codec.dequeueInputBuffer(10_000)
@@ -162,6 +185,7 @@ private object NativeMp4Encoder {
                         val output = codec.getOutputBuffer(outputIndex)
                         if (output != null && info.size > 0 && muxerStarted &&
                             (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                            idleLoops = 0
                             output.position(info.offset)
                             output.limit(info.offset + info.size)
                             muxer.writeSampleData(trackIndex, output, info)
@@ -170,7 +194,7 @@ private object NativeMp4Encoder {
                             outputDone = true
                         }
                         codec.releaseOutputBuffer(outputIndex, false)
-                    }
+                    else -> idleLoops++
                 }
             }
 
@@ -183,6 +207,43 @@ private object NativeMp4Encoder {
         }
 
         require(target.isFile && target.length() > 0L) { "O ficheiro MP4 ficou vazio." }
+    }
+
+    private fun inputImageWidthBytes(width: Int, height: Int): Int = width * height * 3 / 2
+
+    private fun bitmapToInputImage(bitmap: Bitmap, image: android.media.Image) {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        val planes = image.planes
+        require(planes.size >= 3) { "O codificador não disponibilizou planos YUV420." }
+        val yPlane = planes[0]
+        val uPlane = planes[1]
+        val vPlane = planes[2]
+        val yBuffer = yPlane.buffer
+        val uBuffer = uPlane.buffer
+        val vBuffer = vPlane.buffer
+
+        for (row in 0 until height) {
+            for (column in 0 until width) {
+                val pixel = pixels[row * width + column]
+                val r = (pixel shr 16) and 0xff
+                val g = (pixel shr 8) and 0xff
+                val b = pixel and 0xff
+                val y = (((66 * r + 129 * g + 25 * b + 128) shr 8) + 16).coerceIn(0, 255)
+                yBuffer.put(row * yPlane.rowStride + column * yPlane.pixelStride, y.toByte())
+
+                if (row % 2 == 0 && column % 2 == 0) {
+                    val u = (((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128).coerceIn(0, 255)
+                    val v = (((112 * r - 94 * g - 18 * b + 128) shr 8) + 128).coerceIn(0, 255)
+                    val chromaRow = row / 2
+                    val chromaColumn = column / 2
+                    uBuffer.put(chromaRow * uPlane.rowStride + chromaColumn * uPlane.pixelStride, u.toByte())
+                    vBuffer.put(chromaRow * vPlane.rowStride + chromaColumn * vPlane.pixelStride, v.toByte())
+                }
+            }
+        }
     }
 
     private fun bitmapToYuv420(bitmap: Bitmap, colorFormat: Int): ByteArray {
