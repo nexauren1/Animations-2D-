@@ -63,3 +63,18 @@ test("webhook fails closed when the signature verification ID is absent", async 
     error: "O serviço de pagamentos está temporariamente indisponível.",
   });
 });
+
+test("checkout recognizes a valid Bearer header before reporting missing server configuration", async () => {
+  const response = await call("/api/checkout", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-token",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ plan: "lifetime" }),
+  });
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    error: "O serviço de conta está temporariamente indisponível.",
+  });
+});
