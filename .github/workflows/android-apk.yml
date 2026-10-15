@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build single optimized AnimPro release APK
 
 on:
   push:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build signed release APK
+    name: Build one signed universal release APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -23,7 +23,6 @@ jobs:
       FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
       FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
       GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
@@ -55,11 +54,13 @@ jobs:
       - name: Configure optional google-services.json
         run: python3 .github/scripts/configure_firebase_android.py
 
-      - name: Resolve packages
-        run: flutter pub get
-
-      - name: Generate Isar model
-        run: dart run build_runner build --delete-conflicting-outputs
+      - name: Resolve packages and generate Isar model
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          test -s lib/models/project_model.g.dart
 
       - name: Configure permanent release signing
         env:
@@ -69,77 +70,48 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: python3 .github/scripts/prepare_android_signing.py
 
-      - name: Static analysis
-        run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
-
-      - name: Build normal universal APK
+      - name: Build exactly one optimized universal APK
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p build/symbols dist
+          flutter --version
           flutter build apk --release --no-pub \
+            --obfuscate \
+            --split-debug-info=build/symbols \
             --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
             --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID" \
             --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
             --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
             --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID" \
             --dart-define=FIREBASE_NATIVE_CONFIG="$FIREBASE_NATIVE_CONFIG"
-          mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/AnimPro-normal-release.apk
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$APK"
+          cp "$APK" dist/AnimPro-release-signed.apk
+          test -d build/symbols
+          tar -czf dist/AnimPro-private-debug-symbols.tar.gz -C build/symbols .
+          sha256sum dist/AnimPro-release-signed.apk > dist/SHA256SUMS.txt
 
-      - name: Build optimized test APK for arm64
-        shell: bash
-        run: |
-          set -euo pipefail
-          flutter build apk --release --no-pub --target-platform=android-arm64 \
-            --dart-define=ANIMPRO_TEST_BUILD=true \
-            --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
-            --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID" \
-            --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
-            --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
-            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID" \
-            --dart-define=FIREBASE_NATIVE_CONFIG="$FIREBASE_NATIVE_CONFIG"
-          cp build/app/outputs/flutter-apk/app-release.apk dist/AnimPro-test-optimized-arm64.apk
-
-      - name: Build small ARM64 release APK
-        shell: bash
-        run: |
-          set -euo pipefail
-          flutter build apk --release --no-pub --target-platform=android-arm64 \
-            --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
-            --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID" \
-            --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
-            --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
-            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID" \
-            --dart-define=FIREBASE_NATIVE_CONFIG="$FIREBASE_NATIVE_CONFIG"
-          cp build/app/outputs/flutter-apk/app-release.apk dist/AnimPro-optimized-arm64-release.apk
-
-      - name: Verify signatures and create checksums
+      - name: Verify final APK signature
         shell: bash
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
           BUILD_TOOLS="$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
-          test -s dist/AnimPro-normal-release.apk
-          test -s dist/AnimPro-test-optimized-arm64.apk
-          test -s dist/AnimPro-optimized-arm64-release.apk
-          "$BUILD_TOOLS/apksigner" verify --verbose dist/AnimPro-normal-release.apk
-          "$BUILD_TOOLS/apksigner" verify --verbose dist/AnimPro-test-optimized-arm64.apk
-          "$BUILD_TOOLS/apksigner" verify --verbose dist/AnimPro-optimized-arm64-release.apk
-          sha256sum dist/AnimPro-normal-release.apk dist/AnimPro-test-optimized-arm64.apk dist/AnimPro-optimized-arm64-release.apk > dist/SHA256SUMS.txt
+          "$BUILD_TOOLS/apksigner" verify --verbose dist/AnimPro-release-signed.apk
 
-      - name: Store both APKs as workflow artifacts
+      - name: Store one APK plus checksum and private symbol map
         uses: actions/upload-artifact@v4
         with:
-          name: animpro-android-normal-and-optimized-test
+          name: AnimPro-Android-Release
           path: |
-            dist/AnimPro-normal-release.apk
-            dist/AnimPro-test-optimized-arm64.apk
-            dist/AnimPro-optimized-arm64-release.apk
+            dist/AnimPro-release-signed.apk
             dist/SHA256SUMS.txt
+            dist/AnimPro-private-debug-symbols.tar.gz
           if-no-files-found: error
           retention-days: 30
 
-      - name: Replace phone-download release
+      - name: Publish the same single APK to the mobile-latest release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -147,10 +119,8 @@ jobs:
           set -euo pipefail
           gh release delete mobile-latest --yes --cleanup-tag 2>/dev/null || true
           gh release create mobile-latest \
-            dist/AnimPro-normal-release.apk \
-            dist/AnimPro-test-optimized-arm64.apk \
-            dist/AnimPro-optimized-arm64-release.apk \
+            dist/AnimPro-release-signed.apk \
             dist/SHA256SUMS.txt \
-            --target "${GITHUB_SHA}" \
-            --title "AnimPro Android APKs (normal + optimized test)" \
-            --notes "Universal APK: AnimPro-normal-release.apk. Smaller ARM64 release for compatible 64-bit phones: AnimPro-optimized-arm64-release.apk. Test build: AnimPro-test-optimized-arm64.apk. All use the permanent signing key and package ID com.nexauren.animpro. Verify SHA256SUMS.txt before installation."
+            --target "$GITHUB_SHA" \
+            --title "AnimPro — Android release" \
+            --notes "Single optimized, signed universal APK for Android. Package ID: com.nexauren.animpro. The APK is obfuscated for release. SHA256SUMS.txt verifies the download. This release contains no test/debug APK variants."
