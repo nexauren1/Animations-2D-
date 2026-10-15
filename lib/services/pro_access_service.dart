@@ -44,6 +44,6 @@ class ProAccessService {
         builder: (_) => UpgradeScreen(requiredFeature: feature),
       ),
     );
-    return hasPro();
+    return await hasPro();
   }
 }
