@@ -40,7 +40,7 @@ function pemToBytes(pem) {
     .replace(/-----BEGIN PRIVATE KEY-----/g, "")
     .replace(/-----END PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
-  if (!body) throw new HttpError(503, "A credencial de servidor Firebase não está configurada.");
+  if (!body) throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   const raw = atob(body);
   const bytes = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
@@ -95,7 +95,7 @@ async function firebaseUserId(request, env) {
   const match = authorization.match(/^Bearer\\s+(.+)$/i);
   if (!match) throw new HttpError(401, "Inicia sessão no AnimPro antes de comprar.");
   if (!env.FIREBASE_API_KEY || !env.FIREBASE_PROJECT_ID) {
-    throw new HttpError(503, "O serviço de conta ainda não está configurado.");
+    throw new HttpError(503, "O serviço de conta está temporariamente indisponível.");
   }
 
   // Resolve the ID token with Firebase Identity Toolkit. Never trust a UID supplied by the app.
@@ -125,7 +125,7 @@ async function googleAccessToken(env) {
   if (!env.FIREBASE_SERVICE_ACCOUNT_JSON || !env.FIREBASE_PROJECT_ID) {
     throw new HttpError(
       503,
-      "Falta configurar FIREBASE_SERVICE_ACCOUNT_JSON e FIREBASE_PROJECT_ID no Worker Cloudflare.",
+      "O serviço de pagamentos está temporariamente indisponível.",
     );
   }
 
@@ -133,7 +133,7 @@ async function googleAccessToken(env) {
   try {
     account = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_JSON);
   } catch (_) {
-    throw new HttpError(503, "FIREBASE_SERVICE_ACCOUNT_JSON não contém JSON válido.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   if (
     account.type !== "service_account" ||
@@ -141,7 +141,7 @@ async function googleAccessToken(env) {
     !account.private_key ||
     account.project_id !== env.FIREBASE_PROJECT_ID
   ) {
-    throw new HttpError(503, "A conta de serviço Firebase não corresponde ao projeto configurado.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -272,7 +272,7 @@ function paypalApiBase(env) {
 }
 async function paypalAccessToken(env) {
   if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
-    throw new HttpError(503, "Configura PAYPAL_CLIENT_ID e PAYPAL_CLIENT_SECRET nos segredos do Worker.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   const response = await fetch(paypalApiBase(env) + "/v1/oauth2/token", {
     method: "POST",
@@ -343,7 +343,7 @@ async function startCheckout(request, env) {
   if (plan === "monthly") {
     const monthlyPlanId = env.PAYPAL_MONTHLY_PLAN_ID;
     if (!monthlyPlanId) {
-      throw new HttpError(503, "Falta configurar PAYPAL_MONTHLY_PLAN_ID no Worker.");
+      throw new HttpError(503, "O plano mensal ainda não está disponível.");
     }
     const subscription = await paypalRequest(
       env,
@@ -602,13 +602,19 @@ async function handleSubscriptionEvent(env, event, token) {
 
     const billingInfo = currentSubscription.billing_info || {};
     const lastPayment = billingInfo.last_payment || {};
-    const paymentAt = parseDate(resource.create_time) ||
-      parseDate(resource.update_time) ||
-      parseDate(lastPayment.time);
-    if (!paymentAt || !paymentAmountMatches(lastPayment.amount, 5)) {
-      console.warn("Ignoring subscription sale without a verified monthly payment date", subscriptionId);
+    const eventPaymentAt = parseDate(resource.create_time) ||
+      parseDate(resource.update_time);
+    const canonicalPaymentAt = parseDate(lastPayment.time);
+    if (
+      !paymentAmountMatches(lastPayment.amount, 5) ||
+      !eventPaymentAt ||
+      !canonicalPaymentAt ||
+      Math.abs(eventPaymentAt.getTime() - canonicalPaymentAt.getTime()) > 48 * 60 * 60 * 1000
+    ) {
+      console.warn("Ignoring subscription sale without a matching canonical payment record", subscriptionId);
       return;
     }
+    const paymentAt = canonicalPaymentAt;
 
     const savedPaymentAt = parseDate(subscriptionRef.lastPaymentAt);
     if (savedPaymentAt && savedPaymentAt.getTime() >= paymentAt.getTime()) {
@@ -705,7 +711,7 @@ async function handleSubscriptionEvent(env, event, token) {
 
 async function handleWebhook(request, env) {
   if (!env.PAYPAL_WEBHOOK_ID) {
-    throw new HttpError(503, "Falta configurar PAYPAL_WEBHOOK_ID nos segredos do Worker.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   const event = await request.json().catch(() => null);
   if (!event || typeof event.id !== "string" || typeof event.event_type !== "string") {
