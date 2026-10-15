@@ -67,6 +67,9 @@ jobs:
               print(f"SDK mínimo ajustado para 24 em {name}")
           PY
 
+      - name: Configure native H.264 video export
+        run: python3 .github/scripts/configure_android_native_video_export.py
+
       - name: Configurar google-services.json opcional
         run: python3 .github/scripts/configure_firebase_android.py
 
