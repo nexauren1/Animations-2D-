@@ -37,8 +37,9 @@ class ProAccessService {
     BuildContext context, {
     required String feature,
   }) async {
-    if (await hasPro()) return true;
+    final allowed = await hasPro();
     if (!context.mounted) return false;
+    if (allowed) return true;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => UpgradeScreen(requiredFeature: feature),
