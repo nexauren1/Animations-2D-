@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/project_model.dart';
+import '../services/pro_access_service.dart';
 
 /// Exporta PNG, sequência PNG em ZIP, vídeo MP4 com H.264 via MediaCodec
 /// (com fallback para MPEG-4) e GIF animado.
@@ -179,6 +180,10 @@ class _ExportScreenState extends State<ExportScreen> {
     return data.buffer.asUint8List();
   }
   Future<void> _export() async {
+    if (_format == 'MP4' &&
+        !await ProAccessService.requirePro(context, feature: 'Exportação de vídeo MP4')) return;
+    if (_format == 'MP4' && _fps == 60 &&
+        !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
     setState(() => _isExporting = true);
     Directory? framesDirectory;
     try {
@@ -351,7 +356,11 @@ class _ExportScreenState extends State<ExportScreen> {
                       : Icons.folder_zip_outlined,
                   size: 18,
                 ),
-                onSelected: (_) => setState(() => _format = format),
+                onSelected: (_) async {
+                  if (format == 'MP4' &&
+                      !await ProAccessService.requirePro(context, feature: 'Exportação de vídeo MP4')) return;
+                  if (mounted) setState(() => _format = format);
+                },
                 selectedColor: const Color(0xFF5445C6),
                 backgroundColor: const Color(0xFF242737),
                 labelStyle: TextStyle(
@@ -429,7 +438,11 @@ class _ExportScreenState extends State<ExportScreen> {
                 child: Padding(
                   padding: EdgeInsets.only(right: fps == 60 ? 0 : 8),
                   child: OutlinedButton(
-                    onPressed: () => setState(() { _fps = fps; widget.project.fps = fps; }),
+                    onPressed: () async {
+                      if (fps == 60 &&
+                          !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
+                      if (mounted) setState(() { _fps = fps; widget.project.fps = fps; });
+                    },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: selected ? const Color(0xFF5445C6) : const Color(0xFF242737),
                       foregroundColor: Colors.white,
