@@ -52,10 +52,37 @@ function output(name, value) {
   }
 }
 
+async function findProductIdByName(token, name) {
+  for (let page = 1; page <= 10; page += 1) {
+    const result = await jsonRequest(token, 'GET',
+      '/v1/catalogs/products?page_size=20&page=' + page + '&total_required=true');
+    const product = (result.products || []).find((item) => item.name === name);
+    if (product && product.id) return product.id;
+    if (!(result.links || []).some((item) => item.rel === 'next')) break;
+  }
+  return '';
+}
+
+async function findMonthlyPlanId(token, productId, name) {
+  for (let page = 1; page <= 10; page += 1) {
+    const result = await jsonRequest(token, 'GET',
+      '/v1/billing/plans?product_id=' + encodeURIComponent(productId) +
+      '&page_size=20&page=' + page + '&total_required=true');
+    const plan = (result.plans || []).find((item) =>
+      item.name === name && item.status === 'ACTIVE');
+    if (plan && plan.id) return plan.id;
+    if (!(result.links || []).some((item) => item.rel === 'next')) break;
+  }
+  return '';
+}
+
 async function createCatalog(token) {
   let productId = process.env.PAYPAL_PRODUCT_ID || '';
   let monthlyPlanId = process.env.PAYPAL_MONTHLY_PLAN_ID || '';
 
+  if (!productId) {
+    productId = await findProductIdByName(token, 'AnimPro Pro');
+  }
   if (!productId) {
     const product = await jsonRequest(token, 'POST', '/v1/catalogs/products', {
       name: 'AnimPro Pro',
@@ -71,6 +98,9 @@ async function createCatalog(token) {
     console.log('A reutilizar o produto PayPal existente.');
   }
 
+  if (!monthlyPlanId) {
+    monthlyPlanId = await findMonthlyPlanId(token, productId, 'AnimPro Pro Mensal');
+  }
   if (!monthlyPlanId) {
     const plan = await jsonRequest(token, 'POST', '/v1/billing/plans', {
       product_id: productId,
@@ -109,18 +139,30 @@ async function registerWebhook(token) {
     throw new Error('A URL HTTPS de paypalWebhook não foi fornecida.');
   }
   const previousId = process.env.PAYPAL_WEBHOOK_ID || '';
+  let existingId = '';
   if (previousId) {
     try {
       const previous = await jsonRequest(token, 'GET',
         '/v1/notifications/webhooks/' + encodeURIComponent(previousId));
-      if (previous.url === url) {
-        output('webhook_id', previousId);
-        console.log('Webhook PayPal já registado com a URL esperada.');
-        return;
-      }
+      if (previous.url === url) existingId = previousId;
     } catch (_) {
-      console.log('O webhook guardado não foi encontrado; será criado outro.');
+      console.log('O webhook guardado não foi encontrado; será pesquisada a URL esperada.');
     }
+  }
+  if (!existingId) {
+    try {
+      const list = await jsonRequest(token, 'GET',
+        '/v1/notifications/webhooks?page_size=20&page=1');
+      const match = (list.webhooks || []).find((item) => item.url === url);
+      if (match && match.id) existingId = match.id;
+    } catch (_) {
+      // If listing is not available, creation below still gives a clear API error.
+    }
+  }
+  if (existingId) {
+    output('webhook_id', existingId);
+    console.log('Webhook PayPal já registado com a URL esperada.');
+    return;
   }
 
   const created = await jsonRequest(token, 'POST', '/v1/notifications/webhooks', {
