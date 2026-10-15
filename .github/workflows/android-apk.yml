@@ -16,7 +16,13 @@ jobs:
   build:
     name: Build signed release APK
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
+    env:
+      FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+      FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
 
     steps:
       - name: Checkout source
@@ -60,28 +66,51 @@ jobs:
       - name: Static analysis
         run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
 
-      - name: Build release APK
-        run: flutter build apk --release --no-pub
+      - name: Build normal universal APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build apk --release --no-pub \
+            --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
+            --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID" \
+            --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
+            --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/AnimPro-normal-release.apk
 
-      - name: Verify APK signature and prepare checksum
+      - name: Build optimized test APK for arm64
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build apk --release --no-pub --target-platform=android-arm64 \
+            --dart-define=ANIMPRO_TEST_BUILD=true \
+            --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
+            --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID" \
+            --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
+            --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID"
+          cp build/app/outputs/flutter-apk/app-release.apk dist/AnimPro-test-optimized-arm64.apk
+
+      - name: Verify signatures and create checksums
         shell: bash
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
           BUILD_TOOLS="$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
-          APK="build/app/outputs/flutter-apk/app-release.apk"
-          test -s "$APK"
-          "$BUILD_TOOLS/apksigner" verify --verbose "$APK"
-          mkdir -p dist
-          cp "$APK" dist/AnimPro-release-signed.apk
-          sha256sum dist/AnimPro-release-signed.apk > dist/SHA256SUMS.txt
+          test -s dist/AnimPro-normal-release.apk
+          test -s dist/AnimPro-test-optimized-arm64.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose dist/AnimPro-normal-release.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose dist/AnimPro-test-optimized-arm64.apk
+          sha256sum dist/AnimPro-normal-release.apk dist/AnimPro-test-optimized-arm64.apk > dist/SHA256SUMS.txt
 
-      - name: Store signed APK as workflow artifact
+      - name: Store both APKs as workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: animpro-android-release-signed
+          name: animpro-android-normal-and-optimized-test
           path: |
-            dist/AnimPro-release-signed.apk
+            dist/AnimPro-normal-release.apk
+            dist/AnimPro-test-optimized-arm64.apk
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
@@ -94,8 +123,9 @@ jobs:
           set -euo pipefail
           gh release delete mobile-latest --yes --cleanup-tag 2>/dev/null || true
           gh release create mobile-latest \
-            dist/AnimPro-release-signed.apk \
+            dist/AnimPro-normal-release.apk \
+            dist/AnimPro-test-optimized-arm64.apk \
             dist/SHA256SUMS.txt \
             --target "${GITHUB_SHA}" \
-            --title "AnimPro Android APK (latest, signed)" \
-            --notes "APK compilado e assinado com a chave de lançamento permanente. Verifica SHA256SUMS.txt antes de instalar."
+            --title "AnimPro Android APKs (normal + optimized test)" \
+            --notes "Universal APK: AnimPro-normal-release.apk. Test optimized for arm64 devices: AnimPro-test-optimized-arm64.apk. Both use the permanent signing key. The test APK has the same package ID and replaces the normal app if installed. Verify SHA256SUMS.txt before installation."
