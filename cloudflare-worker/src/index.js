@@ -577,7 +577,8 @@ async function handleSubscriptionEvent(env, event, token) {
     );
     if (
       currentSubscription.id !== subscriptionId ||
-      currentSubscription.plan_id !== subscriptionRef.planId
+      currentSubscription.plan_id !== subscriptionRef.planId ||
+      currentSubscription.custom_id !== uid
     ) {
       console.warn("Ignoring subscription with an unexpected plan ID", subscriptionId);
       return;
