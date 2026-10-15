@@ -5,6 +5,8 @@ import '../services/project_store.dart';
 import '../services/project_backup_service.dart';
 import 'canvas_screen.dart';
 import 'account_screen.dart';
+import 'template_gallery_screen.dart';
+import '../services/template_catalog.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({required this.store, super.key});
@@ -130,6 +132,25 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _openTemplates(BuildContext context) async {
+    final template = await Navigator.of(context).push<AnimationTemplate>(
+      MaterialPageRoute<AnimationTemplate>(
+        builder: (_) => const TemplateGalleryScreen(),
+      ),
+    );
+    if (template != null && context.mounted) {
+      await _useTemplate(context, template);
+    }
+  }
+
+  Future<void> _useTemplate(BuildContext context, AnimationTemplate template) async {
+    final project = await store.createProject(template.title);
+    project.fps = template.fps;
+    await store.saveProject(project, frames: template.createFrames());
+    if (!context.mounted) return;
+    await _open(context, project);
+  }
+
   Future<void> _action(
     BuildContext context,
     ProjectModel project,
@@ -245,7 +266,67 @@ class HomeScreen extends StatelessWidget {
                           label: const Text('Importar backup de projeto (.animpro)'),
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 22),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text('Começa por um exemplo',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                          ),
+                          TextButton(
+                            onPressed: () => _openTemplates(context),
+                            child: const Text('Ver todos'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 182,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: TemplateCatalog.all.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final template = TemplateCatalog.all[index];
+                            final tint = Color(template.tint);
+                            return SizedBox(
+                              width: 154,
+                              child: Material(
+                                color: const Color(0xFF191C2B),
+                                borderRadius: BorderRadius.circular(18),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () => _useTemplate(context, template),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: TemplateAnimationPreview(template: template),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(template.title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                                            const SizedBox(height: 4),
+                                            Text('${template.frames().length} frames · ${template.fps} FPS',
+                                                style: TextStyle(color: tint, fontSize: 10, fontWeight: FontWeight.w700)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 26),
                       Row(
                         children: [
                           const Expanded(
