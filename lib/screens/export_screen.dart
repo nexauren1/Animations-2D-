@@ -279,7 +279,7 @@ class _ExportScreenState extends State<ExportScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Falha ao exportar: $error')),
+          SnackBar(content: Text('Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.')),
         );
       }
     } finally {
