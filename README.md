@@ -1,74 +1,80 @@
 # AnimPro — editor de animação 2D
 
-Aplicação Flutter com interface escura de estúdio, canvas de desenho, animação por frames, rigging, ferramentas vetoriais e exportação para ficheiros partilháveis no Android.
+Editor de animação 2D para Android, construído com Flutter. O foco é desenhar, organizar frames, experimentar poses e exportar animações sem obrigar o utilizador a criar uma conta.
 
-## Funcionalidades incluídas
+## Funcionalidades
 
-- **Projetos:** criar, abrir, renomear, duplicar e apagar. Lista em grelha com pré-visualização dos traços.
-- **Tutorial inicial:** ecrã de boas-vindas, apresentado na primeira abertura.
-- **Canvas:** desenho por toque; caneta, borracha, linha, retângulo, elipse e régua graduada.
-- **Pincéis:** lápis, tinta, marcador, aerógrafo, giz de cera, marca-texto, pastel e pixel. Ajuste de cor, espessura e opacidade.
-- **Edição:** desfazer, refazer, limpar, grelha de referência e onion skin do frame anterior a 30%.
-- **Camadas:** Linha, Cor e Fundo. Tocar seleciona; manter pressionado alterna a visibilidade.
-- **Timeline:** frames horizontais, duplicação do frame selecionado e reprodução em loop com intervalo de 500 ms.
-- **Rigging:** seis pontos de controlo e deformação ponderada dos traços próximos. A pose pode ser guardada como novo frame.
-- **Biblioteca de assets:** desenhos vetoriais-base de personagens, natureza e objetos para inserir no canvas.
-- **Audio Lip Sync:** importar áudio do telefone, reproduzir/pausar, marcar manualmente poses de boca e aplicar as marcações à timeline.
-- **Exportação:** PNG do frame atual, sequência de PNG em ZIP, GIF animado e MP4. O MP4 tenta H.264 usando MediaCodec no Android e utiliza MPEG-4 como alternativa quando o dispositivo não disponibiliza esse encoder. Resoluções 540p, 720p e 1080p; taxa de frames configurável.
-- **Base de dados local:** projetos guardados com Isar no dispositivo, sem obrigar a conta.
+- **Projetos locais:** criar, abrir, renomear, duplicar e apagar projetos.
+- **Backups portáteis:** exportar um projeto como ficheiro `.animpro` e importá-lo noutro dispositivo.
+- **Desenho:** caneta, borracha, linha, retângulo, elipse e régua graduada.
+- **Pincéis:** lápis, tinta, marcador, aerógrafo, giz de cera, marca-texto, pastel e pixel.
+- **Edição:** desfazer/refazer, grelha de referência, camadas e onion skin.
+- **Timeline:** criar frames vazios, duplicar/apagar frames e ajustar a reprodução para 6, 12, 24, 30 ou 60 FPS. O FPS fica guardado no projeto e é usado como valor inicial na exportação.
+- **Rigging simples:** pontos de controlo para modificar poses e guardá-las como frames.
+- **Áudio:** importar um áudio, ouvir e marcar manualmente poses de boca.
+- **Biblioteca de assets:** formas vetoriais-base para inserir no canvas.
+- **Exportação:** PNG do frame, sequência de PNG em ZIP, GIF e MP4. O MP4 tenta H.264 em dispositivos compatíveis e utiliza um encoder alternativo quando necessário.
+- **Conta:** registo/entrada com e-mail e palavra-passe, redefinição de palavra-passe, verificação de e-mail e entrada Google, quando o projeto Firebase está configurado.
+- **Modo sem conta:** os projetos continuam disponíveis localmente no telefone.
 
-> **Limites atuais:** o mapa automático de Audio Lip Sync distribui poses ao longo do áudio e é apenas uma base de edição; não é reconhecimento fonético por IA. O rigging usa deformação simples baseada na distância, não um sistema avançado de ossos e mesh. A biblioteca contém formas vetoriais geradas localmente, não um catálogo de imagens externas.
+### Limites conhecidos
 
-## Instalar o APK diretamente no telefone
+O mapa automático de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase ainda não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
 
-1. Abre [Releases](https://github.com/nexauren1/Animations-2D-/releases/tag/mobile-latest) no Android.
-2. Descarrega `AnimPro-release-signed.apk`.
-3. Abre o ficheiro transferido e segue a confirmação de instalação do Android. Instala apenas o APK deste repositório que reconheces.
+## Instalar e escolher uma versão
 
-O GitHub Actions compila um APK de release assinado sempre que há alterações na branch `main`. O fluxo guarda um artefacto de build durante 30 dias.
+As versões assinadas são disponibilizadas na [release mobile-latest](https://github.com/nexauren1/Animations-2D-/releases/tag/mobile-latest).
 
-## Executar o projeto num computador
+- **`AnimPro-normal-release.apk`** — APK universal, maior, com bibliotecas para várias arquiteturas Android.
+- **`AnimPro-test-optimized-arm64.apk`** — APK de teste otimizado para dispositivos Android `arm64-v8a`. Não funciona em telefones que só suportam 32 bits. Tem o mesmo package ID e a mesma chave da versão normal; instalá-lo substitui a versão normal, não instala uma segunda cópia lado a lado.
+- **`SHA256SUMS.txt`** — hashes para verificar os ficheiros transferidos.
 
-Requisitos: Flutter SDK estável e Android SDK.
+O GitHub Actions compila e verifica as assinaturas automaticamente. Os artefactos de execução ficam disponíveis por 30 dias.
 
-```bash
-flutter create --platforms=android --project-name animpro --org com.nexauren .
-flutter pub get
-dart run build_runner build --delete-conflicting-outputs
-flutter run
-```
+## Configuração Firebase Authentication
 
-O segundo passo instala as dependências; o gerador Isar cria `lib/models/project_model.g.dart`. Para gerar o pacote:
+O package ID Android é `com.nexauren.animpro`.
 
-```bash
-flutter build apk --release
-```
+No Firebase Console, abre **Authentication → Sign-in method** e ativa **Email/Password** e **Google**. Em **Project settings → Your apps**, regista a aplicação Android com o package ID acima e acrescenta os seguintes fingerprints da chave permanente de lançamento:
 
-A compilação Android requer API 24 ou superior devido ao codificador FFmpeg integrado.
+- **SHA-1:** `AF:FC:8E:38:94:00:F4:58:B5:71:BA:61:86:1F:7B:81:61:CE:2E:6B`
+- **SHA-256:** `CA:D9:5E:B6:FD:EA:D6:13:77:10:59:23:3B:F0:C1:17:32:82:FD:21:27:90:50:C8:18:0E:9A:B0:E6:46:16:EC`
 
-## Estrutura do código
+Nas definições do repositório GitHub, em **Settings → Secrets and variables → Actions → Variables**, adiciona estas variáveis de configuração do Firebase:
 
-- `lib/main.dart` — inicialização, Isar e primeira abertura.
-- `lib/models/project_model.dart` — projeto, frame, camada e traço.
-- `lib/services/project_store.dart` — operações da base de dados.
-- `lib/screens/home_screen.dart` — grelha de projetos.
-- `lib/screens/onboarding_screen.dart` — tutorial inicial.
-- `lib/screens/canvas_screen.dart` — ferramentas de desenho, camadas, timeline e atalhos.
-- `lib/screens/timeline_screen.dart` — frames e reprodução.
-- `lib/screens/rigging_screen.dart` — pontos de controlo e deformação.
-- `lib/screens/audio_lip_sync_screen.dart` — áudio e marcações de boca.
-- `lib/screens/assets_library_screen.dart` — biblioteca de assets.
-- `lib/screens/export_screen.dart` — render de imagens e codificação de vídeo/GIF.
+- `FIREBASE_API_KEY`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_PROJECT_ID`
+- `GOOGLE_WEB_CLIENT_ID` — o OAuth Client ID do tipo **Web application**, necessário para o fluxo de login Google.
 
+Os identificadores do Firebase são valores de configuração, não a chave privada de assinatura. Obtém-nos nas definições do teu projeto Firebase. Depois de criares ou alterares estas variáveis, executa novamente o workflow **Build Android APK** para incluir a configuração no APK. Se os identificadores estiverem em falta, o editor local continua a funcionar, mas o ecrã de conta informa que a autenticação ainda não está configurada.
 
-## Assinatura permanente Android
+## GitHub Actions Secrets de assinatura
 
-O identificador Android desta aplicação é `com.nexauren.animpro`. Os workflows de compilação usam a chave de release permanente e verificam a assinatura do APK.
+A chave permanente não deve ser guardada no repositório. Em **Settings → Secrets and variables → Actions → Secrets**, mantém estes quatro secrets:
 
-Antes de executar os workflows, cria estes quatro repository secrets em **Settings → Secrets and variables → Actions**:
 - `ANDROID_KEYSTORE_BASE64`
 - `ANDROID_KEYSTORE_PASSWORD`
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEY_PASSWORD`
 
-O ficheiro `.github/scripts/prepare_android_signing.py` valida o keystore e configura a assinatura durante a compilação. Nunca guardes os valores dos secrets, o ficheiro `.jks` ou `android/key.properties` no repositório. Mantém uma cópia de segurança privada do keystore e das palavras-passe: as versões futuras têm de reutilizar a mesma chave de assinatura.
+O script `.github/scripts/prepare_android_signing.py` valida a chave e prepara a assinatura no runner. Guarda uma cópia privada do ficheiro `.jks` e das palavras-passe fora do GitHub. Todas as versões futuras devem usar a mesma chave para permitir atualizações normais.
+
+## Desenvolvimento
+
+Requisitos: Flutter SDK estável e Android SDK.
+
+```bash
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter run
+```
+
+Para um APK universal local:
+
+```bash
+flutter build apk --release
+```
+
+A compilação Android exige API 24 ou superior devido ao encoder de vídeo integrado.
