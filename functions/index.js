@@ -236,6 +236,38 @@ async function handleOrderApproved(event, token) {
   }, { merge: true });
 }
 
+async function handleLifetimeCaptureReversal(event) {
+  const captureId = event.resource && event.resource.id;
+  if (!captureId) return;
+  const orders = await db.collection('paypalOrders')
+    .where('captureId', '==', captureId)
+    .limit(1)
+    .get();
+  if (orders.empty) {
+    console.warn('Ignoring unmatched lifetime capture reversal', captureId);
+    return;
+  }
+  const orderDoc = orders.docs[0];
+  const order = orderDoc.data();
+  if (order.plan !== 'lifetime' || !order.uid) return;
+
+  const entitlementRef = db.collection('proEntitlements').doc(order.uid);
+  const entitlement = await entitlementRef.get();
+  if (entitlement.exists &&
+      entitlement.data().type === 'lifetime' &&
+      entitlement.data().orderId === orderDoc.id) {
+    await entitlementRef.set({
+      active: false,
+      revokedReason: event.event_type,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
+  await orderDoc.ref.set({
+    status: event.event_type === 'PAYMENT.CAPTURE.REFUNDED' ? 'refunded' : 'reversed',
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
+
 async function handleSubscriptionEvent(event) {
   const resource = event.resource || {};
   const subscriptionId = event.event_type.startsWith('PAYMENT.SALE.')
@@ -248,10 +280,14 @@ async function handleSubscriptionEvent(event) {
     const ref = db.collection('paypalSubscriptions').doc(subscriptionId);
     const snapshot = await ref.get();
     subscriptionData = snapshot.exists ? snapshot.data() : null;
-    if (!uid && subscriptionData) uid = subscriptionData.uid;
+    if (subscriptionData) uid = subscriptionData.uid || '';
   }
-  if (!uid) {
-    console.warn('Ignoring PayPal subscription event without mapped Firebase UID', event.event_type);
+  // Only subscriptions created by this checkout flow have a mapping. Do not
+  // grant an entitlement from an unrelated PayPal subscription on the merchant.
+  if (!uid || !subscriptionId || !subscriptionData ||
+      subscriptionData.plan !== 'monthly' ||
+      (resource.custom_id && resource.custom_id !== uid)) {
+    console.warn('Ignoring unrecognized PayPal subscription event', event.event_type);
     return;
   }
 
@@ -362,6 +398,9 @@ exports.paypalWebhook = onRequest({
 
     if (event.event_type === 'CHECKOUT.ORDER.APPROVED') {
       await handleOrderApproved(event, token);
+    } else if (event.event_type === 'PAYMENT.CAPTURE.REFUNDED' ||
+               event.event_type === 'PAYMENT.CAPTURE.REVERSED') {
+      await handleLifetimeCaptureReversal(event);
     } else if (event.event_type.startsWith('BILLING.SUBSCRIPTION.') ||
                event.event_type.startsWith('PAYMENT.SALE.')) {
       await handleSubscriptionEvent(event);
