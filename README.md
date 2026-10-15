@@ -61,6 +61,21 @@ A chave permanente não deve ser guardada no repositório. Em **Settings → Sec
 
 O script `.github/scripts/prepare_android_signing.py` valida a chave e prepara a assinatura no runner. Guarda uma cópia privada do ficheiro `.jks` e das palavras-passe fora do GitHub. Todas as versões futuras devem usar a mesma chave para permitir atualizações normais.
 
+## AnimPro Pro e pagamentos PayPal
+
+O aplicativo inclui uma página de upgrade com duas opções de preço: **USD 5/mês** (subscrição recorrente) e **USD 50 uma única vez** (licença permanente). Rigging, áudio/lip-sync, exportação MP4 e exportação a 60 FPS exigem uma licença Pro válida guardada em `proEntitlements/{uid}` no Firestore. A aplicação apenas lê o estado Pro; as licenças são escritas pelo backend depois de validar eventos assinados do PayPal.
+
+O segredo PayPal nunca deve ser colocado no APK, nas variáveis Dart, no repositório ou em ficheiros de configuração versionados. Para ativar o backend:
+
+1. Em **Settings → Secrets and variables → Actions → Secrets**, define `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` (credenciais do ambiente escolhido) e `FIREBASE_SERVICE_ACCOUNT_JSON` (JSON de uma conta de serviço de deploy com permissões necessárias para Firebase Functions, Secret Manager e Firestore).
+2. Em **Settings → Secrets and variables → Actions → Variables**, define `FIREBASE_PROJECT_ID` com o ID real do projeto Firebase. As variáveis de configuração Firebase do APK continuam a ser configuradas conforme a secção acima.
+3. Executa **Actions → Configure PayPal Pro and deploy Firebase backend → Run workflow**. Escolhe `sandbox` para começar. O workflow cria o produto e o plano mensal de USD 5, regista o webhook, guarda os IDs não secretos como GitHub Actions Variables e coloca as credenciais privadas no Firebase Secret Manager. Também publica as regras Firestore incluídas neste repositório.
+4. Faz compras de ensaio apenas no ambiente Sandbox. Só seleciona `live` depois de validar a conta comercial, os preços, os avisos legais, o webhook e o fluxo de cancelamento/reembolso. O modo Live exige credenciais Live separadas nos mesmos secrets.
+
+A compra permanente de USD 50 é uma ordem PayPal de pagamento único; não é um plano de faturação recorrente. O backend captura a ordem aprovada e só concede a licença depois de confirmar que o estado, o utilizador e o montante correspondem ao pedido esperado. Nunca alteres o valor do lado do cliente para conceder uma licença.
+
+O deploy de Cloud Functions pode exigir que o projeto Firebase esteja no plano Blaze e que as APIs de Cloud Functions, Cloud Build e Secret Manager estejam ativadas. Revê os custos e permissões da conta Google Cloud antes de ativar o backend.
+
 ## Desenvolvimento
 
 Requisitos: Flutter SDK estável e Android SDK.
