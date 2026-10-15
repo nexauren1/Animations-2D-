@@ -106,6 +106,8 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         final message = switch (response.statusCode) {
           HttpStatus.unauthorized || HttpStatus.forbidden =>
             'A tua sessão expirou. Entra novamente na tua conta.',
+          HttpStatus.conflict =>
+            'A tua licença Pro já está ativa. Não precisas de comprar novamente.',
           HttpStatus.badRequest =>
             'Não foi possível iniciar esta compra. Seleciona um plano e tenta novamente.',
           HttpStatus.tooManyRequests =>
@@ -275,11 +277,6 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 icon: Icons.speed_rounded,
                 title: 'Exportação até 60 FPS',
                 detail: 'Controla a fluidez da animação em exportações de vídeo.',
-              ),
-              const _ProFeature(
-                icon: Icons.auto_awesome_outlined,
-                title: 'Ferramentas Pro futuras',
-                detail: 'Novas funções avançadas serão disponibilizadas quando estiverem prontas.',
               ),
               const SizedBox(height: 22),
               if (user == null) ...[
