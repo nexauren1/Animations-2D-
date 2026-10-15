@@ -66,22 +66,41 @@ A chave permanente não deve ser guardada no repositório. Em **Settings → Sec
 
 O script `.github/scripts/prepare_android_signing.py` valida a chave e prepara a assinatura no runner. Guarda uma cópia privada do ficheiro `.jks` e das palavras-passe fora do GitHub. Todas as versões futuras devem usar a mesma chave para permitir atualizações normais.
 
-## AnimPro Pro e pagamentos PayPal
+## AnimPro Pro e pagamentos via Cloudflare Worker
 
-O aplicativo inclui uma página de upgrade com duas opções de preço: **USD 5/mês** (subscrição recorrente) e **USD 50 uma única vez** (licença permanente). Rigging, áudio/lip-sync, exportação MP4 e exportação a 60 FPS exigem uma licença Pro válida guardada em `proEntitlements/{uid}` no Firestore. A aplicação apenas lê o estado Pro; as licenças são escritas pelo backend depois de validar eventos assinados do PayPal.
+O checkout da aplicação usa o Worker `animations2d` em `https://animations2d.nexaurenstore.workers.dev`. O código está em `cloudflare-worker/src/index.js` e a configuração de deploy está em `wrangler.toml`. O checkout só aceita a conta Firebase autenticada; uma licença Pro só é escrita depois de a API PayPal confirmar a captura ou o estado da subscrição através de um webhook assinado.
 
-O segredo PayPal nunca deve ser colocado no APK, nas variáveis Dart, no repositório ou em ficheiros de configuração versionados. Para ativar o backend:
+### Configuração no Cloudflare
 
-1. Em **Settings → Secrets and variables → Actions → Secrets**, define `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` (credenciais Sandbox), `FIREBASE_SERVICE_ACCOUNT_JSON` (JSON de uma conta de serviço de deploy com permissões necessárias para Firebase Functions, Secret Manager e Firestore) e `GH_VARIABLES_TOKEN` (token fine-grained limitado a este repositório, com permissão **Variables: Read and write** e **Metadata: Read**). O token GitHub é usado apenas para guardar os IDs públicos gerados como Actions Variables; não o coloques no código.
-2. Em **Settings → Secrets and variables → Actions → Variables**, define `FIREBASE_PROJECT_ID` com o ID real do projeto Firebase. As variáveis de configuração Firebase do APK continuam a ser configuradas conforme a secção acima.
-3. Executa **Actions → Configure PayPal Pro and deploy Firebase backend → Run workflow**. A primeira versão está bloqueada no ambiente `sandbox` para impedir cobranças reais acidentais. O workflow cria o produto e o plano mensal de USD 5, regista o webhook, guarda os IDs não secretos como GitHub Actions Variables e coloca as credenciais privadas no Firebase Secret Manager. Não substitui as regras Firestore existentes: isso preserva o leaderboard que já está configurado.
-4. Faz compras de ensaio apenas no ambiente Sandbox. Só seleciona `live` depois de validar a conta comercial, os preços, os avisos legais, o webhook e o fluxo de cancelamento/reembolso. O modo Live exige credenciais Live separadas nos mesmos secrets.
+Em **Workers & Pages → animations2d → Settings → Variables and Secrets**, mantém os secrets existentes `PAYPAL_CLIENT_ID` e `PAYPAL_CLIENT_SECRET` com credenciais **Sandbox**. Não coloques credenciais Live enquanto o fluxo Sandbox não estiver validado.
 
-A compra permanente de USD 50 é uma ordem PayPal de pagamento único; não é um plano de faturação recorrente. O backend captura a ordem aprovada e só concede a licença depois de confirmar que o estado, o utilizador e o montante correspondem ao pedido esperado. Nunca alteres o valor do lado do cliente para conceder uma licença.
+Acrescenta estes dois **Secrets** do Worker:
 
-**Importante sobre as regras Firestore existentes:** antes de permitir leituras da licença Pro pelo aplicativo, incorpora a regra `match /proEntitlements/{uid}` de `firestore.rules` no ficheiro de regras já utilizado pelo teu leaderboard. Não substituas o ficheiro existente sem primeiro preservar todas as suas regras. Depois de combinar e rever as regras no projeto local, publica-as separadamente com `firebase deploy --only firestore:rules --project "$FIREBASE_PROJECT_ID"`. O workflow PayPal não publica essas regras para evitar apagar acessos existentes.
+- `FIREBASE_SERVICE_ACCOUNT_JSON` — conteúdo JSON de uma conta de serviço criada para este projeto Firebase. Dá-lhe apenas a permissão de dados necessária para ler/escrever documentos Firestore (`roles/datastore.user`); não reutilizes a chave de deploy com permissões administrativas. A chave privada nunca deve entrar no Git ou no APK.
+- `PAYPAL_WEBHOOK_ID` — ID que o PayPal atribui ao webhook registado para este Worker.
 
-O deploy de Cloud Functions pode exigir que o projeto Firebase esteja no plano Blaze e que as APIs de Cloud Functions, Cloud Build e Secret Manager estejam ativadas. Revê os custos e permissões da conta Google Cloud antes de ativar o backend.
+Acrescenta estas **Variables** (texto simples):
+
+- `FIREBASE_PROJECT_ID` — ID exato do projeto Firebase utilizado pela aplicação.
+- `FIREBASE_API_KEY` — chave de configuração Web/API do mesmo projeto Firebase. Não é a chave privada da conta de serviço.
+
+O `wrangler.toml` define o ambiente PayPal Sandbox, o plano mensal `P-5LD012631E418920JNLIRDEA` e os endereços de retorno. A opção `keep_vars = true` preserva variáveis definidas no painel durante um deploy pelo Git. Os segredos cifrados também são preservados pelos deploys.
+
+### Configurar o webhook PayPal
+
+Na aplicação Sandbox do PayPal, regista como webhook este endereço HTTPS:
+
+`https://animations2d.nexaurenstore.workers.dev/api/paypal/webhook`
+
+Subscreve pelo menos os eventos `CHECKOUT.ORDER.APPROVED`, `BILLING.SUBSCRIPTION.ACTIVATED`, `BILLING.SUBSCRIPTION.UPDATED`, `BILLING.SUBSCRIPTION.CANCELLED`, `BILLING.SUBSCRIPTION.SUSPENDED`, `BILLING.SUBSCRIPTION.EXPIRED`, `BILLING.SUBSCRIPTION.PAYMENT.FAILED`, `PAYMENT.SALE.COMPLETED`, `PAYMENT.SALE.REFUNDED`, `PAYMENT.SALE.REVERSED`, `PAYMENT.CAPTURE.REFUNDED` e `PAYMENT.CAPTURE.REVERSED`. Copia o ID do webhook criado e guarda-o como o secret `PAYPAL_WEBHOOK_ID` no Cloudflare. O Worker verifica a assinatura junto do PayPal antes de processar qualquer evento.
+
+### Firestore e verificação
+
+A conta de serviço tem de pertencer ao mesmo projeto indicado em `FIREBASE_PROJECT_ID`. Antes de testar compras, confirma na Firebase Console que as regras Firestore permitem ao utilizador autenticado ler apenas o seu documento `proEntitlements/{uid}` e não lhe permitem escrever ou apagar licenças. O ficheiro `firestore.rules` deste repositório inclui essa regra e preserva a regra de leaderboard existente no repositório; compara-o com as regras atualmente publicadas e preserva quaisquer regras adicionais necessárias antes de publicar.
+
+Depois de ligar **Settings → Builds → Git repository** ao repositório `nexauren1/Animations-2D-` com a branch `main`, cada push validado na `main` deve disparar o deploy do Worker. Confirma primeiro `https://animations2d.nexaurenstore.workers.dev/health` (esperado: JSON com `ok: true`). Depois testa pagamentos apenas com contas Sandbox e confirma os documentos no Firestore.
+
+O deploy por Cloudflare substitui a dependência da Firebase Function para o checkout; não uses o workflow antigo de deploy Firebase Functions como verificação deste Worker. A compra permanente custa USD 50 e a subscrição mensal USD 5 no código atual. Só migres para Live depois de testar aprovação, cancelamento, falhas, reembolso e revogação da licença.
 
 ## Desenvolvimento
 
