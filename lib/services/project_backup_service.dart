@@ -47,21 +47,19 @@ class ProjectBackupService {
   }
 
   static Future<ImportedProject> pickAndReadProject() async {
-    final picked = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const <String>['animpro'],
-      withData: true,
     );
-    if (picked == null || picked.files.isEmpty) {
+    if (file == null) {
       throw const BackupCancelledException();
     }
-    final file = picked.files.single;
-    if (file.size > 30 * 1024 * 1024) {
-      throw const FormatException('O backup excede o limite de 30 MB.');
+    final byteLength = file.lengthSync() ?? await file.length();
+    if (byteLength == null || byteLength > 30 * 1024 * 1024) {
+      throw const FormatException('O backup excede o limite de 30 MB ou não pode ser lido.');
     }
-    final bytes = file.bytes ??
-        (file.path == null ? null : await File(file.path!).readAsBytes());
-    if (bytes == null || bytes.isEmpty) {
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
       throw const FormatException('Não foi possível ler o ficheiro escolhido.');
     }
 
