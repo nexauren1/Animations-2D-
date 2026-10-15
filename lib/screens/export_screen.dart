@@ -204,7 +204,6 @@ class _ExportScreenState extends State<ExportScreen> {
           archive.addFile(ArchiveFile(filename, bytes.length, bytes));
         }
         final zipBytes = ZipEncoder().encode(archive);
-        if (zipBytes == null) throw StateError('Não foi possível criar o ZIP.');
         exported = File('${directory.path}/animpro_frames_${time}.zip');
         await exported.writeAsBytes(zipBytes, flush: true);
       } else {
