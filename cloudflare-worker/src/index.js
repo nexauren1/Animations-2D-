@@ -327,12 +327,33 @@ function approvalUrl(payload) {
   return url.toString();
 }
 
+function entitlementIsActive(entitlement) {
+  if (!entitlement || entitlement.active !== true) return false;
+  if (entitlement.type === "lifetime" && entitlement.expiresAt == null) return true;
+  const expiresAt = parseDate(entitlement.expiresAt);
+  return expiresAt !== null && expiresAt.getTime() > Date.now();
+}
+
 async function startCheckout(request, env) {
   const uid = await firebaseUserId(request, env);
   const body = await request.json().catch(() => null);
   const plan = body && body.plan;
   if (plan !== "monthly" && plan !== "lifetime") {
     throw new HttpError(400, "Plano inválido.");
+  }
+
+  // Prevent accidental duplicate monthly charges when the user's existing
+  // entitlement is still valid. A monthly subscriber may still upgrade to
+  // the one-time lifetime plan.
+  const existingEntitlement = await getDoc(env, "proEntitlements", uid);
+  if (
+    entitlementIsActive(existingEntitlement) &&
+    (
+      existingEntitlement.type === "lifetime" ||
+      (existingEntitlement.type === "monthly" && plan === "monthly")
+    )
+  ) {
+    throw new HttpError(409, "A tua licença Pro já está ativa. Não precisas de comprar novamente.");
   }
   const token = await paypalAccessToken(env);
   const returnUrl = env.PAYPAL_RETURN_URL ||
