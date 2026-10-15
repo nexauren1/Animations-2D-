@@ -198,20 +198,30 @@ async function handleOrderApproved(event, token) {
   const purchaseUnit = (details.purchase_units || [])[0];
   if (!purchaseUnit || purchaseUnit.custom_id !== orderData.uid ||
       !purchaseUnit.amount || purchaseUnit.amount.currency_code !== 'USD' ||
-      purchaseUnit.amount.value !== '50.00' || details.status !== 'APPROVED') {
+      purchaseUnit.amount.value !== '50.00') {
     throw new Error('PayPal order does not match the expected AnimPro amount or user.');
   }
 
-  const captured = await paypalRequest(
-    token, 'POST',
-    '/v2/checkout/orders/' + encodeURIComponent(orderId) + '/capture',
-    {},
-    'animpro-capture-' + orderId,
-  );
-  const captureUnit = (captured.purchase_units || [])[0];
-  const capture = captureUnit && captureUnit.payments &&
-    (captureUnit.payments.captures || [])[0];
-  if (captured.status !== 'COMPLETED' || !capture || capture.status !== 'COMPLETED' ||
+  let capture = null;
+  if (details.status === 'COMPLETED') {
+    // Recover safely if PayPal captured the order but a previous webhook delivery
+    // failed before Firestore could record the entitlement.
+    capture = ((purchaseUnit.payments && purchaseUnit.payments.captures) || [])
+      .find((item) => item.status === 'COMPLETED') || null;
+  } else if (details.status === 'APPROVED') {
+    const captured = await paypalRequest(
+      token, 'POST',
+      '/v2/checkout/orders/' + encodeURIComponent(orderId) + '/capture',
+      {},
+      'animpro-capture-' + orderId,
+    );
+    const captureUnit = (captured.purchase_units || [])[0];
+    capture = captureUnit && captureUnit.payments &&
+      (captureUnit.payments.captures || [])[0];
+    if (captured.status !== 'COMPLETED') capture = null;
+  }
+
+  if (!capture || capture.status !== 'COMPLETED' ||
       !capture.amount || capture.amount.currency_code !== 'USD' ||
       capture.amount.value !== '50.00') {
     throw new Error('PayPal did not confirm a completed USD 50.00 capture.');
