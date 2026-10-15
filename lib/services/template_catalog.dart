@@ -62,6 +62,36 @@ class TemplateCatalog {
       tag: 'MOVIMENTO',
       frames: _rocketLaunch,
     ),
+    AnimationTemplate(
+      id: 'pendulum-swing',
+      title: 'Pêndulo em movimento',
+      description: 'Estuda arcos, aceleração e desaceleração com uma composição limpa.',
+      iconCodePoint: 0xe532,
+      tint: 0xFF65D6E8,
+      fps: 12,
+      tag: 'FÍSICA',
+      frames: _pendulumSwing,
+    ),
+    AnimationTemplate(
+      id: 'blinking-face',
+      title: 'Personagem a piscar',
+      description: 'Uma personagem expressiva com olhos e boca que mudam entre poses.',
+      iconCodePoint: 0xe87c,
+      tint: 0xFFFF8FB1,
+      fps: 8,
+      tag: 'PERSONAGEM',
+      frames: _blinkingFace,
+    ),
+    AnimationTemplate(
+      id: 'comet-flight',
+      title: 'Cometa veloz',
+      description: 'Pratica trajetórias, rastos e ritmo numa animação curta.',
+      iconCodePoint: 0xe3a4,
+      tint: 0xFFFFC46B,
+      fps: 12,
+      tag: 'EFEITOS',
+      frames: _cometFlight,
+    ),
   ];
 
   static List<FrameModel> _bouncingBall() {
@@ -202,6 +232,130 @@ class TemplateCatalog {
         <Offset>[Offset(x - 9, y + 29), Offset(x, y + 29 + flame), Offset(x + 9, y + 29)],
         color: index.isEven ? 0xFFFFD166 : 0xFFFF7B54, width: 3,
       ));
+      return FrameModel(layers: layers);
+    });
+  }
+
+  static List<FrameModel> _pendulumSwing() {
+    const angles = <double>[-42, -30, -15, 0, 15, 30, 42, 30, 15, 0, -15, -30];
+    return List<FrameModel>.generate(angles.length, (index) {
+      final angle = angles[index] * math.pi / 180;
+      const pivot = Offset(160, 76);
+      const length = 178.0;
+      final bob = Offset(
+        pivot.dx + math.sin(angle) * length,
+        pivot.dy + math.cos(angle) * length,
+      );
+      final layers = _layers();
+      final guide = layers[2];
+      final colour = layers[1];
+      final line = layers[0];
+      guide.strokes.add(_s([Offset(42, 76), Offset(278, 76)],
+          color: 0xFF414963, width: 1.5));
+      final arc = List<Offset>.generate(25, (i) {
+        final a = (-45 + i * 90 / 24) * math.pi / 180;
+        return Offset(pivot.dx + math.sin(a) * length,
+            pivot.dy + math.cos(a) * length);
+      });
+      guide.strokes.add(_s(arc, color: 0xFF3B5268, width: 1.4));
+      guide.strokes.add(_s([Offset(62, 372), Offset(258, 372)],
+          color: 0xFF414963, width: 1.5));
+      line.strokes.add(_s([pivot, bob], color: 0xFFB8C5DF, width: 3));
+      line.strokes.add(_s([
+        Offset(pivot.dx - 12, pivot.dy - 10),
+        Offset(pivot.dx + 12, pivot.dy + 10),
+      ], color: 0xFF65D6E8, width: 3));
+      colour.strokes.add(_s([
+        Offset(bob.dx - 24, bob.dy - 24),
+        Offset(bob.dx + 24, bob.dy + 24),
+      ], color: 0xFF65D6E8, width: 4, kind: 'ellipse'));
+      line.strokes.add(_s([
+        Offset(bob.dx - 9, bob.dy - 11),
+        Offset(bob.dx - 3, bob.dy - 16),
+      ], color: 0xFFE7FCFF, width: 3));
+      return FrameModel(layers: layers);
+    });
+  }
+
+  static List<FrameModel> _blinkingFace() {
+    const closed = <bool>[false, false, true, false, false, false, true, false];
+    return List<FrameModel>.generate(closed.length, (index) {
+      final layers = _layers();
+      final line = layers[0];
+      final colour = layers[1];
+      final guide = layers[2];
+      const centre = Offset(160, 205);
+      colour.strokes.add(_s([
+        const Offset(94, 132), const Offset(226, 278),
+      ], color: 0xFFFF8FB1, width: 4, kind: 'ellipse'));
+      final eyeY = closed[index] ? 192.0 : 184.0;
+      if (closed[index]) {
+        line.strokes.add(_s([
+          const Offset(121, 190), const Offset(137, 185), const Offset(151, 190),
+        ], color: 0xFF26304A, width: 4));
+        line.strokes.add(_s([
+          const Offset(169, 190), const Offset(183, 185), const Offset(199, 190),
+        ], color: 0xFF26304A, width: 4));
+      } else {
+        colour.strokes.add(_s([
+          Offset(119, eyeY - 10), Offset(143, eyeY + 10),
+        ], color: 0xFF65D6E8, width: 3.5, kind: 'ellipse'));
+        colour.strokes.add(_s([
+          Offset(177, eyeY - 10), Offset(201, eyeY + 10),
+        ], color: 0xFF65D6E8, width: 3.5, kind: 'ellipse'));
+        line.strokes.add(_s([
+          Offset(131, eyeY - 2), Offset(131, eyeY + 2),
+        ], color: 0xFF26304A, width: 4));
+        line.strokes.add(_s([
+          Offset(189, eyeY - 2), Offset(189, eyeY + 2),
+        ], color: 0xFF26304A, width: 4));
+      }
+      line.strokes.add(_s([
+        const Offset(148, 222), centre, const Offset(172, 222),
+      ], color: 0xFF26304A, width: 3));
+      guide.strokes.add(_s([
+        const Offset(112, 304), const Offset(208, 304),
+      ], color: 0xFF454B68, width: 2));
+      return FrameModel(layers: layers);
+    });
+  }
+
+  static List<FrameModel> _cometFlight() {
+    const positions = <Offset>[
+      Offset(70, 285), Offset(91, 264), Offset(116, 244), Offset(144, 218),
+      Offset(174, 194), Offset(207, 167), Offset(235, 144), Offset(260, 120),
+    ];
+    return List<FrameModel>.generate(positions.length, (index) {
+      final head = positions[index];
+      final layers = _layers();
+      final guide = layers[2];
+      final colour = layers[1];
+      final line = layers[0];
+      final trail = <Offset>[];
+      for (var t = 0; t < 8; t++) {
+        final fraction = t / 7;
+        trail.add(Offset(head.dx - 92 * fraction, head.dy + 64 * fraction));
+      }
+      guide.strokes.add(_s(trail, color: 0xFF55527E, width: 2));
+      for (var s = 0; s < 12; s++) {
+        final sx = 34.0 + ((s * 47) % 250);
+        final sy = 45.0 + ((s * 61) % 315);
+        guide.strokes.add(_s([
+          Offset(sx, sy), Offset(sx + 2, sy + 2),
+        ], color: 0xFF77769C, width: 1.5));
+      }
+      final star = List<Offset>.generate(11, (i) {
+        final angle = -math.pi / 2 + i * math.pi / 5;
+        final radius = i.isEven ? 21.0 : 9.0;
+        return Offset(head.dx + math.cos(angle) * radius,
+            head.dy + math.sin(angle) * radius);
+      });
+      colour.strokes.add(_s([...star, star.first],
+          color: 0xFFFFC46B, width: 3.5));
+      line.strokes.add(_s([
+        Offset(head.dx - 7, head.dy - 7),
+        Offset(head.dx - 1, head.dy - 1),
+      ], color: 0xFFFFF0C7, width: 3));
       return FrameModel(layers: layers);
     });
   }
