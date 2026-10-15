@@ -110,7 +110,7 @@ class HomeScreen extends StatelessWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível exportar o projeto: $error')),
+        SnackBar(content: Text('Não foi possível criar o backup deste projeto. Tenta novamente.')),
       );
     }
   }
@@ -130,7 +130,7 @@ class HomeScreen extends StatelessWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível importar o backup: $error')),
+        SnackBar(content: Text('Não foi possível importar o backup. Confirma que escolheste um ficheiro AnimPro válido.')),
       );
     }
   }

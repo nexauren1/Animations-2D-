@@ -40,7 +40,7 @@ function pemToBytes(pem) {
     .replace(/-----BEGIN PRIVATE KEY-----/g, "")
     .replace(/-----END PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
-  if (!body) throw new HttpError(503, "A credencial de servidor Firebase não está configurada.");
+  if (!body) throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   const raw = atob(body);
   const bytes = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
@@ -91,14 +91,14 @@ function decodeFirestoreFields(fields) {
 }
 
 async function firebaseUserId(request, env) {
-  if (!env.FIREBASE_API_KEY || !env.FIREBASE_PROJECT_ID) {
-    throw new HttpError(503, "Falta configurar FIREBASE_API_KEY e FIREBASE_PROJECT_ID no Worker Cloudflare.");
-  }
   const authorization = request.headers.get("authorization") || "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) throw new HttpError(401, "Inicia sessão no AnimPro antes de comprar.");
+  if (!env.FIREBASE_API_KEY || !env.FIREBASE_PROJECT_ID) {
+    throw new HttpError(503, "O serviço de conta está temporariamente indisponível.");
+  }
 
-  // Identity Toolkit validates the Firebase ID token; never trust a UID sent by the app.
+  // Resolve the ID token with Firebase Identity Toolkit. Never trust a UID supplied by the app.
   const response = await fetch(
     "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" +
       encodeURIComponent(env.FIREBASE_API_KEY),
@@ -111,11 +111,13 @@ async function firebaseUserId(request, env) {
   const payload = await response.json().catch(() => ({}));
   const user = payload.users && payload.users[0];
   if (!response.ok || !user || !user.localId) {
-    throw new HttpError(401, "A sessão Firebase expirou ou não é válida. Entra novamente.");
+    throw new HttpError(401, "A sessão expirou. Entra novamente na tua conta.");
+  }
+  if (user.disabled === true) {
+    throw new HttpError(403, "Esta conta não está disponível para compras.");
   }
   return user.localId;
 }
-
 async function googleAccessToken(env) {
   if (cachedGoogleToken && cachedGoogleTokenExpiresAt > Date.now() + 60000) {
     return cachedGoogleToken;
@@ -123,7 +125,7 @@ async function googleAccessToken(env) {
   if (!env.FIREBASE_SERVICE_ACCOUNT_JSON || !env.FIREBASE_PROJECT_ID) {
     throw new HttpError(
       503,
-      "Falta configurar FIREBASE_SERVICE_ACCOUNT_JSON e FIREBASE_PROJECT_ID no Worker Cloudflare.",
+      "O serviço de pagamentos está temporariamente indisponível.",
     );
   }
 
@@ -131,7 +133,7 @@ async function googleAccessToken(env) {
   try {
     account = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_JSON);
   } catch (_) {
-    throw new HttpError(503, "FIREBASE_SERVICE_ACCOUNT_JSON não contém JSON válido.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   if (
     account.type !== "service_account" ||
@@ -139,7 +141,7 @@ async function googleAccessToken(env) {
     !account.private_key ||
     account.project_id !== env.FIREBASE_PROJECT_ID
   ) {
-    throw new HttpError(503, "A conta de serviço Firebase não corresponde ao projeto configurado.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -261,12 +263,16 @@ async function queryDocByField(env, collection, fieldName, value) {
 }
 
 function paypalApiBase(env) {
-  return (env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com").replace(/\/$/, "");
+  const configured = (env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com").replace(/\/$/, "");
+  // This build is deliberately Sandbox-only to prevent accidental live charges.
+  if (configured !== "https://api-m.sandbox.paypal.com") {
+    throw new HttpError(503, "O ambiente de pagamentos está configurado incorretamente.");
+  }
+  return configured;
 }
-
 async function paypalAccessToken(env) {
   if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
-    throw new HttpError(503, "Configura PAYPAL_CLIENT_ID e PAYPAL_CLIENT_SECRET nos segredos do Worker.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   const response = await fetch(paypalApiBase(env) + "/v1/oauth2/token", {
     method: "POST",
@@ -337,7 +343,7 @@ async function startCheckout(request, env) {
   if (plan === "monthly") {
     const monthlyPlanId = env.PAYPAL_MONTHLY_PLAN_ID;
     if (!monthlyPlanId) {
-      throw new HttpError(503, "Falta configurar PAYPAL_MONTHLY_PLAN_ID no Worker.");
+      throw new HttpError(503, "O plano mensal ainda não está disponível.");
     }
     const subscription = await paypalRequest(
       env,
@@ -505,44 +511,130 @@ async function handleLifetimeCaptureReversal(env, event) {
   });
 }
 
+function paymentAmountMatches(amount, expectedValue) {
+  if (!amount || typeof amount !== "object") return false;
+  const currency = amount.currency_code || amount.currency;
+  const rawValue = amount.value !== undefined ? amount.value : amount.total;
+  return currency === "USD" &&
+    (typeof rawValue === "string" || typeof rawValue === "number") &&
+    Number.isFinite(Number(rawValue)) &&
+    Number(rawValue) === expectedValue;
+}
+
+function parseDate(value) {
+  if (typeof value !== "string" && !(value instanceof Date)) return null;
+  const parsed = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function paidThroughDate(subscription, paidAt) {
+  const nextBilling = parseDate(
+    subscription && subscription.billing_info && subscription.billing_info.next_billing_time,
+  );
+  const latestAcceptable = paidAt.getTime() + 40 * 24 * 60 * 60 * 1000;
+  if (
+    nextBilling &&
+    nextBilling.getTime() > paidAt.getTime() &&
+    nextBilling.getTime() <= latestAcceptable
+  ) {
+    return nextBilling;
+  }
+  return new Date(paidAt.getTime() + 35 * 24 * 60 * 60 * 1000);
+}
+
 async function handleSubscriptionEvent(env, event, token) {
   const resource = event.resource || {};
-  const subscriptionId = event.event_type.startsWith("PAYMENT.SALE.")
+  const type = event.event_type;
+  const subscriptionId = type.startsWith("PAYMENT.SALE.")
     ? String(resource.billing_agreement_id || "")
     : String(resource.id || resource.billing_agreement_id || "");
   if (!subscriptionId) return;
 
-  const subscription = await getDoc(env, "paypalSubscriptions", subscriptionId);
-  const uid = subscription && subscription.uid;
-  if (!uid || subscription.plan !== "monthly") return;
+  const subscriptionRef = await getDoc(env, "paypalSubscriptions", subscriptionId);
+  if (
+    !subscriptionRef ||
+    !subscriptionRef.uid ||
+    subscriptionRef.plan !== "monthly" ||
+    !subscriptionRef.planId
+  ) {
+    console.warn("Ignoring unmapped subscription event", type);
+    return;
+  }
 
-  const type = event.event_type;
-  const isActiveEvent = type === "BILLING.SUBSCRIPTION.ACTIVATED" ||
-    type === "PAYMENT.SALE.COMPLETED" ||
+  const uid = subscriptionRef.uid;
+  const isSaleCompleted = type === "PAYMENT.SALE.COMPLETED";
+  const isSubscriptionActive = type === "BILLING.SUBSCRIPTION.ACTIVATED" ||
     (type === "BILLING.SUBSCRIPTION.UPDATED" && resource.status === "ACTIVE");
 
-  if (isActiveEvent) {
+  if (isSaleCompleted || isSubscriptionActive) {
+    // Fetch the canonical subscription. The signed event alone is not enough to
+    // prove that this belongs to our USD 5/month plan.
+    const currentSubscription = await paypalRequest(
+      env,
+      token,
+      "GET",
+      "/v1/billing/subscriptions/" + encodeURIComponent(subscriptionId),
+    );
+    if (
+      currentSubscription.id !== subscriptionId ||
+      currentSubscription.plan_id !== subscriptionRef.planId ||
+      currentSubscription.custom_id !== uid
+    ) {
+      console.warn("Ignoring subscription with an unexpected plan ID", subscriptionId);
+      return;
+    }
+
+    if (!isSaleCompleted) {
+      // ACTIVATED/UPDATED may happen without a successful charge. Record status,
+      // but grant access only from a verified PAYMENT.SALE.COMPLETED event.
+      await setDoc(env, "paypalSubscriptions", subscriptionId, {
+        uid: uid,
+        plan: "monthly",
+        status: currentSubscription.status || resource.status || "active",
+        updatedAt: new Date(),
+      });
+      return;
+    }
+
+    if (!paymentAmountMatches(resource.amount, 5)) {
+      console.warn("Ignoring subscription sale with unexpected amount", subscriptionId);
+      return;
+    }
+
+    const billingInfo = currentSubscription.billing_info || {};
+    const lastPayment = billingInfo.last_payment || {};
+    const eventPaymentAt = parseDate(resource.create_time) ||
+      parseDate(resource.update_time);
+    const canonicalPaymentAt = parseDate(lastPayment.time);
+    if (
+      !paymentAmountMatches(lastPayment.amount, 5) ||
+      !eventPaymentAt ||
+      !canonicalPaymentAt ||
+      Math.abs(eventPaymentAt.getTime() - canonicalPaymentAt.getTime()) > 48 * 60 * 60 * 1000
+    ) {
+      console.warn("Ignoring subscription sale without a matching canonical payment record", subscriptionId);
+      return;
+    }
+    const paymentAt = canonicalPaymentAt;
+
+    const savedPaymentAt = parseDate(subscriptionRef.lastPaymentAt);
+    if (savedPaymentAt && savedPaymentAt.getTime() >= paymentAt.getTime()) {
+      // Out-of-order or duplicate sale events must never move the paid-through
+      // date backwards or extend it from an older transaction.
+      return;
+    }
+
     const entitlement = await getDoc(env, "proEntitlements", uid);
     if (entitlement && entitlement.active === true && entitlement.type === "lifetime") {
       return;
     }
-    let expiryValue = resource.billing_info && resource.billing_info.next_billing_time;
-    let currentSubscription = resource;
-    if (!expiryValue || type === "BILLING.SUBSCRIPTION.ACTIVATED" || type === "PAYMENT.SALE.COMPLETED") {
-      try {
-        currentSubscription = await paypalRequest(
-          env, token, "GET",
-          "/v1/billing/subscriptions/" + encodeURIComponent(subscriptionId),
-        );
-        expiryValue = (currentSubscription.billing_info || {}).next_billing_time || expiryValue;
-      } catch (_) {
-        // The next billing time in the event is preferable; fallback is finite and conservative.
-      }
+
+    const expiresAt = paidThroughDate(currentSubscription, paymentAt);
+    if (expiresAt.getTime() <= Date.now()) {
+      console.warn("Ignoring expired subscription sale event", subscriptionId);
+      return;
     }
-    let expiresAt = typeof expiryValue === "string" ? new Date(expiryValue) : null;
-    if (!expiresAt || Number.isNaN(expiresAt.getTime())) {
-      expiresAt = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000);
-    }
+
     await setDoc(env, "proEntitlements", uid, {
       active: true,
       type: "monthly",
@@ -554,28 +646,52 @@ async function handleSubscriptionEvent(env, event, token) {
     await setDoc(env, "paypalSubscriptions", subscriptionId, {
       uid: uid,
       plan: "monthly",
-      status: type === "PAYMENT.SALE.COMPLETED"
-        ? "active"
-        : (currentSubscription.status || resource.status || "active"),
+      planId: subscriptionRef.planId,
+      status: currentSubscription.status || "active",
+      lastPaymentAt: paymentAt,
+      expiresAt: expiresAt,
       updatedAt: new Date(),
     });
     return;
   }
 
-  const revokeEvents = [
-    "BILLING.SUBSCRIPTION.CANCELLED",
+  if (type === "BILLING.SUBSCRIPTION.CANCELLED") {
+    // Cancellation stops renewal; do not remove already-paid access early.
+    // ProAccessService and the upgrade screen check the stored expiresAt date.
+    await setDoc(env, "paypalSubscriptions", subscriptionId, {
+      uid: uid,
+      plan: "monthly",
+      planId: subscriptionRef.planId,
+      status: "CANCELLED",
+      cancelledAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return;
+  }
+
+  const revocationEvents = [
     "BILLING.SUBSCRIPTION.SUSPENDED",
     "BILLING.SUBSCRIPTION.EXPIRED",
     "BILLING.SUBSCRIPTION.PAYMENT.FAILED",
     "PAYMENT.SALE.REFUNDED",
     "PAYMENT.SALE.REVERSED",
   ];
-  if (
-    revokeEvents.includes(type) ||
-    (type === "BILLING.SUBSCRIPTION.UPDATED" && resource.status && resource.status !== "ACTIVE")
-  ) {
+  const updatedToNonActive =
+    type === "BILLING.SUBSCRIPTION.UPDATED" &&
+    resource.status &&
+    resource.status !== "ACTIVE";
+
+  if (revocationEvents.includes(type) || updatedToNonActive) {
     const entitlement = await getDoc(env, "proEntitlements", uid);
-    if (entitlement && entitlement.type === "monthly") {
+    const expiry = entitlement ? parseDate(entitlement.expiresAt) : null;
+    const wasRefundedOrReversed =
+      type === "PAYMENT.SALE.REFUNDED" || type === "PAYMENT.SALE.REVERSED";
+    const accessAlreadyExpired = !expiry || expiry.getTime() <= Date.now();
+    if (
+      entitlement &&
+      entitlement.type === "monthly" &&
+      (wasRefundedOrReversed || accessAlreadyExpired || type === "BILLING.SUBSCRIPTION.EXPIRED")
+    ) {
       await setDoc(env, "proEntitlements", uid, {
         active: false,
         revokedReason: type,
@@ -585,7 +701,10 @@ async function handleSubscriptionEvent(env, event, token) {
     await setDoc(env, "paypalSubscriptions", subscriptionId, {
       uid: uid,
       plan: "monthly",
-      status: type,
+      planId: subscriptionRef.planId,
+      status: type === "BILLING.SUBSCRIPTION.UPDATED"
+        ? String(resource.status)
+        : type,
       updatedAt: new Date(),
     });
   }
@@ -593,7 +712,7 @@ async function handleSubscriptionEvent(env, event, token) {
 
 async function handleWebhook(request, env) {
   if (!env.PAYPAL_WEBHOOK_ID) {
-    throw new HttpError(503, "Falta configurar PAYPAL_WEBHOOK_ID nos segredos do Worker.");
+    throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   const event = await request.json().catch(() => null);
   if (!event || typeof event.id !== "string" || typeof event.event_type !== "string") {

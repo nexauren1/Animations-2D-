@@ -99,7 +99,7 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Falha ao importar áudio: $error')),
+          SnackBar(content: Text('Não foi possível importar este áudio. Confirma o formato do ficheiro e tenta novamente.')),
         );
       }
     } finally {

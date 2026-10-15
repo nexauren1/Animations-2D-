@@ -64,7 +64,7 @@ class _AccountScreenState extends State<AccountScreen> {
         case 'too-many-requests':
           return 'Houve demasiadas tentativas. Espera um pouco e tenta novamente.';
         case 'operation-not-allowed':
-          return 'Este método de entrada ainda não está ativado no Firebase Console.';
+          return 'Este método de entrada está temporariamente indisponível. Tenta outra opção.';
         case 'network-request-failed':
           return 'Não foi possível ligar à internet. Verifica a ligação.';
         case 'account-exists-with-different-credential':
@@ -72,7 +72,7 @@ class _AccountScreenState extends State<AccountScreen> {
         case 'requires-recent-login':
           return 'Por segurança, termina a sessão e entra novamente antes de repetir.';
         default:
-          return 'Não foi possível concluir a operação (' + error.code + ').';
+          return 'Não foi possível concluir a operação. Tenta novamente.';
       }
     }
     final text = error.toString().toLowerCase();
@@ -80,7 +80,7 @@ class _AccountScreenState extends State<AccountScreen> {
     if (text.contains('network') || text.contains('socket')) {
       return 'Falha de ligação. Verifica a internet e tenta novamente.';
     }
-    return 'Ocorreu um erro. Verifica a configuração do Firebase e tenta novamente.';
+    return 'Não foi possível concluir a operação. Verifica a ligação à internet e tenta novamente.';
   }
 
   Future<void> _runBusy(Future<void> Function() operation) async {
@@ -127,7 +127,7 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _signInGoogle() async {
     if (!FirebaseBootstrap.canUseGoogleSignIn) {
       _message(
-        'O acesso Google ainda não está configurado. Define GOOGLE_WEB_CLIENT_ID nas variáveis do GitHub e confirma o SHA-1/SHA-256 no Firebase.',
+        'A entrada com Google está temporariamente indisponível. Podes usar o e-mail ou tentar mais tarde.',
         error: true,
       );
       return;
@@ -231,7 +231,6 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildSetupRequired() {
-    final missing = FirebaseBootstrap.missingValues;
     return ListView(
       padding: const EdgeInsets.all(22),
       children: [
@@ -239,32 +238,35 @@ class _AccountScreenState extends State<AccountScreen> {
         const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFF8F82FF)),
         const SizedBox(height: 18),
         const Text(
-          'Conta na nuvem ainda não configurada',
+          'As contas online ainda não estão disponíveis',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 12),
-        Text(
-          FirebaseBootstrap.initializationError ??
-              'O modo de desenho funciona sem conta. Para ativar registo e início de sessão, adiciona a configuração Firebase como variáveis de repositório no GitHub.',
+        const Text(
+          'Podes continuar a desenhar, animar e guardar os teus projetos neste dispositivo. A entrada com conta estará disponível quando o serviço for ativado.',
           textAlign: TextAlign.center,
         ),
-        if (missing.isNotEmpty) ...[
-          const SizedBox(height: 18),
-          const Text('Variáveis em falta:', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          for (final name in missing)
-            ListTile(
-              dense: true,
-              leading: const Icon(Icons.warning_amber_rounded),
-              title: Text(name),
-            ),
-        ],
-        const SizedBox(height: 10),
-        const Text(
-          'No Firebase Console, ativa Email/Password e Google em Authentication → Sign-in method. Os projetos existentes continuam guardados localmente.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF202237),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline_rounded, color: Color(0xFFB9B0FF)),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Os projetos locais continuam guardados no teu telefone. Não precisas de criar uma conta para usar o editor.',
+                  style: TextStyle(height: 1.45),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -312,7 +314,7 @@ class _AccountScreenState extends State<AccountScreen> {
         if (!FirebaseBootstrap.canUseGoogleSignIn) ...[
           const SizedBox(height: 7),
           const Text(
-            'O botão Google será ativado quando GOOGLE_WEB_CLIENT_ID estiver configurado.',
+            'A entrada com Google está temporariamente indisponível. Podes usar o e-mail.',
             style: TextStyle(fontSize: 12, color: Colors.white54),
           ),
         ],

@@ -204,7 +204,6 @@ class _ExportScreenState extends State<ExportScreen> {
           archive.addFile(ArchiveFile(filename, bytes.length, bytes));
         }
         final zipBytes = ZipEncoder().encode(archive);
-        if (zipBytes == null) throw StateError('Não foi possível criar o ZIP.');
         exported = File('${directory.path}/animpro_frames_${time}.zip');
         await exported.writeAsBytes(zipBytes, flush: true);
       } else {
@@ -279,7 +278,7 @@ class _ExportScreenState extends State<ExportScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Falha ao exportar: $error')),
+          SnackBar(content: Text('Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.')),
         );
       }
     } finally {

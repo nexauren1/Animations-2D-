@@ -1,0 +1,62 @@
+name: Analyze AnimPro Flutter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "test/**"
+      - "pubspec.yaml"
+      - "analysis_options.yaml"
+      - ".github/workflows/flutter-quality.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "test/**"
+      - "pubspec.yaml"
+      - "analysis_options.yaml"
+      - ".github/workflows/flutter-quality.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Flutter stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter packages
+        run: flutter pub get
+
+      - name: Generate Isar model
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run Dart and Flutter static analysis
+        shell: bash
+        run: |
+          set +e
+          flutter analyze --no-pub 2>&1 | tee /tmp/flutter-analyze.log
+          analyze_status=${PIPESTATUS[0]}
+          set -e
+          if grep -E '(^|[[:space:]])(error|warning)[[:space:]]•' /tmp/flutter-analyze.log; then
+            echo "Static analysis found warnings or errors."
+            exit 1
+          fi
+          if [ "$analyze_status" -ne 0 ] && ! grep -q 'issues found' /tmp/flutter-analyze.log; then
+            echo "Flutter analysis failed before producing a report."
+            exit "$analyze_status"
+          fi
+          echo "No analyzer warnings or errors found; informational lint suggestions are non-blocking."
+
+      - name: Run unit tests
+        run: flutter test --no-pub

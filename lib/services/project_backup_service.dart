@@ -26,7 +26,7 @@ class ProjectBackupService {
     final archive = Archive()
       ..addFile(ArchiveFile('project.json', bytes.length, bytes));
     final zipped = ZipEncoder().encode(archive);
-    if (zipped == null || zipped.isEmpty) {
+    if (zipped.isEmpty) {
       throw const FormatException('Não foi possível criar o backup.');
     }
 

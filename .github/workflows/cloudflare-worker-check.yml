@@ -35,5 +35,8 @@ jobs:
       - name: Check Worker JavaScript syntax
         run: node --check cloudflare-worker/src/index.js
 
+      - name: Test Worker authentication and route guards
+        run: npm --prefix cloudflare-worker test
+
       - name: Bundle Worker with Wrangler without deployment
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/animpro-worker-dry-run
