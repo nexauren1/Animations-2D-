@@ -48,6 +48,8 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
     );
+    // Refresh the account and entitlement stream after returning from sign-in.
+    if (mounted) setState(() {});
   }
 
   Future<void> _openLink(String value) async {
