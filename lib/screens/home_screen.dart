@@ -5,6 +5,7 @@ import '../services/project_store.dart';
 import '../services/project_backup_service.dart';
 import 'canvas_screen.dart';
 import 'account_screen.dart';
+import 'resource_center_screen.dart';
 import 'template_gallery_screen.dart';
 import '../services/template_catalog.dart';
 
@@ -132,6 +133,17 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _openResourceCenter(BuildContext context) async {
+    final template = await Navigator.of(context).push<AnimationTemplate>(
+      MaterialPageRoute<AnimationTemplate>(
+        builder: (_) => const ResourceCenterScreen(),
+      ),
+    );
+    if (template != null && context.mounted) {
+      await _useTemplate(context, template);
+    }
+  }
+
   Future<void> _openTemplates(BuildContext context) async {
     final template = await Navigator.of(context).push<AnimationTemplate>(
       MaterialPageRoute<AnimationTemplate>(
@@ -198,6 +210,11 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Centro de recursos e downloads',
+            onPressed: () => _openResourceCenter(context),
+            icon: const Icon(Icons.cloud_download_outlined),
+          ),
           IconButton(
             tooltip: 'Conta AnimPro',
             onPressed: () => Navigator.of(context).push(
