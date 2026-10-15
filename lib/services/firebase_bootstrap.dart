@@ -13,6 +13,9 @@ class FirebaseBootstrap {
   static const String googleWebClientId =
       String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
 
+  static const bool nativeAndroidConfig =
+      bool.fromEnvironment('FIREBASE_NATIVE_CONFIG');
+
   static bool _initialized = false;
   static String? _initializationError;
 
@@ -25,35 +28,45 @@ class FirebaseBootstrap {
   static bool get isInitialized => _initialized;
   static String? get initializationError => _initializationError;
   static bool get canUseGoogleSignIn =>
-      _initialized && googleWebClientId.trim().isNotEmpty;
+      _initialized &&
+      (googleWebClientId.trim().isNotEmpty || nativeAndroidConfig);
 
-  static List<String> get missingValues => <String>[
-        if (apiKey.isEmpty) 'FIREBASE_API_KEY',
-        if (appId.isEmpty) 'FIREBASE_APP_ID',
-        if (messagingSenderId.isEmpty) 'FIREBASE_MESSAGING_SENDER_ID',
-        if (projectId.isEmpty) 'FIREBASE_PROJECT_ID',
-      ];
+  static List<String> get missingValues => nativeAndroidConfig
+      ? const <String>[]
+      : <String>[
+          if (apiKey.isEmpty) 'FIREBASE_API_KEY',
+          if (appId.isEmpty) 'FIREBASE_APP_ID',
+          if (messagingSenderId.isEmpty) 'FIREBASE_MESSAGING_SENDER_ID',
+          if (projectId.isEmpty) 'FIREBASE_PROJECT_ID',
+        ];
 
   static Future<void> initialize() async {
-    if (!isConfigured) return;
+    if (!isConfigured && !nativeAndroidConfig) return;
     try {
       if (Firebase.apps.isNotEmpty) {
         _initialized = true;
         return;
       }
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: apiKey,
-          appId: appId,
-          messagingSenderId: messagingSenderId,
-          projectId: projectId,
-        ),
-      );
+      if (isConfigured) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: apiKey,
+            appId: appId,
+            messagingSenderId: messagingSenderId,
+            projectId: projectId,
+          ),
+        );
+      } else {
+        // Android Gradle's Google Services plugin supplies native resources
+        // from android/app/google-services.json in this build variant.
+        await Firebase.initializeApp();
+      }
       _initialized = true;
+      _initializationError = null;
     } catch (_) {
       // Keep the local editor usable if the Firebase configuration is invalid.
       _initializationError =
-          'Não foi possível iniciar o Firebase. Confirma as variáveis do projeto.';
+          'Não foi possível iniciar o Firebase. Confirma google-services.json e as variáveis do projeto.';
       _initialized = false;
     }
   }
