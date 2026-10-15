@@ -64,7 +64,7 @@ class TemplateGalleryScreen extends StatelessWidget {
                 Icon(Icons.tips_and_updates_outlined, color: Color(0xFFB5A8FF)),
                 SizedBox(width: 10),
                 Expanded(
-                  child: Text('Dica: usa a timeline e o onion skin para comparar as poses entre frames.',
+                  child: Text('Dica: usa a linha temporal e a sobreposição de frames para comparar as poses.',
                       style: TextStyle(color: Colors.white70, height: 1.35)),
                 ),
               ],
