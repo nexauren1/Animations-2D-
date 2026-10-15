@@ -13,3 +13,8 @@ build/
 android/local.properties
 ios/Flutter/.last_build_id
 coverage/
+
+# Android release signing material — never commit private keys or passwords
+android/key.properties
+*.jks
+*.keystore
