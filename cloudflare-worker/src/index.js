@@ -92,7 +92,7 @@ function decodeFirestoreFields(fields) {
 
 async function firebaseUserId(request, env) {
   const authorization = request.headers.get("authorization") || "";
-  const match = authorization.match(/^Bearer\\s+(.+)$/i);
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) throw new HttpError(401, "Inicia sessão no AnimPro antes de comprar.");
   if (!env.FIREBASE_API_KEY || !env.FIREBASE_PROJECT_ID) {
     throw new HttpError(503, "O serviço de conta está temporariamente indisponível.");
