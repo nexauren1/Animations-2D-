@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GH_VARIABLES_TOKEN }}
       FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
       PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
       PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
@@ -38,13 +38,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Confirm required configuration
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         shell: bash
         run: |
           set -euo pipefail
           [[ -n "$FIREBASE_PROJECT_ID" ]] || { echo "::error::Define a variável FIREBASE_PROJECT_ID em Settings → Secrets and variables → Actions → Variables."; exit 1; }
           [[ -n "$PAYPAL_CLIENT_ID" ]] || { echo "::error::Define o secret PAYPAL_CLIENT_ID."; exit 1; }
           [[ -n "$PAYPAL_CLIENT_SECRET" ]] || { echo "::error::Define o secret PAYPAL_CLIENT_SECRET."; exit 1; }
-          [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" ]] || { echo "::error::Define o secret FIREBASE_SERVICE_ACCOUNT_JSON com a conta de serviço para deploy Firebase/GCP."; exit 1; }
+          [[ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]] || { echo "::error::Define o secret FIREBASE_SERVICE_ACCOUNT_JSON com a conta de serviço para deploy Firebase/GCP."; exit 1; }
+          [[ -n "$GH_TOKEN" ]] || { echo "::error::Define GH_VARIABLES_TOKEN como token limitado à escrita de Actions Variables deste repositório."; exit 1; }
           echo "Configuração básica encontrada. O modo PayPal selecionado é $PAYPAL_API_BASE."
 
       - name: Install Node.js
