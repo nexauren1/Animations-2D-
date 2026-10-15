@@ -192,7 +192,8 @@ function firestoreRoot(env) {
 
 async function firestoreRequest(env, path, method, body, ignore404) {
   const token = await googleAccessToken(env);
-  const response = await fetch(firestoreRoot(env) + "/" + path, {
+  const requestUrl = firestoreRoot(env) + (path.startsWith(":") ? path : "/" + path);
+  const response = await fetch(requestUrl, {
     method: method || "GET",
     headers: {
       authorization: "Bearer " + token,
