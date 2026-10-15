@@ -71,7 +71,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Remover pacote?'),
-        content: Text('"\${pack.title}" será removido do armazenamento deste dispositivo.'),
+        content: Text('"${pack.title}" será removido do armazenamento deste dispositivo.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -188,7 +188,8 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
   }
 
   Widget _availableCard(DownloadableResourcePack pack) {
-    final downloaded = _downloaded.where((item) => item.id == pack.id).firstOrNull;
+    final matching = _downloaded.where((item) => item.id == pack.id);
+    final downloaded = matching.isEmpty ? null : matching.first;
     final downloading = _downloading == pack.id;
     return Container(
       margin: const EdgeInsets.only(bottom: 11),
