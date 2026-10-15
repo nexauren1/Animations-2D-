@@ -25,11 +25,10 @@ O mapa automático de Audio Lip Sync é uma base de edição manual, não reconh
 
 As versões assinadas são disponibilizadas na [release mobile-latest](https://github.com/nexauren1/Animations-2D-/releases/tag/mobile-latest).
 
-- **`AnimPro-normal-release.apk`** — APK universal, maior, com bibliotecas para várias arquiteturas Android.
-- **`AnimPro-test-optimized-arm64.apk`** — APK de teste otimizado para dispositivos Android `arm64-v8a`. Não funciona em telefones que só suportam 32 bits. Tem o mesmo package ID e a mesma chave da versão normal; instalá-lo substitui a versão normal, não instala uma segunda cópia lado a lado.
-- **`SHA256SUMS.txt`** — hashes para verificar os ficheiros transferidos.
+- **`AnimPro-release-signed.apk`** — único APK universal de lançamento, assinado com a chave permanente e otimizado para distribuição. Não é uma versão de teste.
+- **`SHA256SUMS.txt`** — hash SHA-256 para confirmar a integridade do APK transferido.
 
-O GitHub Actions compila e verifica as assinaturas automaticamente. Os artefactos de execução ficam disponíveis por 30 dias.
+O GitHub Actions gera apenas este APK para distribuição e verifica a assinatura antes de atualizar a release `mobile-latest`. O workflow guarda também um mapa privado de símbolos de depuração no artefacto interno, separado dos ficheiros públicos.
 
 ## Configuração Firebase Authentication
 
@@ -69,7 +68,7 @@ O segredo PayPal nunca deve ser colocado no APK, nas variáveis Dart, no reposit
 
 1. Em **Settings → Secrets and variables → Actions → Secrets**, define `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` (credenciais Sandbox), `FIREBASE_SERVICE_ACCOUNT_JSON` (JSON de uma conta de serviço de deploy com permissões necessárias para Firebase Functions, Secret Manager e Firestore) e `GH_VARIABLES_TOKEN` (token fine-grained limitado a este repositório, com permissão **Variables: Read and write** e **Metadata: Read**). O token GitHub é usado apenas para guardar os IDs públicos gerados como Actions Variables; não o coloques no código.
 2. Em **Settings → Secrets and variables → Actions → Variables**, define `FIREBASE_PROJECT_ID` com o ID real do projeto Firebase. As variáveis de configuração Firebase do APK continuam a ser configuradas conforme a secção acima.
-3. Executa **Actions → Configure PayPal Pro and deploy Firebase backend → Run workflow**. Escolhe `sandbox` para começar. O workflow cria o produto e o plano mensal de USD 5, regista o webhook, guarda os IDs não secretos como GitHub Actions Variables e coloca as credenciais privadas no Firebase Secret Manager. Também publica as regras Firestore incluídas neste repositório.
+3. Executa **Actions → Configure PayPal Pro and deploy Firebase backend → Run workflow**. A primeira versão está bloqueada no ambiente `sandbox` para impedir cobranças reais acidentais. O workflow cria o produto e o plano mensal de USD 5, regista o webhook, guarda os IDs não secretos como GitHub Actions Variables e coloca as credenciais privadas no Firebase Secret Manager. Também publica as regras Firestore incluídas neste repositório.
 4. Faz compras de ensaio apenas no ambiente Sandbox. Só seleciona `live` depois de validar a conta comercial, os preços, os avisos legais, o webhook e o fluxo de cancelamento/reembolso. O modo Live exige credenciais Live separadas nos mesmos secrets.
 
 A compra permanente de USD 50 é uma ordem PayPal de pagamento único; não é um plano de faturação recorrente. O backend captura a ordem aprovada e só concede a licença depois de confirmar que o estado, o utilizador e o montante correspondem ao pedido esperado. Nunca alteres o valor do lado do cliente para conceder uma licença.
