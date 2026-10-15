@@ -48,17 +48,17 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   }
 
   Future<void> _buy(String plan) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _message('Inicia sessão ou cria uma conta antes de comprar.', error: true);
-      await _openAccount();
-      return;
-    }
-    if (!FirebaseBootstrap.isInitialized) {
+    if (!FirebaseBootstrap.isInitialized || Firebase.apps.isEmpty) {
       _message(
         'O Firebase ainda não está configurado. Define as variáveis de Firebase no GitHub Actions e publica uma nova versão.',
         error: true,
       );
+      return;
+    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _message('Inicia sessão ou cria uma conta antes de comprar.', error: true);
+      await _openAccount();
       return;
     }
     if (_launching) return;
@@ -115,8 +115,9 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final canReadEntitlement = Firebase.apps.isNotEmpty && user != null;
+    final firebaseReady = FirebaseBootstrap.isInitialized && Firebase.apps.isNotEmpty;
+    final user = firebaseReady ? FirebaseAuth.instance.currentUser : null;
+    final canReadEntitlement = firebaseReady && user != null;
 
     return Scaffold(
       appBar: AppBar(
