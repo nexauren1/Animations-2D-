@@ -100,7 +100,7 @@ A conta de serviço tem de pertencer ao mesmo projeto indicado em `FIREBASE_PROJ
 
 Depois de ligar **Settings → Builds → Git repository** ao repositório `nexauren1/Animations-2D-` com a branch `main`, cada push validado na `main` deve disparar o deploy do Worker. Confirma primeiro `https://animations2d.nexaurenstore.workers.dev/health` (esperado: JSON com `ok: true`). Depois testa pagamentos apenas com contas Sandbox e confirma os documentos no Firestore.
 
-O deploy por Cloudflare substitui a dependência da Firebase Function para o checkout; não uses o workflow antigo de deploy Firebase Functions como verificação deste Worker. A compra permanente custa USD 50 e a subscrição mensal USD 5 no código atual. Só migres para Live depois de testar aprovação, cancelamento, falhas, reembolso e revogação da licença.
+O checkout usa exclusivamente o Worker Cloudflare. O workflow antigo de deploy PayPal por Firebase Functions foi retirado para evitar tentativas de deploy incompatíveis com esta arquitetura. A compra permanente custa USD 50 e a subscrição mensal USD 5 no código atual. Só migres para Live depois de testar aprovação, cancelamento, falhas, reembolso e revogação da licença.
 
 ## Desenvolvimento
 
