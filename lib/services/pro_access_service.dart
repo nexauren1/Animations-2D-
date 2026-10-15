@@ -22,7 +22,7 @@ class ProAccessService {
       if (!snapshot.exists || data == null || data['active'] != true) return false;
 
       final expiresAt = data['expiresAt'];
-      if (expiresAt == null) return true;
+      if (data['type'] == 'lifetime' && expiresAt == null) return true;
       if (expiresAt is Timestamp) {
         return expiresAt.toDate().isAfter(DateTime.now());
       }
