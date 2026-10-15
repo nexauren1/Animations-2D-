@@ -194,6 +194,7 @@ private object NativeMp4Encoder {
                             outputDone = true
                         }
                         codec.releaseOutputBuffer(outputIndex, false)
+                    }
                     else -> idleLoops++
                 }
             }
