@@ -36,7 +36,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Não foi possível ler os pacotes guardados: $error';
+        _error = 'Não foi possível carregar os pacotes guardados. Tenta novamente.';
       });
     }
   }
@@ -60,7 +60,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = 'Download não concluído: $error');
+      setState(() => _error = 'Não foi possível concluir a transferência. Verifica a ligação à internet e tenta novamente.');
     } finally {
       if (mounted) setState(() => _downloading = null);
     }
