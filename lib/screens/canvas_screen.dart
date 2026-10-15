@@ -134,7 +134,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     }).catchError((Object error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Não foi possível guardar o projeto: $error')),
+          SnackBar(content: Text('Não foi possível guardar o projeto. Tenta novamente.')),
         );
       }
     });
