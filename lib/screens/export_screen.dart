@@ -26,10 +26,16 @@ class ExportScreen extends StatefulWidget {
 class _ExportScreenState extends State<ExportScreen> {
   String _format = 'PNG';
   int _resolution = 1080;
-  int _fps = 24;
+  late int _fps;
   String _aspectRatio = '16:9';
   String _shareTarget = 'Geral';
   bool _isExporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fps = widget.project.fps.clamp(1, 60).toInt();
+  }
 
   List<FrameModel> get _frames => widget.project.frames;
   FrameModel get _frame => _frames.isEmpty
@@ -407,7 +413,7 @@ class _ExportScreenState extends State<ExportScreen> {
                 child: Padding(
                   padding: EdgeInsets.only(right: fps == 60 ? 0 : 8),
                   child: OutlinedButton(
-                    onPressed: () => setState(() => _fps = fps),
+                    onPressed: () => setState(() { _fps = fps; widget.project.fps = fps; }),
                     style: OutlinedButton.styleFrom(
                       backgroundColor: selected ? const Color(0xFF5445C6) : const Color(0xFF242737),
                       foregroundColor: Colors.white,
