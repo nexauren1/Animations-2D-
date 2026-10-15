@@ -1,0 +1,148 @@
+name: Configure PayPal Pro and deploy Firebase backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      paypal_environment:
+        description: PayPal environment
+        type: choice
+        required: true
+        default: sandbox
+        options:
+          - sandbox
+          - live
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: animpro-paypal-deploy
+  cancel-in-progress: false
+
+jobs:
+  configure-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+      PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
+      PAYPAL_API_BASE: ${{ inputs.paypal_environment == 'live' && 'https://api-m.paypal.com' || 'https://api-m.sandbox.paypal.com' }}
+      PAYPAL_PRODUCT_ID: ${{ vars.PAYPAL_PRODUCT_ID }}
+      PAYPAL_MONTHLY_PLAN_ID: ${{ vars.PAYPAL_MONTHLY_PLAN_ID }}
+      PAYPAL_WEBHOOK_ID: ${{ vars.PAYPAL_WEBHOOK_ID }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Confirm required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -n "$FIREBASE_PROJECT_ID" ]] || { echo "::error::Define a variável FIREBASE_PROJECT_ID em Settings → Secrets and variables → Actions → Variables."; exit 1; }
+          [[ -n "$PAYPAL_CLIENT_ID" ]] || { echo "::error::Define o secret PAYPAL_CLIENT_ID."; exit 1; }
+          [[ -n "$PAYPAL_CLIENT_SECRET" ]] || { echo "::error::Define o secret PAYPAL_CLIENT_SECRET."; exit 1; }
+          [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" ]] || { echo "::error::Define o secret FIREBASE_SERVICE_ACCOUNT_JSON com a conta de serviço para deploy Firebase/GCP."; exit 1; }
+          echo "Configuração básica encontrada. O modo PayPal selecionado é $PAYPAL_API_BASE."
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Authenticate Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Configure gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Create PayPal product and monthly plan automatically
+        id: catalog
+        run: node .github/scripts/paypal_catalog.mjs catalog
+
+      - name: Save public PayPal catalog IDs as GitHub Actions variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh variable set PAYPAL_PRODUCT_ID --body "${{ steps.catalog.outputs.product_id }}" --repo "$GITHUB_REPOSITORY"
+          gh variable set PAYPAL_MONTHLY_PLAN_ID --body "${{ steps.catalog.outputs.monthly_plan_id }}" --repo "$GITHUB_REPOSITORY"
+          gh variable set PAYPAL_API_BASE --body "$PAYPAL_API_BASE" --repo "$GITHUB_REPOSITORY"
+
+      - name: Prepare non-secret runtime configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "functions/.env.$FIREBASE_PROJECT_ID" <<EOF
+          PAYPAL_API_BASE=$PAYPAL_API_BASE
+          PAYPAL_PRODUCT_ID=${{ steps.catalog.outputs.product_id }}
+          PAYPAL_MONTHLY_PLAN_ID=${{ steps.catalog.outputs.monthly_plan_id }}
+          PAYPAL_RETURN_URL=https://nexauren1.github.io/Animations-2D-/payment-return.html
+          PAYPAL_CANCEL_URL=https://nexauren1.github.io/Animations-2D-/payment-return.html?cancelled=1
+          EOF
+
+      - name: Store PayPal credentials in Firebase Secret Manager
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$PAYPAL_CLIENT_ID" > "$RUNNER_TEMP/paypal-client-id"
+          printf '%s' "$PAYPAL_CLIENT_SECRET" > "$RUNNER_TEMP/paypal-client-secret"
+          if [[ -n "$PAYPAL_WEBHOOK_ID" ]]; then
+            printf '%s' "$PAYPAL_WEBHOOK_ID" > "$RUNNER_TEMP/paypal-webhook-id"
+          else
+            printf '%s' 'pending-webhook-registration' > "$RUNNER_TEMP/paypal-webhook-id"
+          fi
+          chmod 600 "$RUNNER_TEMP/paypal-client-id" "$RUNNER_TEMP/paypal-client-secret" "$RUNNER_TEMP/paypal-webhook-id"
+          firebase functions:secrets:set PAYPAL_CLIENT_ID --project "$FIREBASE_PROJECT_ID" --data-file "$RUNNER_TEMP/paypal-client-id" --force
+          firebase functions:secrets:set PAYPAL_CLIENT_SECRET --project "$FIREBASE_PROJECT_ID" --data-file "$RUNNER_TEMP/paypal-client-secret" --force
+          firebase functions:secrets:set PAYPAL_WEBHOOK_ID --project "$FIREBASE_PROJECT_ID" --data-file "$RUNNER_TEMP/paypal-webhook-id" --force
+          rm -f "$RUNNER_TEMP/paypal-client-id" "$RUNNER_TEMP/paypal-client-secret" "$RUNNER_TEMP/paypal-webhook-id"
+
+      - name: Deploy secure Firebase functions and Firestore rules
+        run: firebase deploy --only functions,firestore:rules --project "$FIREBASE_PROJECT_ID" --non-interactive
+
+      - name: Read deployed HTTPS webhook URL
+        id: endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="$(gcloud functions describe paypalWebhook --gen2 --region=us-central1 --project="$FIREBASE_PROJECT_ID" --format='value(serviceConfig.uri)')"
+          [[ "$URL" == https://* ]] || { echo "::error::Não foi possível obter a URL HTTPS do webhook PayPal."; exit 1; }
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Endpoint HTTPS do webhook obtido."
+
+      - name: Register PayPal webhook and its event subscriptions
+        id: webhook
+        env:
+          PAYPAL_WEBHOOK_URL: ${{ steps.endpoint.outputs.url }}
+        run: node .github/scripts/paypal_catalog.mjs webhook
+
+      - name: Save webhook ID and selected PayPal environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh variable set PAYPAL_WEBHOOK_ID --body "${{ steps.webhook.outputs.webhook_id }}" --repo "$GITHUB_REPOSITORY"
+          gh variable set PAYPAL_API_BASE --body "$PAYPAL_API_BASE" --repo "$GITHUB_REPOSITORY"
+
+      - name: Activate the verified webhook ID in Firebase Secret Manager
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ steps.webhook.outputs.webhook_id }}" > "$RUNNER_TEMP/paypal-webhook-id"
+          chmod 600 "$RUNNER_TEMP/paypal-webhook-id"
+          firebase functions:secrets:set PAYPAL_WEBHOOK_ID --project "$FIREBASE_PROJECT_ID" --data-file "$RUNNER_TEMP/paypal-webhook-id" --force
+          rm -f "$RUNNER_TEMP/paypal-webhook-id"
+
+      - name: Redeploy functions with final webhook secret
+        run: firebase deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive
+
+      - name: Report deployment links
+        run: |
+          echo "PayPal catalog and Firebase backend setup finished for the selected environment."
+          echo "Review the paypalWebhook function in Firebase Console before accepting real customer payments."
