@@ -1,4 +1,5 @@
 import test from "node:test";
+import { generateKeyPairSync } from "node:crypto";
 import assert from "node:assert/strict";
 
 import worker from "../src/index.js";
@@ -78,3 +79,78 @@ test("checkout recognizes a valid Bearer header before reporting missing server 
     error: "O serviço de conta está temporariamente indisponível.",
   });
 });
+
+test("checkout blocks a second monthly subscription while Pro access is paid and active", async () => {
+  const previousFetch = globalThis.fetch;
+  const calls = [];
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const serviceAccount = {
+    type: "service_account",
+    project_id: "animpro-audit-test",
+    client_email: "worker@animpro-audit-test.iam.gserviceaccount.com",
+    private_key: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+  };
+
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    calls.push(url);
+
+    if (url.startsWith("https://identitytoolkit.googleapis.com/v1/accounts:lookup")) {
+      return new Response(JSON.stringify({ users: [{ localId: "uid-monthly-test" }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url === "https://oauth2.googleapis.com/token") {
+      return new Response(JSON.stringify({ access_token: "mock-firestore-token", expires_in: 3600 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url.includes("/documents/proEntitlements/uid-monthly-test")) {
+      return new Response(JSON.stringify({
+        fields: {
+          active: { booleanValue: true },
+          type: { stringValue: "monthly" },
+          expiresAt: { timestampValue: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() },
+        },
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error("Unexpected network request in test: " + url);
+  };
+
+  try {
+    const response = await call("/api/checkout", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer mock-firebase-id-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ plan: "monthly" }),
+    }, {
+      FIREBASE_API_KEY: "mock-firebase-api-key",
+      FIREBASE_PROJECT_ID: "animpro-audit-test",
+      FIREBASE_SERVICE_ACCOUNT_JSON: JSON.stringify(serviceAccount),
+      PAYPAL_CLIENT_ID: "mock-sandbox-client-id",
+      PAYPAL_CLIENT_SECRET: "mock-sandbox-client-secret",
+      PAYPAL_API_BASE: "https://api-m.sandbox.paypal.com",
+      PAYPAL_MONTHLY_PLAN_ID: "P-mock-monthly-plan",
+    });
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), {
+      error: "A tua licença Pro já está ativa. Não precisas de comprar novamente.",
+    });
+    assert.equal(
+      calls.some((url) => url.startsWith("https://api-m.sandbox.paypal.com/")),
+      false,
+      "PayPal must not be called when a valid monthly entitlement already exists",
+    );
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
