@@ -91,8 +91,8 @@ class _StartupRecoveryApp extends StatelessWidget {
                       width: double.infinity,
                       height: 50,
                       child: FilledButton.icon(
-                        onPressed: () {
-                          onRetry();
+                        onPressed: () async {
+                          await onRetry();
                         },
                         icon: const Icon(Icons.refresh_rounded),
                         label: const Text('Tentar novamente'),
