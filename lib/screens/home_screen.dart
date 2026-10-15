@@ -220,13 +220,6 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.workspace_premium_outlined, color: Color(0xFFFFD36A)),
           ),
           IconButton(
-            tooltip: 'Site, privacidade, termos e suporte',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const LegalScreen()),
-            ),
-            icon: const Icon(Icons.privacy_tip_outlined),
-          ),
-          IconButton(
             tooltip: 'Centro de recursos e downloads',
             onPressed: () => _openResourceCenter(context),
             icon: const Icon(Icons.cloud_download_outlined),
@@ -238,15 +231,43 @@ class HomeScreen extends StatelessWidget {
             ),
             icon: const Icon(Icons.account_circle_outlined),
           ),
-          IconButton(
-            tooltip: 'Sobre o AnimPro',
-            onPressed: () => showAboutDialog(
-              context: context,
-              applicationName: 'AnimPro',
-              applicationVersion: '1.2.0',
-              children: const [Text('Desenha, cria frames e experimenta poses 2D.')],
-            ),
-            icon: const Icon(Icons.help_outline_rounded),
+          PopupMenuButton<String>(
+            tooltip: 'Mais informações',
+            onSelected: (value) {
+              if (value == 'legal') {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const LegalScreen()),
+                );
+              } else if (value == 'about') {
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'AnimPro',
+                  applicationVersion: '1.2.0',
+                  children: const [
+                    Text('Desenha, cria frames e experimenta poses 2D.'),
+                  ],
+                );
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'legal',
+                child: ListTile(
+                  leading: Icon(Icons.privacy_tip_outlined),
+                  title: Text('Site, privacidade e suporte'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'about',
+                child: ListTile(
+                  leading: Icon(Icons.info_outline_rounded),
+                  title: Text('Sobre o AnimPro'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert_rounded),
           ),
           const SizedBox(width: 6),
         ],
