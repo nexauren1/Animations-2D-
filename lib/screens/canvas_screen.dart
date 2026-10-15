@@ -38,6 +38,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   double _opacity = 1;
   bool _showGrid = false;
   bool _onionSkin = true;
+  double _onionOpacity = .30;
   Future<void> _saveQueue = Future<void>.value();
   Size _canvasSize = const Size(320, 420);
   List<Offset>? _draftPoints;
@@ -48,6 +49,52 @@ class _CanvasScreenState extends State<CanvasScreen> {
   LayerModel get _activeLayer => _currentFrame.layers[_selectedLayerIndex];
   FrameModel? get _previousFrame =>
       _onionSkin && _currentFrameIndex > 0 ? _frames[_currentFrameIndex - 1] : null;
+  FrameModel? get _nextFrame =>
+      _onionSkin && _currentFrameIndex + 1 < _frames.length
+          ? _frames[_currentFrameIndex + 1]
+          : null;
+
+  Future<void> _openOnionSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF202231),
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Onion skin', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                const Text('Mostra os frames anterior e seguinte para facilitar o movimento.',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 16),
+                Row(children: [
+                  const Expanded(child: Text('Opacidade dos frames-guia')),
+                  Text('${(_onionOpacity * 100).round()}%',
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                ]),
+                Slider(
+                  value: _onionOpacity,
+                  min: .05,
+                  max: .75,
+                  divisions: 14,
+                  label: '${(_onionOpacity * 100).round()}%',
+                  onChanged: (value) {
+                    setState(() => _onionOpacity = value);
+                    setSheetState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   String get _strokeKind => switch (_tool) {
         _DrawingTool.pen => 'pen',
@@ -608,8 +655,13 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid,
                   onTap: () => setState(() => _showGrid = !_showGrid)),
                 const SizedBox(width: 7),
-                _tinyToggle(icon: Icons.layers_outlined, label: 'Onion', selected: _onionSkin,
-                  onTap: () => setState(() => _onionSkin = !_onionSkin)),
+                _tinyToggle(
+                  icon: Icons.layers_outlined,
+                  label: 'Onion',
+                  selected: _onionSkin,
+                  onTap: () => setState(() => _onionSkin = !_onionSkin),
+                  onLongPress: _openOnionSettings,
+                ),
               ],
             ),
           ),
@@ -633,7 +685,14 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       onPanEnd: _finishStroke,
                       onPanCancel: () => setState(() => _draftPoints = null),
                       child: CustomPaint(
-                        painter: _AnimationCanvasPainter(frame: _currentFrame, previousFrame: _previousFrame, draft: draft, showGrid: _showGrid),
+                        painter: _AnimationCanvasPainter(
+                          frame: _currentFrame,
+                          previousFrame: _previousFrame,
+                          nextFrame: _nextFrame,
+                          onionOpacity: _onionOpacity,
+                          draft: draft,
+                          showGrid: _showGrid,
+                        ),
                         child: const SizedBox.expand(),
                       ),
                     );
@@ -649,9 +708,16 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _tinyToggle({required IconData icon, required String label, required bool selected, required VoidCallback onTap}) {
+  Widget _tinyToggle({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    VoidCallback? onLongPress,
+  }) {
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(9),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
@@ -806,9 +872,18 @@ class _CanvasScreenState extends State<CanvasScreen> {
 }
 
 class _AnimationCanvasPainter extends CustomPainter {
-  _AnimationCanvasPainter({required this.frame, required this.previousFrame, required this.draft, required this.showGrid});
+  _AnimationCanvasPainter({
+    required this.frame,
+    required this.previousFrame,
+    required this.nextFrame,
+    required this.onionOpacity,
+    required this.draft,
+    required this.showGrid,
+  });
   final FrameModel frame;
   final FrameModel? previousFrame;
+  final FrameModel? nextFrame;
+  final double onionOpacity;
   final StrokeModel? draft;
   final bool showGrid;
 
@@ -824,7 +899,8 @@ class _AnimationCanvasPainter extends CustomPainter {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
       }
     }
-    if (previousFrame != null) _paintFrame(canvas, previousFrame!, .30);
+    if (previousFrame != null) _paintFrame(canvas, previousFrame!, onionOpacity);
+    if (nextFrame != null) _paintFrame(canvas, nextFrame!, onionOpacity * .55);
     _paintFrame(canvas, frame, 1);
     if (draft != null) _paintStroke(canvas, draft!, 1);
   }
