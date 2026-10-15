@@ -257,8 +257,9 @@ async function handleSubscriptionEvent(event) {
 
   const type = event.event_type;
   if (type === 'BILLING.SUBSCRIPTION.ACTIVATED' ||
-      type === 'BILLING.SUBSCRIPTION.UPDATED' ||
-      type === 'PAYMENT.SALE.COMPLETED') {
+      type === 'PAYMENT.SALE.COMPLETED' ||
+      (type === 'BILLING.SUBSCRIPTION.UPDATED' &&
+       (!resource.status || resource.status === 'ACTIVE'))) {
     const currentEntitlement = await db.collection('proEntitlements').doc(uid).get();
     if (currentEntitlement.exists &&
         currentEntitlement.data().active === true &&
@@ -289,6 +290,7 @@ async function handleSubscriptionEvent(event) {
     'BILLING.SUBSCRIPTION.SUSPENDED',
     'BILLING.SUBSCRIPTION.EXPIRED',
     'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
+    'BILLING.SUBSCRIPTION.UPDATED',
     'PAYMENT.SALE.REFUNDED',
     'PAYMENT.SALE.REVERSED',
   ].includes(type)) {
