@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
+import '../services/project_backup_service.dart';
 import 'canvas_screen.dart';
 import 'account_screen.dart';
 
@@ -98,6 +99,37 @@ class HomeScreen extends StatelessWidget {
     if (confirmed == true) await store.deleteProject(project);
   }
 
+  Future<void> _exportBackup(BuildContext context, ProjectModel project) async {
+    try {
+      await ProjectBackupService.shareProject(project);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível exportar o projeto: $error')),
+      );
+    }
+  }
+
+  Future<void> _importBackup(BuildContext context) async {
+    try {
+      final imported = await ProjectBackupService.pickAndReadProject();
+      final project = await store.createProject(imported.name);
+      project.fps = imported.fps;
+      await store.saveProject(project, frames: imported.frames);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Projeto "${project.name}" importado com sucesso.')),
+      );
+    } on BackupCancelledException {
+      // Cancelar o seletor de ficheiros não é um erro.
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível importar o backup: $error')),
+      );
+    }
+  }
+
   Future<void> _action(
     BuildContext context,
     ProjectModel project,
@@ -109,6 +141,8 @@ class HomeScreen extends StatelessWidget {
       await store.duplicateProject(project);
     } else if (action == 'delete') {
       await _delete(context, project);
+    } else if (action == 'export') {
+      await _exportBackup(context, project);
     }
   }
 
@@ -180,6 +214,16 @@ class HomeScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(17),
                             ),
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _importBackup(context),
+                          icon: const Icon(Icons.file_open_rounded),
+                          label: const Text('Importar backup de projeto (.animpro)'),
                         ),
                       ),
                       const SizedBox(height: 28),
@@ -314,6 +358,7 @@ class _ProjectCard extends StatelessWidget {
                       itemBuilder: (_) => const [
                         PopupMenuItem(value: 'rename', child: Text('Renomear')),
                         PopupMenuItem(value: 'duplicate', child: Text('Duplicar')),
+                        PopupMenuItem(value: 'export', child: Text('Exportar backup (.animpro)')),
                         PopupMenuItem(value: 'delete', child: Text('Apagar')),
                       ],
                       icon: const Icon(Icons.more_horiz, color: Colors.white),
