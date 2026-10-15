@@ -191,7 +191,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         stream: canReadEntitlement
             ? FirebaseFirestore.instance
                 .collection('proEntitlements')
-                .doc(user!.uid)
+                .doc(user.uid)
                 .snapshots()
             : null,
         builder: (context, snapshot) {
