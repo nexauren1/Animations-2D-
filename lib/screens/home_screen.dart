@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import 'canvas_screen.dart';
+import 'account_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({required this.store, super.key});
@@ -123,6 +124,13 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Conta AnimPro',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
+            ),
+            icon: const Icon(Icons.account_circle_outlined),
+          ),
           IconButton(
             tooltip: 'Sobre o AnimPro',
             onPressed: () => showAboutDialog(
