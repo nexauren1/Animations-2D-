@@ -228,8 +228,9 @@ async function handleOrderApproved(event, token) {
 
 async function handleSubscriptionEvent(event) {
   const resource = event.resource || {};
-  const subscriptionId = resource.id ||
-    (resource.billing_agreement_id ? String(resource.billing_agreement_id) : '');
+  const subscriptionId = event.event_type.startsWith('PAYMENT.SALE.')
+    ? (resource.billing_agreement_id ? String(resource.billing_agreement_id) : '')
+    : (resource.id || (resource.billing_agreement_id ? String(resource.billing_agreement_id) : ''));
   let uid = resource.custom_id || '';
   let subscriptionData = null;
 
