@@ -1,0 +1,226 @@
+package com.nexauren.animpro
+
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaCodec
+import android.media.MediaCodecInfo
+import android.media.MediaCodecList
+import android.media.MediaFormat
+import android.media.MediaMuxer
+import android.os.Handler
+import android.os.Looper
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
+import java.io.File
+import java.nio.ByteBuffer
+
+class MainActivity : FlutterActivity() {
+    private val exportChannel = "animpro/native_video_export"
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, exportChannel)
+            .setMethodCallHandler { call, result ->
+                if (call.method != "exportMp4") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+
+                val paths = call.argument<List<String>>("framePaths").orEmpty()
+                val outputPath = call.argument<String>("outputPath").orEmpty()
+                val fps = (call.argument<Int>("fps") ?: 12).coerceIn(1, 60)
+                if (paths.isEmpty() || outputPath.isBlank()) {
+                    result.error("INVALID_ARGUMENT", "Faltam frames ou o caminho de saída.", null)
+                    return@setMethodCallHandler
+                }
+
+                Thread {
+                    try {
+                        NativeMp4Encoder.encode(paths, outputPath, fps)
+                        Handler(Looper.getMainLooper()).post { result.success(outputPath) }
+                    } catch (error: Throwable) {
+                        Handler(Looper.getMainLooper()).post {
+                            result.error(
+                                "MP4_EXPORT_FAILED",
+                                error.message ?: "O codificador H.264 do dispositivo não conseguiu criar o vídeo.",
+                                null
+                            )
+                        }
+                    }
+                }.start()
+            }
+    }
+}
+
+private object NativeMp4Encoder {
+    private const val MIME = MediaFormat.MIMETYPE_VIDEO_AVC
+    private const val COLOR_PLANAR = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar
+    private const val COLOR_SEMIPLANAR = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
+
+    fun encode(framePaths: List<String>, outputPath: String, fps: Int) {
+        require(framePaths.isNotEmpty()) { "O projeto não tem frames para exportar." }
+        val firstFile = File(framePaths.first())
+        require(firstFile.isFile) { "O primeiro frame não existe." }
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(firstFile.absolutePath, bounds)
+        val width = bounds.outWidth and -2
+        val height = bounds.outHeight and -2
+        require(width >= 2 && height >= 2) { "Dimensões de vídeo inválidas." }
+
+        val codecInfo = MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.firstOrNull { info ->
+            info.isEncoder &&
+                info.supportedTypes.any { it.equals(MIME, ignoreCase = true) } &&
+                runCatching {
+                    info.getCapabilitiesForType(MIME).colorFormats.any {
+                        it == COLOR_PLANAR || it == COLOR_SEMIPLANAR
+                    }
+                }.getOrDefault(false)
+        } ?: throw IllegalStateException("Este dispositivo não disponibiliza um codificador H.264 compatível.")
+
+        val capabilities = codecInfo.getCapabilitiesForType(MIME)
+        val colorFormat = when {
+            capabilities.colorFormats.contains(COLOR_SEMIPLANAR) -> COLOR_SEMIPLANAR
+            capabilities.colorFormats.contains(COLOR_PLANAR) -> COLOR_PLANAR
+            else -> throw IllegalStateException("Formato de cor H.264 não suportado.")
+        }
+
+        val format = MediaFormat.createVideoFormat(MIME, width, height).apply {
+            setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat)
+            setInteger(MediaFormat.KEY_BIT_RATE, (width.toLong() * height * fps * 0.08).toInt().coerceIn(500_000, 8_000_000))
+            setInteger(MediaFormat.KEY_FRAME_RATE, fps)
+            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
+        }
+
+        val codec = MediaCodec.createByCodecName(codecInfo.name)
+        val target = File(outputPath)
+        target.parentFile?.mkdirs()
+        if (target.exists()) target.delete()
+        val muxer = MediaMuxer(target.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        var muxerStarted = false
+        var trackIndex = -1
+        var codecStarted = false
+
+        try {
+            codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            codec.start()
+            codecStarted = true
+            val info = MediaCodec.BufferInfo()
+            var frameIndex = 0
+            var eosQueued = false
+            var outputDone = false
+
+            while (!outputDone) {
+                if (frameIndex < framePaths.size) {
+                    val inputIndex = codec.dequeueInputBuffer(10_000)
+                    if (inputIndex >= 0) {
+                        val bitmapOriginal = BitmapFactory.decodeFile(framePaths[frameIndex])
+                            ?: throw IllegalStateException("Não foi possível abrir o frame ${frameIndex + 1}.")
+                        val bitmap = if (bitmapOriginal.width != width || bitmapOriginal.height != height) {
+                            Bitmap.createScaledBitmap(bitmapOriginal, width, height, true).also {
+                                if (it !== bitmapOriginal) bitmapOriginal.recycle()
+                            }
+                        } else bitmapOriginal
+                        val yuv = try {
+                            bitmapToYuv420(bitmap, colorFormat)
+                        } finally {
+                            bitmap.recycle()
+                        }
+                        val input = codec.getInputBuffer(inputIndex)
+                            ?: throw IllegalStateException("Buffer de entrada H.264 indisponível.")
+                        input.clear()
+                        require(yuv.size <= input.remaining()) { "Frame maior que o buffer H.264." }
+                        input.put(yuv)
+                        codec.queueInputBuffer(
+                            inputIndex, 0, yuv.size,
+                            frameIndex * 1_000_000L / fps,
+                            0
+                        )
+                        frameIndex++
+                    }
+                } else if (!eosQueued) {
+                    val inputIndex = codec.dequeueInputBuffer(10_000)
+                    if (inputIndex >= 0) {
+                        codec.queueInputBuffer(
+                            inputIndex, 0, 0,
+                            framePaths.size * 1_000_000L / fps,
+                            MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                        )
+                        eosQueued = true
+                    }
+                }
+
+                val outputIndex = codec.dequeueOutputBuffer(info, 10_000)
+                when {
+                    outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                        if (muxerStarted) throw IllegalStateException("Formato H.264 mudou durante a exportação.")
+                        trackIndex = muxer.addTrack(codec.outputFormat)
+                        muxer.start()
+                        muxerStarted = true
+                    }
+                    outputIndex >= 0 -> {
+                        val output = codec.getOutputBuffer(outputIndex)
+                        if (output != null && info.size > 0 && muxerStarted &&
+                            (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                            output.position(info.offset)
+                            output.limit(info.offset + info.size)
+                            muxer.writeSampleData(trackIndex, output, info)
+                        }
+                        if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                            outputDone = true
+                        }
+                        codec.releaseOutputBuffer(outputIndex, false)
+                    }
+                }
+            }
+
+            if (!muxerStarted) throw IllegalStateException("O encoder não produziu uma faixa de vídeo.")
+        } finally {
+            if (codecStarted) runCatching { codec.stop() }
+            runCatching { codec.release() }
+            if (muxerStarted) runCatching { muxer.stop() }
+            runCatching { muxer.release() }
+        }
+
+        require(target.isFile && target.length() > 0L) { "O ficheiro MP4 ficou vazio." }
+    }
+
+    private fun bitmapToYuv420(bitmap: Bitmap, colorFormat: Int): ByteArray {
+        val width = bitmap.width
+        val height = bitmap.height
+        val frameSize = width * height
+        val pixels = IntArray(frameSize)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        val output = ByteArray(frameSize * 3 / 2)
+        var yIndex = 0
+        var chromaIndex = 0
+        val uStart = frameSize
+        val vStart = frameSize + frameSize / 4
+
+        for (row in 0 until height) {
+            for (column in 0 until width) {
+                val pixel = pixels[row * width + column]
+                val r = (pixel shr 16) and 0xff
+                val g = (pixel shr 8) and 0xff
+                val b = pixel and 0xff
+                val y = (((66 * r + 129 * g + 25 * b + 128) shr 8) + 16).coerceIn(0, 255)
+                output[yIndex++] = y.toByte()
+
+                if (row % 2 == 0 && column % 2 == 0) {
+                    val u = (((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128).coerceIn(0, 255)
+                    val v = (((112 * r - 94 * g - 18 * b + 128) shr 8) + 128).coerceIn(0, 255)
+                    if (colorFormat == COLOR_SEMIPLANAR) {
+                        val index = uStart + chromaIndex * 2
+                        output[index] = u.toByte()
+                        output[index + 1] = v.toByte()
+                    } else {
+                        output[uStart + chromaIndex] = u.toByte()
+                        output[vStart + chromaIndex] = v.toByte()
+                    }
+                    chromaIndex++
+                }
+            }
+        }
+        return output
+    }
+}
