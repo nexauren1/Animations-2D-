@@ -9,8 +9,9 @@ class ProAccessService {
   ProAccessService._();
 
   static Future<bool> hasPro() async {
+    if (!FirebaseBootstrap.isInitialized) return false;
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || !FirebaseBootstrap.isInitialized) return false;
+    if (user == null) return false;
 
     try {
       final snapshot = await FirebaseFirestore.instance
