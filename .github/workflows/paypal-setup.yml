@@ -8,10 +8,10 @@ on:
       - main
     paths:
       - .github/scripts/paypal_catalog.mjs
+      - .github/workflows/paypal-setup.yml
 
 permissions:
   contents: read
-  actions: write
 
 concurrency:
   group: animpro-paypal-deploy
@@ -22,8 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      # Actions variables API is covered by actions:write. A dedicated PAT is optional.
-      GH_TOKEN: ${{ secrets.GH_VARIABLES_TOKEN || github.token }}
       FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
       PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
       PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
@@ -60,7 +58,6 @@ jobs:
               sys.exit(1)
           print("Conta de serviço validada para o projeto Firebase selecionado.")
           PY
-          [[ -n "$GH_TOKEN" ]] || { echo "::error::O token automático do GitHub não está disponível para gerir Actions Variables."; exit 1; }
           echo "Configuração básica validada. Ambiente PayPal: Sandbox."
 
       - name: Install Node.js
@@ -87,14 +84,6 @@ jobs:
       - name: Create PayPal product and monthly plan automatically
         id: catalog
         run: node .github/scripts/paypal_catalog.mjs catalog
-
-      - name: Save public PayPal catalog IDs as GitHub Actions variables
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh variable set PAYPAL_PRODUCT_ID --body "${{ steps.catalog.outputs.product_id }}" --repo "$GITHUB_REPOSITORY"
-          gh variable set PAYPAL_MONTHLY_PLAN_ID --body "${{ steps.catalog.outputs.monthly_plan_id }}" --repo "$GITHUB_REPOSITORY"
-          gh variable set PAYPAL_API_BASE --body "$PAYPAL_API_BASE" --repo "$GITHUB_REPOSITORY"
 
       - name: Prepare non-secret runtime configuration
         shell: bash
@@ -143,13 +132,6 @@ jobs:
         env:
           PAYPAL_WEBHOOK_URL: ${{ steps.endpoint.outputs.url }}
         run: node .github/scripts/paypal_catalog.mjs webhook
-
-      - name: Save webhook ID and selected PayPal environment
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh variable set PAYPAL_WEBHOOK_ID --body "${{ steps.webhook.outputs.webhook_id }}" --repo "$GITHUB_REPOSITORY"
-          gh variable set PAYPAL_API_BASE --body "$PAYPAL_API_BASE" --repo "$GITHUB_REPOSITORY"
 
       - name: Activate the verified webhook ID in Firebase Secret Manager
         shell: bash

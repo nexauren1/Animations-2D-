@@ -52,6 +52,7 @@ function output(name, value) {
   }
 }
 
+// Retries reuse the catalog by name if a prior deployment stopped before runtime config was saved.
 async function findProductIdByName(token, name) {
   for (let page = 1; page <= 10; page += 1) {
     const result = await jsonRequest(token, 'GET',
