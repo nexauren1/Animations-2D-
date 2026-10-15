@@ -6,6 +6,7 @@ import '../services/project_backup_service.dart';
 import 'canvas_screen.dart';
 import 'account_screen.dart';
 import 'upgrade_screen.dart';
+import 'legal_screen.dart';
 import 'resource_center_screen.dart';
 import 'template_gallery_screen.dart';
 import '../services/template_catalog.dart';
@@ -217,6 +218,13 @@ class HomeScreen extends StatelessWidget {
               MaterialPageRoute<void>(builder: (_) => const UpgradeScreen()),
             ),
             icon: const Icon(Icons.workspace_premium_outlined, color: Color(0xFFFFD36A)),
+          ),
+          IconButton(
+            tooltip: 'Site, privacidade, termos e suporte',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const LegalScreen()),
+            ),
+            icon: const Icon(Icons.privacy_tip_outlined),
           ),
           IconButton(
             tooltip: 'Centro de recursos e downloads',
