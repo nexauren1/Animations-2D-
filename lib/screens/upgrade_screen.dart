@@ -1,12 +1,20 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/firebase_bootstrap.dart';
 import 'account_screen.dart';
+
+class _CheckoutException implements Exception {
+  const _CheckoutException(this.message);
+
+  final String message;
+}
 
 class UpgradeScreen extends StatefulWidget {
   const UpgradeScreen({super.key, this.requiredFeature});
@@ -21,6 +29,8 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   bool _launching = false;
 
   static const _site = 'https://nexauren1.github.io/Animations-2D-/';
+  static const _checkoutEndpoint =
+      'https://animations2d.nexaurenstore.workers.dev/api/checkout';
   static const _privacy = '${_site}privacy.html';
   static const _terms = '${_site}terms.html';
 
@@ -50,7 +60,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   Future<void> _buy(String plan) async {
     if (!FirebaseBootstrap.isInitialized || Firebase.apps.isEmpty) {
       _message(
-        'O Firebase ainda não está configurado. Define as variáveis de Firebase no GitHub Actions e publica uma nova versão.',
+        'O Firebase ainda não está configurado. Define as variáveis Firebase e publica uma nova versão.',
         error: true,
       );
       return;
@@ -63,43 +73,79 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
     }
     if (_launching) return;
     setState(() => _launching = true);
+
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15);
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'startPayPalCheckout',
-        options: HttpsCallableOptions(timeout: const Duration(seconds: 45)),
-      );
-      final response = await callable.call(<String, Object>{'plan': plan});
-      final data = Map<String, dynamic>.from(response.data as Map);
+      final idToken = await user.getIdToken();
+      if (idToken == null || idToken.isEmpty) {
+        throw const _CheckoutException('Inicia sessão novamente antes de comprar.');
+      }
+
+      final request = await client
+          .postUrl(Uri.parse(_checkoutEndpoint))
+          .timeout(const Duration(seconds: 15));
+      request.headers.contentType = ContentType.json;
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer ' + idToken);
+      request.write(jsonEncode(<String, String>{'plan': plan}));
+
+      final response = await request.close().timeout(const Duration(seconds: 45));
+      final responseBody = await utf8.decoder
+          .bind(response)
+          .join()
+          .timeout(const Duration(seconds: 30));
+      Map<String, dynamic> data = <String, dynamic>{};
+      try {
+        final decoded = jsonDecode(responseBody);
+        if (decoded is Map) data = Map<String, dynamic>.from(decoded);
+      } catch (_) {
+        // The server may return plain text for an unexpected gateway error.
+      }
+
+      if (response.statusCode != HttpStatus.ok) {
+        final serverMessage = data['error'];
+        throw _CheckoutException(
+          serverMessage is String
+              ? serverMessage
+              : 'O serviço de pagamentos respondeu com erro (' +
+                  response.statusCode.toString() +
+                  ').',
+        );
+      }
+
       final approval = data['approvalUrl'] as String?;
       final url = approval == null ? null : Uri.tryParse(approval);
-      if (url == null || !url.hasAuthority || url.scheme != 'https') {
-        throw StateError('O PayPal não devolveu um link de pagamento válido.');
+      final safePayPalHost = url != null &&
+          (url.host == 'paypal.com' || url.host.endsWith('.paypal.com'));
+      if (url == null ||
+          !url.hasAuthority ||
+          url.scheme != 'https' ||
+          !safePayPalHost) {
+        throw const _CheckoutException(
+          'O PayPal não devolveu um link de pagamento válido.',
+        );
       }
+
       final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
       if (!opened) {
-        throw StateError('Não foi possível abrir a página segura do PayPal.');
+        throw const _CheckoutException(
+          'Não foi possível abrir a página segura do PayPal.',
+        );
       }
       if (mounted) {
         _message(
-          'Conclui o pagamento no PayPal e regressa aqui. A ativação é confirmada pelo servidor.',
+          'Conclui o pagamento no PayPal e regressa aqui. A licença é ativada pelo servidor depois da confirmação.',
         );
       }
-    } on FirebaseFunctionsException catch (error) {
-      final message = switch (error.code) {
-        'unauthenticated' => 'Inicia sessão novamente antes de comprar.',
-        'failed-precondition' =>
-          'O pagamento ainda não está configurado. Executa o workflow PayPal no GitHub Actions.',
-        'unavailable' =>
-          'O serviço de pagamentos não está disponível. Tenta novamente mais tarde.',
-        _ => 'Não foi possível iniciar o pagamento (${error.code}).',
-      };
-      _message(message, error: true);
+    } on _CheckoutException catch (error) {
+      _message(error.message, error: true);
     } catch (_) {
       _message(
-        'Não foi possível iniciar o checkout. Verifica a ligação ou a configuração PayPal.',
+        'Não foi possível iniciar o checkout. Verifica a ligação e a configuração do Worker Cloudflare.',
         error: true,
       );
     } finally {
+      client.close(force: true);
       if (mounted) setState(() => _launching = false);
     }
   }
