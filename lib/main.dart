@@ -3,6 +3,8 @@ import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'services/firebase_bootstrap.dart';
+
 import 'models/project_model.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -10,6 +12,7 @@ import 'services/project_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseBootstrap.initialize();
   final documents = await getApplicationDocumentsDirectory();
   final isar = await Isar.open(
     [ProjectModelSchema],
