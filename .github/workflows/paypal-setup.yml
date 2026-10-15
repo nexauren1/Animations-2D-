@@ -2,6 +2,12 @@ name: Configure PayPal Pro and deploy Firebase backend
 
 on:
   workflow_dispatch:
+  # Run the PayPal setup automatically when its catalog script is fixed or updated.
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/paypal_catalog.mjs
 
 permissions:
   contents: read
