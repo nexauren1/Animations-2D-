@@ -66,7 +66,7 @@ class FirebaseBootstrap {
     } catch (_) {
       // Keep the local editor usable if the Firebase configuration is invalid.
       _initializationError =
-          'Não foi possível iniciar o Firebase. Confirma google-services.json e as variáveis do projeto.';
+          'A conta online não está disponível neste momento. Podes continuar a usar o editor sem iniciar sessão.';
       _initialized = false;
     }
   }
