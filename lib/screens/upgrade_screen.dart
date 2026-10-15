@@ -60,7 +60,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   Future<void> _buy(String plan) async {
     if (!FirebaseBootstrap.isInitialized || Firebase.apps.isEmpty) {
       _message(
-        'O Firebase ainda não está configurado. Define as variáveis Firebase e publica uma nova versão.',
+        'As compras estão temporariamente indisponíveis. Tenta novamente mais tarde.',
         error: true,
       );
       return;
@@ -103,14 +103,20 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
       }
 
       if (response.statusCode != HttpStatus.ok) {
-        final serverMessage = data['error'];
-        throw _CheckoutException(
-          serverMessage is String
-              ? serverMessage
-              : 'O serviço de pagamentos respondeu com erro (' +
-                  response.statusCode.toString() +
-                  ').',
-        );
+        final message = switch (response.statusCode) {
+          HttpStatus.unauthorized || HttpStatus.forbidden =>
+            'A tua sessão expirou. Entra novamente na tua conta.',
+          HttpStatus.badRequest =>
+            'Não foi possível iniciar esta compra. Seleciona um plano e tenta novamente.',
+          HttpStatus.tooManyRequests =>
+            'Houve demasiadas tentativas. Espera um pouco antes de voltar a tentar.',
+          HttpStatus.badGateway ||
+          HttpStatus.serviceUnavailable ||
+          HttpStatus.internalServerError =>
+            'As compras estão temporariamente indisponíveis. Tenta novamente mais tarde.',
+          _ => 'Não foi possível iniciar o pagamento. Tenta novamente.',
+        };
+        throw _CheckoutException(message);
       }
 
       final approval = data['approvalUrl'] as String?;
@@ -141,7 +147,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
       _message(error.message, error: true);
     } catch (_) {
       _message(
-        'Não foi possível iniciar o checkout. Verifica a ligação e a configuração do Worker Cloudflare.',
+        'Não foi possível iniciar o pagamento. Verifica a ligação à internet e tenta novamente.',
         error: true,
       );
     } finally {
