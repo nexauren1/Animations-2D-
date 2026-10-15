@@ -30,6 +30,12 @@ As versões assinadas são disponibilizadas na [release mobile-latest](https://g
 
 O GitHub Actions gera apenas este APK para distribuição e verifica a assinatura antes de atualizar a release `mobile-latest`. O workflow guarda também um mapa privado de símbolos de depuração no artefacto interno, separado dos ficheiros públicos.
 
+## Site oficial e páginas legais
+
+O site está preparado em `docs/`, com página inicial, Política de Privacidade, Termos e página de retorno PayPal. Endereço previsto: [AnimPro](https://nexauren1.github.io/Animations-2D-/).
+
+**Ativação inicial necessária:** abre o repositório no GitHub, entra em **Settings → Pages** e escolhe **Build and deployment → Source: GitHub Actions**. A automação não conseguiu criar o site porque o token de workflow não tem permissão administrativa para ativar Pages num repositório sem configuração. Depois desta ativação, o workflow **Deploy AnimPro website** publica os ficheiros de `docs/` em cada alteração relevante.
+
 ## Configuração Firebase Authentication
 
 O package ID Android é `com.nexauren.animpro`.
