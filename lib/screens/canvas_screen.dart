@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/project_model.dart';
 import '../services/project_store.dart';
+import '../services/pro_access_service.dart';
 import 'assets_library_screen.dart';
 import 'audio_lip_sync_screen.dart';
 import 'export_screen.dart';
@@ -250,6 +251,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _openRigging() async {
+    if (!await ProAccessService.requirePro(context, feature: 'Rigging e poses')) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -286,6 +288,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _openAudioLipSync() async {
+    if (!await ProAccessService.requirePro(context, feature: 'Áudio e marcação de boca')) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => AudioLipSyncScreen(
