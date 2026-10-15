@@ -68,7 +68,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Onion skin', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const Text('Sobreposição de frames', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 5),
                 const Text('Mostra os frames anterior e seguinte para facilitar o movimento.',
                     style: TextStyle(color: Colors.white70, fontSize: 12)),
