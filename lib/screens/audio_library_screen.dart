@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart' hide Text;
 
 import '../services/audio_library_service.dart';
+import '../services/app_locale.dart';
 
 class AudioLibraryScreen extends StatefulWidget {
   const AudioLibraryScreen({
@@ -171,7 +172,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       setState(() => _clips = updated);
       _message('Áudio importado e colocado no frame ${startFrame + 1}.');
     } catch (error) {
-      _message(error is FormatException ? error.message ?? 'Formato de áudio inválido.' : 'Não foi possível importar este áudio.', error: true);
+      _message(error is FormatException ? error.message?.toString() ?? 'Formato de áudio inválido.' : 'Não foi possível importar este áudio.', error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -193,7 +194,8 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = <String>['Tudo', ..._items.map((item) => item.category).toSet().toList()..sort()];
+    final catalogCategories = _items.map((item) => item.category).toSet().toList()..sort();
+    final categories = <String>['Tudo', ...catalogCategories];
     final visibleItems = _filter == 'Tudo'
         ? _items
         : _items.where((item) => item.category == _filter).toList();
