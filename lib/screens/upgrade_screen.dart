@@ -4,7 +4,8 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/firebase_bootstrap.dart';
@@ -263,20 +264,15 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
               const Text('O que está incluído',
                   style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
               const SizedBox(height: 12),
-              const _ProFeature(
-                icon: Icons.movie_creation_outlined,
-                title: 'Exportação de vídeo MP4',
-                detail: 'Gera vídeos com os frames do projeto e a taxa de FPS escolhida.',
+              const Text(
+                'O desenho, os efeitos visuais, o áudio e a exportação MP4 continuam gratuitos. O Pro desbloqueia apenas ferramentas avançadas.',
+                style: TextStyle(color: Colors.white70, height: 1.4),
               ),
+              const SizedBox(height: 14),
               const _ProFeature(
                 icon: Icons.hub_outlined,
                 title: 'Rigging e poses',
                 detail: 'Ajusta poses com controlos de rigging e guarda-as como frames.',
-              ),
-              const _ProFeature(
-                icon: Icons.graphic_eq_outlined,
-                title: 'Áudio e marcação de boca',
-                detail: 'Importa áudio e marca manualmente as poses para lip sync.',
               ),
               const _ProFeature(
                 icon: Icons.speed_rounded,

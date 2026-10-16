@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LegalScreen extends StatelessWidget {

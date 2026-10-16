@@ -1,5 +1,6 @@
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import '../services/project_backup_service.dart';
@@ -14,6 +15,38 @@ import '../services/template_catalog.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({required this.store, super.key});
   final ProjectStore store;
+
+  Future<void> _chooseLanguage(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Idioma / Language'),
+        content: const Text('Escolhe o idioma da aplicação.'),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await AppLocale.setLanguage('pt');
+              if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+            },
+            icon: Icon(AppLocale.locale.value.languageCode == 'pt'
+                ? Icons.radio_button_checked
+                : Icons.radio_button_off),
+            label: const Text('Português'),
+          ),
+          TextButton.icon(
+            onPressed: () async {
+              await AppLocale.setLanguage('en');
+              if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+            },
+            icon: Icon(AppLocale.locale.value.languageCode == 'en'
+                ? Icons.radio_button_checked
+                : Icons.radio_button_off),
+            label: const Text('English'),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showActionError(BuildContext context, String message) {
     if (!context.mounted) return;
@@ -178,7 +211,7 @@ class HomeScreen extends StatelessWidget {
 
   Future<void> _useTemplate(BuildContext context, AnimationTemplate template) async {
     try {
-      final project = await store.createProject(template.title);
+      final project = await store.createProject(AppLocale.translate(context, template.title));
       project.fps = template.fps;
       await store.saveProject(project, frames: template.createFrames());
       if (!context.mounted) return;
@@ -245,11 +278,13 @@ class HomeScreen extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(builder: (_) => const LegalScreen()),
                 );
+              } else if (value == 'language') {
+                _chooseLanguage(context);
               } else if (value == 'about') {
                 showAboutDialog(
                   context: context,
                   applicationName: 'AnimPro',
-                  applicationVersion: '1.2.0',
+                  applicationVersion: '1.3.0',
                   children: const [
                     Text('Desenha, cria frames e experimenta poses 2D.'),
                   ],
@@ -257,6 +292,14 @@ class HomeScreen extends StatelessWidget {
               }
             },
             itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'language',
+                child: ListTile(
+                  leading: Icon(Icons.translate_rounded),
+                  title: Text('Idioma / Language'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
               PopupMenuItem(
                 value: 'legal',
                 child: ListTile(

@@ -6,7 +6,8 @@ import 'dart:ui' as ui;
 import 'package:archive/archive.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -134,6 +135,33 @@ class _ExportScreenState extends State<ExportScreen> {
             width *= 1.8;
             paint.maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, math.max(1.0, width * .1).toDouble());
             break;
+          case 'caneta técnica':
+            width *= .55;
+            break;
+          case 'tinta chinesa':
+            width *= .75;
+            break;
+          case 'pincel suave':
+            width *= 1.7;
+            paint.maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, math.max(1.0, width * .18).toDouble());
+            break;
+          case 'pincel seco':
+            width *= 1.5;
+            opacity *= .42;
+            paint.strokeCap = ui.StrokeCap.square;
+            break;
+          case 'brilho neon':
+            width *= 1.25;
+            break;
+          case 'luz energética':
+            width *= 1.6;
+            break;
+          case 'rastro de movimento':
+            width *= 1.2;
+            opacity *= .75;
+            break;
+          case 'linha tracejada':
+            break;
           case 'pixel':
             paint.strokeCap = ui.StrokeCap.square;
             paint.strokeJoin = ui.StrokeJoin.miter;
@@ -142,12 +170,72 @@ class _ExportScreenState extends State<ExportScreen> {
             break;
         }
         paint..color = baseColor.withOpacity(opacity)..strokeWidth = width;
-        if (stroke.kind == 'rectangle' && mapped.length >= 2) {
-          canvas.drawRect(ui.Rect.fromPoints(mapped.first, mapped.last), paint);
-        } else if (stroke.kind == 'ellipse' && mapped.length >= 2) {
-          canvas.drawOval(ui.Rect.fromPoints(mapped.first, mapped.last), paint);
-        } else if ((stroke.kind == 'line' || stroke.kind == 'ruler') && mapped.length >= 2) {
-          canvas.drawLine(mapped.first, mapped.last, paint);
+        void drawStyledPath(ui.Path path) {
+          if (stroke.brushStyle == 'linha tracejada') {
+            for (final metric in path.computeMetrics()) {
+              for (var distance = 0.0; distance < metric.length; distance += 16.0) {
+                final end = math.min(distance + 9.0, metric.length).toDouble();
+                canvas.drawPath(metric.extractPath(distance, end), paint);
+              }
+            }
+          } else if (stroke.brushStyle == 'brilho neon' || stroke.brushStyle == 'luz energética') {
+            final intensity = stroke.brushStyle == 'luz energética' ? 2.8 : 2.0;
+            final blur = stroke.brushStyle == 'luz energética' ? width * .9 : width * .6;
+            final glowPaint = ui.Paint()
+              ..color = baseColor.withOpacity((opacity * .78).clamp(0.0, 1.0).toDouble())
+              ..strokeWidth = width * intensity
+              ..strokeCap = ui.StrokeCap.round
+              ..strokeJoin = ui.StrokeJoin.round
+              ..style = ui.PaintingStyle.stroke
+              ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, math.max(2.0, blur).toDouble());
+            canvas.drawPath(path, glowPaint);
+            final corePaint = ui.Paint()
+              ..color = baseColor.withOpacity(opacity)
+              ..strokeWidth = math.max(1.0, width * .48).toDouble()
+              ..strokeCap = ui.StrokeCap.round
+              ..strokeJoin = ui.StrokeJoin.round
+              ..style = ui.PaintingStyle.stroke;
+            canvas.drawPath(path, corePaint);
+          } else if (stroke.brushStyle == 'rastro de movimento') {
+            final trailPaint = ui.Paint()
+              ..color = baseColor.withOpacity((opacity * .24).clamp(0.0, 1.0).toDouble())
+              ..strokeWidth = math.max(1.0, width * .85).toDouble()
+              ..strokeCap = ui.StrokeCap.round
+              ..strokeJoin = ui.StrokeJoin.round
+              ..style = ui.PaintingStyle.stroke
+              ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, math.max(1.0, width * .22).toDouble());
+            canvas.drawPath(path.shift(ui.Offset(-width * 1.2, width * .35)), trailPaint);
+            canvas.drawPath(path, paint);
+          } else {
+            canvas.drawPath(path, paint);
+          }
+        }
+
+        if (mapped.length == 1) {
+          if (stroke.brushStyle == 'brilho neon' || stroke.brushStyle == 'luz energética') {
+            final glow = ui.Paint()
+              ..color = baseColor.withOpacity((opacity * .78).clamp(0.0, 1.0).toDouble())
+              ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, math.max(2.0, width * .6).toDouble());
+            canvas.drawCircle(mapped.first, width * 1.15, glow);
+          }
+          canvas.drawCircle(mapped.first, paint.strokeWidth / 2, paint..style = ui.PaintingStyle.fill);
+        } else {
+          final path = ui.Path();
+          if (stroke.kind == 'rectangle') {
+            path.addRect(ui.Rect.fromPoints(mapped.first, mapped.last));
+          } else if (stroke.kind == 'ellipse') {
+            path.addOval(ui.Rect.fromPoints(mapped.first, mapped.last));
+          } else {
+            path.moveTo(mapped.first.dx, mapped.first.dy);
+            if (stroke.kind == 'line' || stroke.kind == 'ruler') {
+              path.lineTo(mapped.last.dx, mapped.last.dy);
+            } else {
+              for (final point in mapped.skip(1)) {
+                path.lineTo(point.dx, point.dy);
+              }
+            }
+          }
+          drawStyledPath(path);
           if (stroke.kind == 'ruler') {
             final delta = mapped.last - mapped.first;
             final length = delta.distance;
@@ -160,14 +248,6 @@ class _ExportScreenState extends State<ExportScreen> {
               }
             }
           }
-        } else if (mapped.length == 1) {
-          canvas.drawCircle(mapped.first, paint.strokeWidth / 2, paint..style = ui.PaintingStyle.fill);
-        } else {
-          final path = ui.Path()..moveTo(mapped.first.dx, mapped.first.dy);
-          for (final point in mapped.skip(1)) {
-            path.lineTo(point.dx, point.dy);
-          }
-          canvas.drawPath(path, paint);
         }
       }
     }
@@ -180,8 +260,6 @@ class _ExportScreenState extends State<ExportScreen> {
     return data.buffer.asUint8List();
   }
   Future<void> _export() async {
-    if (_format == 'MP4' &&
-        !await ProAccessService.requirePro(context, feature: 'Exportação de vídeo MP4')) return;
     if (_format == 'MP4' && _fps == 60 &&
         !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
     setState(() => _isExporting = true);
@@ -221,11 +299,50 @@ class _ExportScreenState extends State<ExportScreen> {
         );
         if (_format == 'MP4') {
           exported = File('${directory.path}/animpro_${time}.mp4');
-          await _nativeVideoChannel.invokeMethod<String>('exportMp4', <String, Object>{
-            'framePaths': framePaths,
-            'outputPath': exported.path,
-            'fps': _fps,
-          });
+          Future<void> encodeMp4() async {
+            await _nativeVideoChannel.invokeMethod<String>(
+              'exportMp4',
+              <String, Object>{
+                'framePaths': framePaths,
+                'outputPath': exported.path,
+                'fps': _fps,
+              },
+            );
+          }
+
+          try {
+            await encodeMp4();
+          } catch (_) {
+            // Some phones advertise H.264 but cannot encode the requested size.
+            // Re-render the exact same frames smaller, then retry the native muxer.
+            if (_resolution <= 360) rethrow;
+            final fallbackResolution = _resolution >= 720 ? 540 : 360;
+            for (var index = 0; index < frames.length; index++) {
+              final bytes = await _renderPng(frames[index], fallbackResolution);
+              final filename = 'frame_${index.toString().padLeft(5, '0')}.png';
+              await File('${framesDirectory.path}/${filename}').writeAsBytes(
+                bytes,
+                flush: true,
+              );
+            }
+            try {
+              await encodeMp4();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'O dispositivo precisou de uma resolução reduzida para exportar o MP4 (${fallbackResolution}p).',
+                    ),
+                  ),
+                );
+              }
+            } catch (_) {
+              throw StateError(
+                'O dispositivo não conseguiu codificar o MP4. Tenta 540p/360p e 12 ou 24 FPS, ou exporta GIF.',
+              );
+            }
+          }
+
           if (!await exported.exists() || await exported.length() == 0) {
             throw StateError('O codificador Android não criou um MP4 válido.');
           }
@@ -277,8 +394,11 @@ class _ExportScreenState extends State<ExportScreen> {
       );
     } catch (error) {
       if (mounted) {
+        final message = _format == 'MP4' && error is PlatformException
+            ? 'Falha ao codificar MP4 neste dispositivo. Tenta uma resolução menor e 12/24 FPS, ou exporta GIF.'
+            : 'Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.')),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
@@ -356,8 +476,6 @@ class _ExportScreenState extends State<ExportScreen> {
                   size: 18,
                 ),
                 onSelected: (_) async {
-                  if (format == 'MP4' &&
-                      !await ProAccessService.requirePro(context, feature: 'Exportação de vídeo MP4')) return;
                   if (mounted) setState(() => _format = format);
                 },
                 selectedColor: const Color(0xFF5445C6),

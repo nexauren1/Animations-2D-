@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'services/firebase_bootstrap.dart';
+import 'services/app_locale.dart';
 
 import 'models/project_model.dart';
 import 'screens/home_screen.dart';
@@ -18,6 +20,7 @@ Future<void> main() async {
 Future<void> _launchAnimPro() async {
   Isar? database;
   try {
+    await AppLocale.load();
     await FirebaseBootstrap.initialize();
     final documents = await getApplicationDocumentsDirectory();
     database = await Isar.open(
@@ -116,7 +119,16 @@ class AnimProApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const background = Color(0xFF0B0D18);
-    return MaterialApp(
+    return ValueListenableBuilder<Locale>(
+      valueListenable: AppLocale.locale,
+      builder: (context, locale, _) => MaterialApp(
+      locale: locale,
+      supportedLocales: const [Locale('pt'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       title: 'AnimPro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -136,6 +148,7 @@ class AnimProApp extends StatelessWidget {
         ),
       ),
       home: _LaunchGate(store: store),
+      ),
     );
   }
 }

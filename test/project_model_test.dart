@@ -4,6 +4,7 @@ import 'dart:ui' show Offset;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../lib/models/project_model.dart';
+import '../lib/services/template_catalog.dart';
 
 void main() {
   group('ProjectModel', () {
@@ -78,4 +79,24 @@ void main() {
       expect(frames.single.layers, hasLength(3));
     });
   });
+  group('TemplateCatalog', () {
+    test('stickman sparring starter contains editable fight poses and visual effects', () {
+      final template = TemplateCatalog.all.singleWhere(
+        (item) => item.id == 'stickman-fight',
+      );
+      final frames = template.createFrames();
+      final strokes = frames
+          .expand((frame) => frame.layers)
+          .expand((layer) => layer.strokes)
+          .toList(growable: false);
+
+      expect(frames, hasLength(16));
+      expect(frames.every((frame) => frame.layers.length >= 3), isTrue);
+      expect(frames.every((frame) =>
+          frame.layers.any((layer) => layer.strokes.isNotEmpty)), isTrue);
+      expect(strokes.map((stroke) => stroke.brushStyle), contains('luz energética'));
+      expect(strokes.map((stroke) => stroke.brushStyle), contains('rastro de movimento'));
+    });
+  });
+
 }
