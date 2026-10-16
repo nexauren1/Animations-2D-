@@ -80,7 +80,7 @@ class MainActivity : FlutterActivity() {
     private fun saveExportToDownloads(sourcePath: String, requestedName: String, mimeType: String): String {
         val source = File(sourcePath)
         require(source.isFile && source.length() > 0L) { "O ficheiro exportado não existe ou está vazio." }
-        val fileName = requestedName.substringAfterLast('/').substringAfterLast('\\\\')
+        val fileName = requestedName.substringAfterLast('/').substringAfterLast('\\')
             .replace(Regex("[^A-Za-z0-9._-]"), "_")
             .take(120)
         require(fileName.isNotBlank()) { "Nome de ficheiro inválido." }
