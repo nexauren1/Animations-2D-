@@ -240,7 +240,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Os clips de áudio são guardados neste dispositivo e não estão incluídos no backup .animpro.',
+                  'Os clips ficam guardados neste dispositivo e também são incluídos no backup .animpro, para poderes copiá-los para o Google Drive ou Dropbox.',
                   style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.35),
                 ),
                 const SizedBox(height: 16),
