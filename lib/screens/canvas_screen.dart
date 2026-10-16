@@ -30,6 +30,11 @@ class CanvasScreen extends StatefulWidget {
 }
 
 class _CanvasScreenState extends State<CanvasScreen> {
+  static const _proBrushStyles = <String>{
+    'aerógrafo', 'pincel suave', 'pastel', 'pincel seco',
+    'pixel', 'brilho neon', 'rastro de movimento', 'luz energética',
+  };
+
   static const _palette = <Color>[
     Color(0xFF000000), Color(0xFF333333), Color(0xFF707070),
     Color(0xFFAAAAAA), Colors.white, Color(0xFF7A202A),
@@ -635,9 +640,21 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       final value = style.toLowerCase();
                       final selected = value == _brushStyle;
                       return ChoiceChip(
-                        label: Text(style),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(style),
+                            if (_proBrushStyles.contains(value)) ...[
+                              const SizedBox(width: 4),
+                              const Icon(Icons.workspace_premium_rounded, size: 12, color: Color(0xFFFFD166)),
+                            ],
+                          ],
+                        ),
                         selected: selected,
-                        onSelected: (_) {
+                        onSelected: (_) async {
+                          if (_proBrushStyles.contains(value) &&
+                              !await ProAccessService.requirePro(context, feature: 'Pincéis Pro')) return;
+                          if (!mounted) return;
                           setState(() => _brushStyle = value);
                           setSheetState(() {});
                         },
