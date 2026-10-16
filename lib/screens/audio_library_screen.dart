@@ -233,6 +233,16 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
                   'Pré-visualiza primeiro; depois adiciona o som à timeline. Os clips são guardados localmente com este projeto. Durante a pré-visualização do editor, cada som começa no frame indicado.',
                   style: TextStyle(color: Colors.white70, height: 1.45),
                 ),
+                const SizedBox(height: 8),
+                const Text(
+                  'O áudio é reproduzido na pré-visualização do projeto, mas ainda não é misturado no MP4 exportado.',
+                  style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.35),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Os clips de áudio são guardados neste dispositivo e não estão incluídos no backup .animpro.',
+                  style: TextStyle(color: Colors.white54, fontSize: 11, height: 1.35),
+                ),
                 const SizedBox(height: 16),
                 Row(children: [
                   const Expanded(child: Text('Colocar no frame', style: TextStyle(fontWeight: FontWeight.w800))),
