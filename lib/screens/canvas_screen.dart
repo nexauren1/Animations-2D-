@@ -58,7 +58,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
   double _brushSize = 3;
   String _brushStyle = 'lápis';
   double _opacity = 1;
+  double _stabilization = .35;
+  bool _mirrorDrawing = false;
   bool _showGrid = false;
+  bool _showRulers = false;
+  double _gridSpacing = 24;
   bool _onionSkin = true;
   double _onionOpacity = .30;
   Future<void> _saveQueue = Future<void>.value();
@@ -76,6 +80,65 @@ class _CanvasScreenState extends State<CanvasScreen> {
       _onionSkin && _currentFrameIndex + 1 < _frames.length
           ? _frames[_currentFrameIndex + 1]
           : null;
+
+  Future<void> _openGridSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF202231),
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Grelha e guias', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                const Text('Ajusta a distância das linhas para desenhar com mais precisão.',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 14),
+                Row(children: [
+                  const Expanded(child: Text('Espaçamento')),
+                  Text('${_gridSpacing.round()} px', style: const TextStyle(fontWeight: FontWeight.w800)),
+                ]),
+                Slider(
+                  value: _gridSpacing.clamp(12, 60).toDouble(),
+                  min: 12,
+                  max: 60,
+                  divisions: 12,
+                  label: '${_gridSpacing.round()} px',
+                  onChanged: (value) {
+                    setState(() => _gridSpacing = value);
+                    setSheetState(() {});
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Mostrar grelha'),
+                  value: _showGrid,
+                  onChanged: (value) {
+                    setState(() => _showGrid = value);
+                    setSheetState(() {});
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Mostrar réguas horizontal e vertical'),
+                  value: _showRulers,
+                  onChanged: (value) {
+                    setState(() => _showRulers = value);
+                    setSheetState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _openOnionSettings() async {
     await showModalBottomSheet<void>(
@@ -214,15 +277,49 @@ class _CanvasScreenState extends State<CanvasScreen> {
       return;
     }
     _rememberUndo();
-    _activeLayer.strokes.add(StrokeModel(
-      points: List<Offset>.from(points),
+    final isFreehand = _tool == _DrawingTool.pen || _tool == _DrawingTool.eraser;
+    final drawingPoints = isFreehand
+        ? _stabilizeStroke(points, _stabilization)
+        : List<Offset>.from(points);
+    final stroke = StrokeModel(
+      points: drawingPoints,
       color: _activeColor,
       width: (_tool == _DrawingTool.eraser ? math.max(_brushSize, 8) : _brushSize).toDouble(),
       kind: _strokeKind,
       brushStyle: _tool == _DrawingTool.eraser ? 'borracha' : _brushStyle,
-    ));
+    );
+    _activeLayer.strokes.add(stroke);
+    if (_mirrorDrawing) {
+      _activeLayer.strokes.add(StrokeModel(
+        points: drawingPoints
+            .map((point) => Offset(_canvasSize.width - point.dx, point.dy))
+            .toList(growable: false),
+        color: stroke.color,
+        width: stroke.width,
+        kind: stroke.kind,
+        brushStyle: stroke.brushStyle,
+      ));
+    }
     setState(() => _draftPoints = null);
     await _persist();
+  }
+
+  List<Offset> _stabilizeStroke(List<Offset> points, double amount) {
+    if (points.length < 3 || amount <= 0) return List<Offset>.from(points);
+    final strength = amount.clamp(0.0, .9).toDouble();
+    final result = <Offset>[points.first];
+    for (var i = 1; i < points.length - 1; i++) {
+      final previous = points[i - 1];
+      final current = points[i];
+      final next = points[i + 1];
+      final average = Offset(
+        (previous.dx + next.dx) / 2,
+        (previous.dy + next.dy) / 2,
+      );
+      result.add(Offset.lerp(current, average, strength * .65)!);
+    }
+    result.add(points.last);
+    return result;
   }
 
   Future<void> _undo() async {
@@ -834,6 +931,22 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       setSheetState(() {});
                     },
                   ),
+                  Row(children: [
+                    const Expanded(child: Text('Estabilização do traço', style: TextStyle(fontWeight: FontWeight.w800))),
+                    Text('${(_stabilization * 100).round()}%',
+                      style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
+                  ]),
+                  Slider(
+                    value: _stabilization.clamp(0, .9).toDouble(),
+                    min: 0, max: .9, divisions: 9,
+                    activeColor: const Color(0xFF8B70FF),
+                    onChanged: (value) {
+                      setState(() => _stabilization = value);
+                      setSheetState(() {});
+                    },
+                  ),
+                  const Text('Valores mais altos suavizam pequenos tremores. As extremidades do traço são preservadas.',
+                    style: TextStyle(color: Colors.white54, fontSize: 11)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -1089,8 +1202,16 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
                 const Spacer(),
                 _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid,
-                  onTap: () => setState(() => _showGrid = !_showGrid)),
-                const SizedBox(width: 7),
+                  onTap: () => setState(() => _showGrid = !_showGrid),
+                  onLongPress: _openGridSettings),
+                const SizedBox(width: 5),
+                _tinyToggle(icon: Icons.straighten_rounded, label: 'Réguas', selected: _showRulers,
+                  onTap: () => setState(() => _showRulers = !_showRulers),
+                  onLongPress: _openGridSettings),
+                const SizedBox(width: 5),
+                _tinyToggle(icon: Icons.flip_rounded, label: 'Simetria', selected: _mirrorDrawing,
+                  onTap: () => setState(() => _mirrorDrawing = !_mirrorDrawing)),
+                const SizedBox(width: 5),
                 _tinyToggle(
                   icon: Icons.layers_outlined,
                   label: 'Onion',
@@ -1128,6 +1249,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
                           onionOpacity: _onionOpacity,
                           draft: draft,
                           showGrid: _showGrid,
+                          gridSpacing: _gridSpacing,
+                          showRulers: _showRulers,
+                          mirrorDraft: _mirrorDrawing,
                         ),
                         child: const SizedBox.expand(),
                       ),
@@ -1317,6 +1441,9 @@ class _AnimationCanvasPainter extends CustomPainter {
     required this.onionOpacity,
     required this.draft,
     required this.showGrid,
+    this.gridSpacing = 24,
+    this.showRulers = false,
+    this.mirrorDraft = false,
   });
   final FrameModel frame;
   final FrameModel? previousFrame;
@@ -1324,23 +1451,60 @@ class _AnimationCanvasPainter extends CustomPainter {
   final double onionOpacity;
   final StrokeModel? draft;
   final bool showGrid;
+  final double gridSpacing;
+  final bool showRulers;
+  final bool mirrorDraft;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
     if (showGrid) {
+      final step = gridSpacing.clamp(12, 60).toDouble();
       final gridPaint = Paint()..color = const Color(0xFFEDEFF4)..strokeWidth = .7;
-      for (double x = 0; x < size.width; x += 24) {
+      for (double x = 0; x < size.width; x += step) {
         canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
       }
-      for (double y = 0; y < size.height; y += 24) {
+      for (double y = 0; y < size.height; y += step) {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
       }
     }
+    if (showRulers) _paintRulers(canvas, size, gridSpacing);
     if (previousFrame != null) _paintFrame(canvas, previousFrame!, onionOpacity);
     if (nextFrame != null) _paintFrame(canvas, nextFrame!, onionOpacity * .55);
     _paintFrame(canvas, frame, 1);
-    if (draft != null) _paintStroke(canvas, draft!, 1);
+    if (draft != null) {
+      _paintStroke(canvas, draft!, 1);
+      if (mirrorDraft) {
+        final mirrored = StrokeModel(
+          points: draft!.points
+              .map((point) => Offset(size.width - point.dx, point.dy))
+              .toList(growable: false),
+          color: draft!.color,
+          width: draft!.width,
+          kind: draft!.kind,
+          brushStyle: draft!.brushStyle,
+        );
+        _paintStroke(canvas, mirrored, 1);
+      }
+    }
+  }
+
+  void _paintRulers(Canvas canvas, Size size, double spacing) {
+    const rulerThickness = 18.0;
+    final background = Paint()..color = const Color(0xFFE1E5EF);
+    canvas.drawRect(const Rect.fromLTWH(0, 0, rulerThickness, rulerThickness), background);
+    canvas.drawRect(Rect.fromLTWH(rulerThickness, 0, size.width - rulerThickness, rulerThickness), background);
+    canvas.drawRect(Rect.fromLTWH(0, rulerThickness, rulerThickness, size.height - rulerThickness), background);
+    final marks = Paint()..color = const Color(0xFF596174)..strokeWidth = .8;
+    final step = spacing.clamp(12, 60).toDouble();
+    for (double x = rulerThickness; x < size.width; x += step) {
+      final major = (((x - rulerThickness) / step).round() % 5) == 0;
+      canvas.drawLine(Offset(x, rulerThickness), Offset(x, major ? 5 : 11), marks);
+    }
+    for (double y = rulerThickness; y < size.height; y += step) {
+      final major = (((y - rulerThickness) / step).round() % 5) == 0;
+      canvas.drawLine(Offset(rulerThickness, y), Offset(major ? 5 : 11, y), marks);
+    }
   }
 
   void _paintFrame(Canvas canvas, FrameModel target, double opacity) {
