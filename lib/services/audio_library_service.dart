@@ -117,7 +117,7 @@ class AudioTimelineClip {
       catalogId: json['catalogId'] as String? ?? 'local',
       title: json['title'] as String? ?? 'Áudio',
       localPath: path,
-      startFrame: start.toInt().clamp(0, 20000),
+      startFrame: start.toInt().clamp(0, 20000).toInt(),
       volume: (volume is num ? volume.toDouble() : 1).clamp(0, 1).toDouble(),
       isPro: json['isPro'] == true,
       credit: json['credit'] as String? ?? '',
