@@ -1,6 +1,6 @@
 # AnimPro — editor de animação 2D
 
-**Versão de atualização:** `1.4.1+7` · interface em português e inglês.
+**Versão de atualização:** `1.5.0+8` · interface em português e inglês.
 
 Editor de animação 2D para Android, construído com Flutter. O foco é desenhar, organizar frames, experimentar poses e exportar animações sem obrigar o utilizador a criar uma conta.
 
@@ -13,11 +13,11 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 - **Efeitos gratuitos:** brilho neon, luz energética, rasto de movimento e linhas tracejadas; os efeitos também são renderizados na exportação de imagem e de vídeo.
 - **Interface bilingue:** português ou inglês, com a preferência guardada no dispositivo.
 - **Cores:** paleta com 36 cores de acesso rápido, código HEX personalizado e controlos HSV para matiz, saturação e luminosidade. A cor HEX permite definir qualquer cor RGB de 24 bits.
-- **Edição:** editor horizontal, pré-visualização de pincéis com amostras de traço, desfazer/refazer, grelha de referência, camadas, régua graduada e onion skin.
+- **Edição:** editor horizontal, pré-visualização de pincéis, estabilização configurável do traço, desenho simétrico, réguas horizontal/vertical com grelha ajustável, camadas adicionais e onion skin.
 - **Pré-visualização:** reprodução em ecrã completo com loop, controlo de FPS, avanço/retrocesso por frame e faixas de áudio sincronizadas por frame.
 - **Biblioteca de áudio online:** pré-escuta antes de transferir, download para o dispositivo, faixas Pro e colocação do som no frame escolhido. O catálogo é atualizado pelo site sem lançar novo APK.
 - **Timeline:** criar frames vazios, duplicar/apagar frames e ajustar a reprodução para 6, 12, 24, 30 ou 60 FPS. O FPS fica guardado no projeto e é usado como valor inicial na exportação.
-- **Rigging simples:** pontos de controlo para modificar poses e guardá-las como frames.
+- **Rigging orientado a camadas:** rig de pose para a camada selecionada; modo objeto para mover, escalar e rodar uma camada sem transformar as restantes. Para duas personagens/objetos independentes, coloca cada um numa camada própria.
 - **Áudio e lip sync:** as faixas de áudio do projeto ficam guardadas localmente e são reproduzidas na pré-visualização a partir do frame definido. O MP4 exportado continua silencioso: a mistura/muxagem de áudio no vídeo ainda não está implementada.
 - **Projetos prontos:** seis exemplos de base e um combate Stickman estilizado de 16 frames com socos, esquivas, bloqueios, pontapé aéreo e impactos cartunescos. Todos os frames são editáveis.
 - **Biblioteca de assets e downloads:** formas vetoriais-base, modelos de animação e pacotes de conteúdo descarregáveis para guardar no dispositivo e editar offline.
