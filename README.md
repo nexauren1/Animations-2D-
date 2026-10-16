@@ -7,19 +7,20 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 - **Projetos locais:** criar, abrir, renomear, duplicar e apagar projetos.
 - **Backups portáteis:** exportar um projeto como ficheiro `.animpro` e importá-lo noutro dispositivo.
 - **Desenho:** caneta, borracha, linha, retângulo, elipse e régua graduada.
-- **Pincéis:** lápis, tinta, marcador, aerógrafo, giz de cera, marca-texto, pastel e pixel.
+- **Pincéis:** lápis, caneta técnica, tinta, tinta chinesa, marcador, aerógrafo, pincel suave, giz de cera, marca-texto, pastel, pincel seco e pixel.
+- **Cores:** paleta com 36 cores de acesso rápido, código HEX personalizado e controlos HSV para matiz, saturação e luminosidade. A cor HEX permite definir qualquer cor RGB de 24 bits.
 - **Edição:** desfazer/refazer, grelha de referência, camadas e onion skin.
 - **Timeline:** criar frames vazios, duplicar/apagar frames e ajustar a reprodução para 6, 12, 24, 30 ou 60 FPS. O FPS fica guardado no projeto e é usado como valor inicial na exportação.
 - **Rigging simples:** pontos de controlo para modificar poses e guardá-las como frames.
-- **Áudio:** importar um áudio, ouvir e marcar manualmente poses de boca.
-- **Biblioteca de assets:** formas vetoriais-base para inserir no canvas.
+- **Áudio e lip sync:** importar uma faixa, reproduzi-la e marcar manualmente poses de boca na timeline. A aplicação ainda não tem edição de múltiplas faixas, mistura de áudio ou corte/fades estilo CapCut.
+- **Biblioteca de assets e downloads:** formas vetoriais-base, modelos de animação e pacotes de conteúdo descarregáveis para guardar no dispositivo e editar offline.
 - **Exportação:** PNG do frame, sequência de PNG em ZIP, GIF e MP4. O MP4 tenta H.264 em dispositivos compatíveis e utiliza um encoder alternativo quando necessário.
 - **Conta:** registo/entrada com e-mail e palavra-passe, redefinição de palavra-passe, verificação de e-mail e entrada Google, quando o projeto Firebase está configurado.
 - **Modo sem conta:** os projetos continuam disponíveis localmente no telefone.
 
 ### Limites conhecidos
 
-O mapa automático de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase ainda não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
+O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas como um editor de vídeo. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
 
 ## Instalar e escolher uma versão
 
@@ -32,9 +33,7 @@ O GitHub Actions gera apenas este APK para distribuição e verifica a assinatur
 
 ## Site oficial e páginas legais
 
-O site está preparado em `docs/`, com página inicial, Política de Privacidade, Termos e página de retorno PayPal. Endereço previsto: [AnimPro](https://nexauren1.github.io/Animations-2D-/).
-
-**Ativação inicial necessária:** abre o repositório no GitHub, entra em **Settings → Pages** e escolhe **Build and deployment → Source: GitHub Actions**. A automação não conseguiu criar o site porque o token de workflow não tem permissão administrativa para ativar Pages num repositório sem configuração. Depois desta ativação, o workflow **Deploy AnimPro website** publica os ficheiros de `docs/` em cada alteração relevante.
+O site oficial está publicado em [AnimPro](https://nexauren1.github.io/Animations-2D-/), com página inicial, Política de Privacidade, Termos e página de retorno PayPal. O workflow **Deploy AnimPro website** concluiu a publicação com sucesso em 16 de outubro de 2026. Os botões de download apontam diretamente para o APK e para o checksum, sem encaminhar o utilizador para a página principal do repositório.
 
 ## Configuração Firebase Authentication
 
