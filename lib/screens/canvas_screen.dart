@@ -988,7 +988,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   const SizedBox(height: 21),
                   Row(children: [
                     const Expanded(child: Text('Espessura', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${_brushSize.round()} px',
+                    Text('${_brushSize.round()} px',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -1002,7 +1002,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   ),
                   Row(children: [
                     const Expanded(child: Text('Opacidade', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${(_opacity * 100).round()}%',
+                    Text('${(_opacity * 100).round()}%',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -1248,7 +1248,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           children: [
             Text(widget.project.name, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            Text('Frame \${_currentFrameIndex + 1} / \${_frames.length}',
+            Text('Frame ${_currentFrameIndex + 1} / ${_frames.length}',
               style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55))),
           ],
         ),
@@ -1276,7 +1276,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       Container(height: 20, width: 20,
                         decoration: BoxDecoration(color: Color(_selectedColor), shape: BoxShape.circle, border: Border.all(color: Colors.white24))),
                       const SizedBox(width: 7),
-                      Text('\${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text('${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                       const SizedBox(width: 5),
                       const Icon(Icons.tune_rounded, size: 15),
                     ]),
