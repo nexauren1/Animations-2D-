@@ -4,7 +4,6 @@ compatibility_date = "2026-10-15"
 keep_vars = true
 
 [vars]
-PAYPAL_ENVIRONMENT = "sandbox"
 PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com"
 PAYPAL_MONTHLY_PLAN_ID = "P-5LD012631E418920JNLIRDEA"
 PAYPAL_RETURN_URL = "https://nexauren1.github.io/Animations-2D-/payment-return.html"
