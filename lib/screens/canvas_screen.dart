@@ -3,11 +3,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../services/app_locale.dart';
 
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import '../services/pro_access_service.dart';
+import '../services/audio_timeline_service.dart';
+import 'audio_library_screen.dart';
 import 'assets_library_screen.dart';
 import 'audio_lip_sync_screen.dart';
 import 'export_screen.dart';
@@ -57,6 +60,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
   final List<List<LayerModel>> _redoStack = <List<LayerModel>>[];
+  List<AudioTimelineClip> _audioClips = <AudioTimelineClip>[];
 
   FrameModel get _currentFrame => _frames[_currentFrameIndex];
   LayerModel get _activeLayer => _currentFrame.layers[_selectedLayerIndex];
@@ -132,6 +136,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
     ]);
     _frames = widget.project.frames.map((frame) => frame.copy()).toList();
     if (_frames.isEmpty) _frames = <FrameModel>[FrameModel.blank()];
+    AudioTimelineService.load(widget.project.uid).then((clips) {
+      if (mounted) setState(() => _audioClips = clips);
+    });
   }
 
   @override
@@ -341,6 +348,159 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
+  Future<int?> _chooseAudioStartFrame(int initialFrame) async {
+    var selectedFrame = initialFrame.clamp(0, _frames.length - 1).toInt();
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Posição do áudio'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Escolhe o frame onde o áudio começa.'),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: selectedFrame,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Frame inicial'),
+                items: List<DropdownMenuItem<int>>.generate(
+                  _frames.length,
+                  (index) => DropdownMenuItem<int>(value: index, child: Text('Frame ${index + 1}')),
+                ),
+                onChanged: (value) {
+                  if (value != null) setDialogState(() => selectedFrame = value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, selectedFrame), child: const Text('Aplicar')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAudioLibrary() async {
+    final selection = await Navigator.of(context).push<AudioLibrarySelection>(
+      MaterialPageRoute<AudioLibrarySelection>(builder: (_) => const AudioLibraryScreen()),
+    );
+    if (selection == null || !mounted) return;
+    final startFrame = await _chooseAudioStartFrame(_currentFrameIndex);
+    if (startFrame == null || !mounted) return;
+    final clip = AudioTimelineClip(
+      id: '${selection.id}-${DateTime.now().microsecondsSinceEpoch}',
+      name: selection.name,
+      path: selection.path,
+      startFrame: startFrame,
+      isPro: selection.isPro,
+    );
+    final updated = <AudioTimelineClip>[..._audioClips, clip]
+      ..sort((a, b) => a.startFrame.compareTo(b.startFrame));
+    await AudioTimelineService.save(widget.project.uid, updated);
+    if (!mounted) return;
+    setState(() => _audioClips = updated);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Áudio “${selection.name}” colocado no frame ${startFrame + 1}.')),
+    );
+  }
+
+  Future<void> _openAudioTimeline() async {
+    var addAudio = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF202231),
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 22),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .72),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Faixas de áudio', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  const Text('Cada faixa começa no frame escolhido. A pré-visualização reproduz os sons; a exportação MP4 ainda não mistura áudio.', style: TextStyle(color: Colors.white70, height: 1.35)),
+                  const SizedBox(height: 12),
+                  if (_audioClips.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 22),
+                      child: Center(child: Text('Ainda não adicionaste áudio a este projeto.')),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _audioClips.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final clip = _audioClips[index];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.graphic_eq_rounded, color: Color(0xFF8FE6EE)),
+                            title: Text(clip.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text('Começa no frame ${clip.startFrame + 1}${clip.isPro ? ' · Pro' : ''}'),
+                            trailing: Wrap(
+                              spacing: 0,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Mudar posição',
+                                  onPressed: () async {
+                                    final nextFrame = await _chooseAudioStartFrame(clip.startFrame);
+                                    if (nextFrame == null || !mounted) return;
+                                    final updated = _audioClips.map((entry) => entry.id == clip.id ? entry.copyWith(startFrame: nextFrame) : entry).toList()
+                                      ..sort((a, b) => a.startFrame.compareTo(b.startFrame));
+                                    await AudioTimelineService.save(widget.project.uid, updated);
+                                    if (mounted) setState(() => _audioClips = updated);
+                                    setSheetState(() {});
+                                  },
+                                  icon: const Icon(Icons.edit_rounded),
+                                ),
+                                IconButton(
+                                  tooltip: 'Remover faixa',
+                                  onPressed: () async {
+                                    final updated = _audioClips.where((entry) => entry.id != clip.id).toList();
+                                    await AudioTimelineService.save(widget.project.uid, updated);
+                                    if (mounted) setState(() => _audioClips = updated);
+                                    setSheetState(() {});
+                                  },
+                                  icon: const Icon(Icons.delete_outline_rounded),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        addAudio = true;
+                        Navigator.of(sheetContext).pop();
+                      },
+                      icon: const Icon(Icons.library_music_rounded),
+                      label: const Text('Abrir biblioteca de áudio'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (addAudio && mounted) await _openAudioLibrary();
+  }
+
   Future<void> _openPreview() async {
     await _persist();
     if (!mounted) return;
@@ -351,6 +511,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           fps: widget.project.fps,
           canvasSize: _canvasSize,
           projectName: widget.project.name,
+          audioClips: List<AudioTimelineClip>.from(_audioClips),
         ),
       ),
     );
@@ -1106,7 +1267,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
           _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects),
           _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
           _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
-          _bottomItem(icon: Icons.graphic_eq_rounded, label: 'Áudio', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
+          _bottomItem(icon: Icons.library_music_rounded, label: 'Áudios', color: const Color(0xFF50D3E4), onPressed: _openAudioTimeline),
+          _bottomItem(icon: Icons.record_voice_over_rounded, label: 'Lábios', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
           _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
           _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
         ]),
@@ -1362,12 +1524,14 @@ class _AnimationPreviewScreen extends StatefulWidget {
     required this.fps,
     required this.canvasSize,
     required this.projectName,
+    required this.audioClips,
   });
 
   final List<FrameModel> frames;
   final int fps;
   final Size canvasSize;
   final String projectName;
+  final List<AudioTimelineClip> audioClips;
 
   @override
   State<_AnimationPreviewScreen> createState() => _AnimationPreviewScreenState();
@@ -1379,21 +1543,43 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
   bool _loop = true;
   bool _showControls = true;
   Timer? _timer;
+  final Map<String, AudioPlayer> _audioPlayers = <String, AudioPlayer>{};
 
   @override
   void dispose() {
     _timer?.cancel();
+    for (final player in _audioPlayers.values) {
+      player.dispose();
+    }
     super.dispose();
+  }
+
+  Future<void> _playAudioAtFrame(int frameIndex) async {
+    for (final clip in widget.audioClips.where((entry) => entry.startFrame == frameIndex)) {
+      try {
+        final file = File(clip.path);
+        if (!await file.exists()) continue;
+        final player = _audioPlayers.putIfAbsent(clip.id, AudioPlayer.new);
+        await player.stop();
+        await player.play(DeviceFileSource(clip.path));
+      } catch (_) {
+        // A missing audio file should not interrupt animation playback.
+      }
+    }
   }
 
   void _togglePlayback() {
     if (_playing) {
       _timer?.cancel();
+      for (final player in _audioPlayers.values) {
+        player.pause();
+      }
       setState(() => _playing = false);
       return;
     }
     if (widget.frames.isEmpty) return;
     setState(() => _playing = true);
+    _playAudioAtFrame(_index);
     _timer?.cancel();
     _timer = Timer.periodic(
       Duration(milliseconds: (1000 / widget.fps.clamp(1, 60)).round()),
@@ -1405,6 +1591,7 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
           return;
         }
         setState(() => _index = (_index + 1) % widget.frames.length);
+        _playAudioAtFrame(_index);
       },
     );
   }
