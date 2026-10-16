@@ -70,6 +70,42 @@ void main() {
       expect(frame.layers.first.visible, isTrue);
     });
 
+    test('custom layers and object drawing metadata survive a JSON round-trip', () {
+      final frame = FrameModel(
+        uid: 'scene-with-objects',
+        layers: <LayerModel>[
+          LayerModel(
+            name: 'Personagem A',
+            strokes: <StrokeModel>[
+              StrokeModel(
+                points: <Offset>[const Offset(1, 2), const Offset(5, 8)],
+                color: 0xFF123456,
+                width: 5,
+                kind: 'ellipse',
+                brushStyle: 'pincel seco',
+              ),
+            ],
+          ),
+          LayerModel(name: 'Personagem B'),
+          LayerModel(name: 'Casa / objeto'),
+          LayerModel(name: 'Fundo'),
+        ],
+      );
+
+      final restored = FrameModel.fromJson(
+        Map<String, dynamic>.from(jsonDecode(jsonEncode(frame.toJson())) as Map),
+      );
+
+      expect(restored.layers, hasLength(4));
+      expect(restored.layers.map((layer) => layer.name),
+          <String>['Personagem A', 'Personagem B', 'Casa / objeto', 'Fundo']);
+      expect(restored.layers.first.strokes.single.kind, 'ellipse');
+      expect(restored.layers.first.strokes.single.brushStyle, 'pincel seco');
+
+      restored.layers[1].name = 'Personagem B redesenhada';
+      expect(frame.layers[1].name, 'Personagem B');
+    });
+
     test('malformed stored frame data recovers to a usable blank frame', () {
       final project = ProjectModel.create('Recuperação');
       project.framesJson = '{invalid-json';
