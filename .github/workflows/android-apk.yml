@@ -58,6 +58,33 @@ jobs:
       - name: Configure optional google-services.json
         run: python3 .github/scripts/configure_firebase_android.py
 
+      - name: Resolve Google Web OAuth client ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GOOGLE_WEB_CLIENT_ID:-}" && -s android/app/google-services.json ]]; then
+            client_id="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("android/app/google-services.json").read_text(encoding="utf-8"))
+          for client in data.get("client", []):
+              info = client.get("client_info", {})
+              if info.get("android_client_info", {}).get("package_name") != "com.nexauren.animpro":
+                  continue
+              for oauth in client.get("oauth_client", []):
+                  if oauth.get("client_type") == 3 and oauth.get("client_id"):
+                      print(oauth["client_id"])
+                      raise SystemExit(0)
+          PY
+          )"
+            if [[ -n "$client_id" ]]; then
+              echo "GOOGLE_WEB_CLIENT_ID=$client_id" >> "$GITHUB_ENV"
+              echo "Resolved Google Web OAuth client ID from google-services.json."
+            else
+              echo "::warning::No Web OAuth client was found in google-services.json."
+            fi
+          fi
+
       - name: Validate Firebase release configuration
         shell: bash
         run: |
