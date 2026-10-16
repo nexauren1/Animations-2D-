@@ -102,6 +102,26 @@ class TemplateCatalog {
       tag: 'ANIMAÇÃO DE AÇÃO',
       frames: _stickmanFight,
     ),
+    AnimationTemplate(
+      id: 'two-characters',
+      title: 'Duas personagens a acenar',
+      description: 'Duas personagens em camadas independentes para praticar poses, separar objetos e experimentar o rigging de cada personagem.',
+      iconCodePoint: 0xe7ef,
+      tint: 0xFF55CAD4,
+      fps: 8,
+      tag: 'MULTI-PERSONAGEM',
+      frames: _twoCharacters,
+    ),
+    AnimationTemplate(
+      id: 'house-door',
+      title: 'Casa com porta a abrir',
+      description: 'Uma pequena cena em camadas: paisagem, estrutura da casa e porta móvel para praticar movimento de objetos.',
+      iconCodePoint: 0xe88a,
+      tint: 0xFF80C783,
+      fps: 8,
+      tag: 'OBJETOS E CENÁRIOS',
+      frames: _houseDoor,
+    ),
   ];
 
   static List<FrameModel> _bouncingBall() {
@@ -680,6 +700,222 @@ class TemplateCatalog {
       }
 
       return FrameModel(layers: layers);
+    });
+  }
+
+  /// Two distinct characters are stored in two independent editable layers.
+  static List<FrameModel> _twoCharacters() {
+    const waveAngles = <double>[0, -10, -22, -10, 0, -10, -22, -10];
+    return List<FrameModel>.generate(waveAngles.length, (index) {
+      final wave = waveAngles[index] * math.pi / 180;
+      final personA = LayerModel(name: 'Personagem A');
+      final personB = LayerModel(name: 'Personagem B');
+      final scenery = LayerModel(name: 'Cenário');
+      final guides = LayerModel(name: 'Guias');
+      const ink = 0xFF29334B;
+      const teal = 0xFF25B8C7;
+      const coral = 0xFFFF986C;
+      const cream = 0xFFFFDFA6;
+
+      void person(LayerModel layer, double x, double headY, int accent,
+          {required bool waving, required double lean}) {
+        final head = Offset(x + lean * .2, headY);
+        final shoulder = Offset(x + lean, headY + 24);
+        final hip = Offset(x + lean * .7, headY + 78);
+        layer.strokes.add(_s([
+          Offset(head.dx - 15, head.dy - 16),
+          Offset(head.dx + 15, head.dy + 16),
+        ], color: accent, width: 3.5, kind: 'ellipse'));
+        layer.strokes.add(_s([
+          Offset(head.dx - 5, head.dy - 1),
+          Offset(head.dx - 2, head.dy + 2),
+        ], color: ink, width: 2.6));
+        layer.strokes.add(_s([
+          Offset(head.dx + 4, head.dy - 1),
+          Offset(head.dx + 7, head.dy + 2),
+        ], color: ink, width: 2.6));
+        layer.strokes.add(_s([
+          Offset(head.dx - 5, head.dy + 8),
+          Offset(head.dx, head.dy + 11),
+          Offset(head.dx + 6, head.dy + 8),
+        ], color: ink, width: 2.1));
+        layer.strokes.add(_s([Offset(head.dx, head.dy + 15), shoulder],
+            color: accent, width: 4));
+        layer.strokes.add(_s([shoulder, hip], color: ink, width: 4));
+        layer.strokes.add(_s([
+          shoulder,
+          Offset(x - 20, headY + 43),
+          Offset(x - 24, headY + 59),
+        ], color: accent, width: 3.3));
+        if (waving) {
+          final hand = Offset(
+            x + 29 + math.cos(wave) * 7,
+            headY + 25 + math.sin(wave) * 7,
+          );
+          layer.strokes.add(_s([
+            shoulder,
+            Offset(x + 15, headY + 10),
+            hand,
+          ], color: accent, width: 3.5));
+          layer.strokes.add(_s([
+            hand,
+            Offset(hand.dx + 1, hand.dy - 8),
+          ], color: accent, width: 2.4));
+          layer.strokes.add(_s([
+            hand,
+            Offset(hand.dx + 7, hand.dy - 5),
+          ], color: accent, width: 2.4));
+        } else {
+          layer.strokes.add(_s([
+            shoulder,
+            Offset(x + 20, headY + 42),
+            Offset(x + 23, headY + 55),
+          ], color: accent, width: 3.3));
+        }
+        layer.strokes.add(_s([
+          hip,
+          Offset(x - 14 + lean * .2, headY + 111),
+          Offset(x - 20 + lean * .2, headY + 126),
+        ], color: ink, width: 3.6));
+        layer.strokes.add(_s([
+          hip,
+          Offset(x + 13 + lean * .2, headY + 110),
+          Offset(x + 20 + lean * .2, headY + 125),
+        ], color: ink, width: 3.6));
+        layer.strokes.add(_s([
+          Offset(x - 3, headY + 38),
+          Offset(x + 4, headY + 46),
+        ], color: cream, width: 2.5));
+      }
+
+      person(personA, 93, 145 + math.sin(index * math.pi / 2) * 2, teal,
+          waving: true, lean: math.sin(index * math.pi / 2) * 2);
+      person(personB, 226, 151 + math.sin((index + 1) * math.pi / 2) * 2, coral,
+          waving: false, lean: math.cos(index * math.pi / 2) * 1.5);
+
+      scenery.strokes.add(_s([
+        const Offset(20, 353),
+        const Offset(300, 353),
+      ], color: 0xFF7C9A8C, width: 2));
+      scenery.strokes.add(_s([
+        const Offset(42, 353),
+        const Offset(72, 329),
+        const Offset(96, 353),
+      ], color: 0xFF83C78D, width: 3));
+      scenery.strokes.add(_s([
+        const Offset(240, 353),
+        const Offset(263, 331),
+        const Offset(285, 353),
+      ], color: 0xFF83C78D, width: 3));
+      if (index % 2 == 0) {
+        guides.strokes.add(_s([
+          const Offset(124, 110),
+          const Offset(132, 98),
+          const Offset(143, 106),
+        ], color: 0xFFFFD166, width: 2.6));
+      }
+      return FrameModel(layers: <LayerModel>[personA, personB, scenery, guides]);
+    });
+  }
+
+  /// House geometry remains stationary while the door has its own transformable layer.
+  static List<FrameModel> _houseDoor() {
+    const doorWidths = <double>[29, 27, 23, 18, 13, 18, 23, 29];
+    const doorDepths = <double>[0, 7, 14, 20, 25, 20, 14, 7];
+    return List<FrameModel>.generate(doorWidths.length, (index) {
+      final door = LayerModel(name: 'Porta');
+      final house = LayerModel(name: 'Casa');
+      final scenery = LayerModel(name: 'Paisagem');
+      const ink = 0xFF344052;
+      const wall = 0xFFFFE6AC;
+      const roof = 0xFFD96F5D;
+      const glass = 0xFF67C7D4;
+
+      house.strokes.add(_s([
+        const Offset(83, 205),
+        const Offset(237, 205),
+      ], color: roof, width: 5));
+      house.strokes.add(_s([
+        const Offset(66, 207),
+        const Offset(160, 125),
+        const Offset(254, 207),
+        const Offset(66, 207),
+      ], color: roof, width: 5));
+      house.strokes.add(_s([
+        const Offset(83, 205),
+        const Offset(237, 205),
+        const Offset(237, 333),
+        const Offset(83, 333),
+        const Offset(83, 205),
+      ], color: ink, width: 3.5));
+      house.strokes.add(_s([
+        const Offset(98, 225),
+        const Offset(138, 265),
+      ], color: wall, width: 3, kind: 'rectangle'));
+      house.strokes.add(_s([
+        const Offset(184, 225),
+        const Offset(224, 265),
+      ], color: glass, width: 3, kind: 'rectangle'));
+      house.strokes.add(_s([
+        const Offset(115, 245),
+        const Offset(125, 255),
+      ], color: ink, width: 2.4, kind: 'line'));
+      house.strokes.add(_s([
+        const Offset(204, 245),
+        const Offset(214, 255),
+      ], color: ink, width: 2.4, kind: 'line'));
+      house.strokes.add(_s([
+        const Offset(147, 285),
+        const Offset(176, 333),
+      ], color: ink, width: 3, kind: 'rectangle'));
+      house.strokes.add(_s([
+        const Offset(160, 302),
+        const Offset(160, 308),
+      ], color: 0xFFFFD166, width: 3, kind: 'line'));
+
+      final doorWidth = doorWidths[index];
+      final depth = doorDepths[index];
+      door.strokes.add(_s([
+        Offset(147, 286),
+        Offset(147 + doorWidth, 286),
+        Offset(147 + doorWidth - depth, 333),
+        Offset(147, 333),
+        const Offset(147, 286),
+      ], color: roof, width: 3));
+      door.strokes.add(_s([
+        Offset(151, 295),
+        Offset(151 + math.max(doorWidth - 8, 3), 295),
+        Offset(151 + math.max(doorWidth - 8, 3) - depth * .65, 324),
+        Offset(151, 324),
+        const Offset(151, 295),
+      ], color: wall, width: 2));
+      door.strokes.add(_s([
+        Offset(147 + math.max(doorWidth - depth - 5, 3), 311),
+        Offset(147 + math.max(doorWidth - depth - 2, 3), 311),
+      ], color: ink, width: 2.2));
+
+      scenery.strokes.add(_s([
+        const Offset(18, 354),
+        const Offset(302, 354),
+      ], color: 0xFF7ABF84, width: 3));
+      scenery.strokes.add(_s([
+        const Offset(34, 83),
+        const Offset(62, 111),
+      ], color: 0xFFFFD166, width: 4, kind: 'ellipse'));
+      scenery.strokes.add(_s([
+        const Offset(35, 84),
+        const Offset(61, 110),
+      ], color: 0xFFFFD166, width: 3, kind: 'line'));
+      scenery.strokes.add(_s([
+        const Offset(255, 90),
+        const Offset(292, 110),
+      ], color: 0xFFB7D9F5, width: 2.5, kind: 'ellipse'));
+      scenery.strokes.add(_s([
+        const Offset(265, 82),
+        const Offset(301, 106),
+      ], color: 0xFFB7D9F5, width: 2.5, kind: 'ellipse'));
+
+      return FrameModel(layers: <LayerModel>[door, house, scenery]);
     });
   }
 
