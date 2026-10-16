@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/services.dart';
 import '../services/app_locale.dart';
 
 import '../models/project_model.dart';
@@ -123,8 +124,25 @@ class _CanvasScreenState extends State<CanvasScreen> {
   @override
   void initState() {
     super.initState();
+    // A landscape canvas gives the drawing surface priority on phones and tablets.
+    SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _frames = widget.project.frames.map((frame) => frame.copy()).toList();
     if (_frames.isEmpty) _frames = <FrameModel>[FrameModel.blank()];
+  }
+
+  @override
+  void dispose() {
+    // Restore the normal app orientation when the user leaves the editor.
+    SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    super.dispose();
   }
 
   List<LayerModel> _copyLayers(List<LayerModel> layers) =>
@@ -317,6 +335,21 @@ class _CanvasScreenState extends State<CanvasScreen> {
               );
             }
           },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPreview() async {
+    await _persist();
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => _AnimationPreviewScreen(
+          frames: _frames.map((frame) => frame.copy()).toList(),
+          fps: widget.project.fps,
+          canvasSize: _canvasSize,
+          projectName: widget.project.name,
         ),
       ),
     );
@@ -627,14 +660,17 @@ class _CanvasScreenState extends State<CanvasScreen> {
                     decoration: BoxDecoration(color: const Color(0xFF171A28), borderRadius: BorderRadius.circular(15)),
                     child: Row(children: [
                       Container(
-                        width: 60, height: 45,
+                        width: 120, height: 52,
                         decoration: BoxDecoration(color: const Color(0xFFFAFAFF), borderRadius: BorderRadius.circular(10)),
-                        child: Center(
-                          child: Container(
-                            height: _brushSize.clamp(1, 40).toDouble(),
-                            width: _brushSize.clamp(1, 40).toDouble(),
-                            decoration: BoxDecoration(color: Color(_selectedColor).withOpacity(_opacity), shape: BoxShape.circle),
+                        clipBehavior: Clip.antiAlias,
+                        child: CustomPaint(
+                          painter: _BrushPreviewPainter(
+                            color: Color(_selectedColor),
+                            width: _brushSize,
+                            opacity: _opacity,
+                            style: _brushStyle,
                           ),
+                          child: const SizedBox.expand(),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -842,6 +878,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           ],
         ),
         actions: [
+          IconButton(tooltip: 'Reproduzir animação', onPressed: _openPreview, icon: const Icon(Icons.play_circle_fill_rounded)),
           IconButton(tooltip: 'Exportar', onPressed: _openExport, icon: const Icon(Icons.ios_share_rounded)),
           IconButton(tooltip: 'Guardar projeto', onPressed: _saveAndShowMessage, icon: const Icon(Icons.save_outlined)),
           const SizedBox(width: 3),
@@ -1313,4 +1350,224 @@ class _AnimationCanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AnimationCanvasPainter oldDelegate) => true;
+}
+
+
+/// Full-screen playback preview. It reuses the editor's stroke renderer so the
+/// user can inspect the animation without opening the timeline sheet.
+class _AnimationPreviewScreen extends StatefulWidget {
+  const _AnimationPreviewScreen({
+    required this.frames,
+    required this.fps,
+    required this.canvasSize,
+    required this.projectName,
+  });
+
+  final List<FrameModel> frames;
+  final int fps;
+  final Size canvasSize;
+  final String projectName;
+
+  @override
+  State<_AnimationPreviewScreen> createState() => _AnimationPreviewScreenState();
+}
+
+class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
+  int _index = 0;
+  bool _playing = false;
+  bool _loop = true;
+  bool _showControls = true;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _togglePlayback() {
+    if (_playing) {
+      _timer?.cancel();
+      setState(() => _playing = false);
+      return;
+    }
+    if (widget.frames.isEmpty) return;
+    setState(() => _playing = true);
+    _timer?.cancel();
+    _timer = Timer.periodic(
+      Duration(milliseconds: (1000 / widget.fps.clamp(1, 60)).round()),
+      (_) {
+        if (!mounted) return;
+        if (_index + 1 >= widget.frames.length && !_loop) {
+          _timer?.cancel();
+          setState(() => _playing = false);
+          return;
+        }
+        setState(() => _index = (_index + 1) % widget.frames.length);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final safeIndex = _index.clamp(0, widget.frames.length - 1).toInt();
+    final frame = widget.frames.isEmpty ? FrameModel.blank() : widget.frames[safeIndex];
+    return Scaffold(
+      backgroundColor: const Color(0xFF090B13),
+      appBar: AppBar(
+        title: Text(widget.projectName, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          IconButton(
+            tooltip: _loop ? 'Desativar repetição' : 'Repetir animação',
+            onPressed: () => setState(() => _loop = !_loop),
+            icon: Icon(_loop ? Icons.repeat_on_rounded : Icons.repeat_rounded),
+          ),
+          IconButton(
+            tooltip: _showControls ? 'Ocultar controlos' : 'Mostrar controlos',
+            onPressed: () => setState(() => _showControls = !_showControls),
+            icon: Icon(_showControls ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: SizedBox(
+                    width: math.max(1, widget.canvasSize.width),
+                    height: math.max(1, widget.canvasSize.height),
+                    child: CustomPaint(
+                      painter: _AnimationCanvasPainter(
+                        frame: frame,
+                        previousFrame: null,
+                        nextFrame: null,
+                        onionOpacity: 0,
+                        draft: null,
+                        showGrid: false,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (_showControls)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Frame anterior',
+                      onPressed: () => setState(() => _index = (_index - 1 + widget.frames.length) % widget.frames.length),
+                      icon: const Icon(Icons.skip_previous_rounded),
+                    ),
+                    IconButton.filled(
+                      tooltip: _playing ? 'Pausar' : 'Reproduzir',
+                      onPressed: _togglePlayback,
+                      icon: Icon(_playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'Frame seguinte',
+                      onPressed: () => setState(() => _index = (_index + 1) % widget.frames.length),
+                      icon: const Icon(Icons.skip_next_rounded),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Frame ${safeIndex + 1} / ${widget.frames.length}'),
+                          Slider(
+                            value: safeIndex.toDouble(),
+                            min: 0,
+                            max: math.max(1, widget.frames.length - 1).toDouble(),
+                            onChanged: (value) => setState(() => _index = value.round().clamp(0, widget.frames.length - 1)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text('${widget.fps} FPS', style: const TextStyle(color: Colors.white70)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Displays a recognizable sample stroke instead of a generic brush-size dot.
+class _BrushPreviewPainter extends CustomPainter {
+  const _BrushPreviewPainter({
+    required this.color,
+    required this.width,
+    required this.opacity,
+    required this.style,
+  });
+
+  final Color color;
+  final double width;
+  final double opacity;
+  final String style;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final base = Paint()
+      ..color = color.withOpacity(opacity)
+      ..strokeWidth = width.clamp(1, 40).toDouble()
+      ..strokeCap = style == 'giz de cera' || style == 'pincel seco'
+          ? StrokeCap.square
+          : StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    final path = Path()
+      ..moveTo(8, size.height * .68)
+      ..cubicTo(size.width * .24, size.height * .08, size.width * .62, size.height * .96, size.width - 8, size.height * .32);
+    if (style == 'marcador' || style == 'marca-texto') {
+      base
+        ..strokeWidth = width.clamp(3, 40).toDouble() * (style == 'marca-texto' ? 2.4 : 1.7)
+        ..color = color.withOpacity(opacity * (style == 'marca-texto' ? .35 : .55));
+    } else if (style == 'aerógrafo' || style == 'pincel suave' || style == 'pastel') {
+      base.maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(1, width * .22).toDouble());
+    } else if (style == 'linha tracejada') {
+      final metrics = path.computeMetrics();
+      for (final metric in metrics) {
+        for (var distance = 0.0; distance < metric.length; distance += 12) {
+          canvas.drawPath(metric.extractPath(distance, math.min(distance + 7, metric.length).toDouble()), base);
+        }
+      }
+      return;
+    } else if (style == 'brilho neon' || style == 'luz energética') {
+      final glow = Paint()
+        ..color = color.withOpacity(opacity * .45)
+        ..strokeWidth = width * 3
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(2, width).toDouble());
+      canvas.drawPath(path, glow);
+      base
+        ..strokeWidth = math.max(1, width * .55).toDouble()
+        ..color = color.withOpacity(opacity);
+    }
+    canvas.drawPath(path, base);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BrushPreviewPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.width != width ||
+      oldDelegate.opacity != opacity ||
+      oldDelegate.style != style;
 }
