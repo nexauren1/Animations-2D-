@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
@@ -9,6 +10,8 @@ import '../services/app_locale.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import '../services/pro_access_service.dart';
+import '../services/audio_library_service.dart';
+import 'audio_library_screen.dart';
 import 'assets_library_screen.dart';
 import 'audio_lip_sync_screen.dart';
 import 'export_screen.dart';
@@ -56,6 +59,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
   Future<void> _saveQueue = Future<void>.value();
   Timer? _playbackTimer;
   bool _isPlaying = false;
+  List<AudioTimelineClip> _audioClips = <AudioTimelineClip>[];
+  final Map<String, AudioPlayer> _audioPlayers = <String, AudioPlayer>{};
   Size _canvasSize = const Size(320, 420);
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
@@ -134,20 +139,45 @@ class _CanvasScreenState extends State<CanvasScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]));
+    unawaited(_reloadAudioClips());
   }
 
   @override
   void dispose() {
     _playbackTimer?.cancel();
+    for (final player in _audioPlayers.values) {
+      unawaited(player.dispose());
+    }
     unawaited(SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
       DeviceOrientation.portraitUp,
     ]));
     super.dispose();
   }
 
+  Future<void> _reloadAudioClips() async {
+    final clips = await AudioLibraryService.loadClips(widget.project.uid);
+    if (!mounted) return;
+    setState(() => _audioClips = clips);
+  }
+
+  void _playAudioForFrame(int frameIndex) {
+    for (final clip in _audioClips.where((item) => item.startFrame == frameIndex)) {
+      final player = _audioPlayers.putIfAbsent(clip.instanceId, AudioPlayer.new);
+      unawaited(
+        player.stop().then((_) => player.play(
+              DeviceFileSource(clip.localPath),
+              volume: clip.volume,
+            )).catchError((Object _) {}),
+      );
+    }
+  }
+
   void _stopPlayback() {
     _playbackTimer?.cancel();
     _playbackTimer = null;
+    for (final player in _audioPlayers.values) {
+      unawaited(player.stop());
+    }
     if (_isPlaying && mounted) setState(() => _isPlaying = false);
   }
 
@@ -163,17 +193,20 @@ class _CanvasScreenState extends State<CanvasScreen> {
       return;
     }
     setState(() => _isPlaying = true);
+    _playAudioForFrame(_currentFrameIndex);
     final fps = widget.project.fps.clamp(1, 60);
     _playbackTimer = Timer.periodic(
       Duration(microseconds: (Duration.microsecondsPerSecond / fps).round()),
       (_) {
         if (!mounted || !_isPlaying) return;
+        final nextFrame = _currentFrameIndex >= _frames.length - 1
+            ? 0
+            : _currentFrameIndex + 1;
         setState(() {
-          _currentFrameIndex = _currentFrameIndex >= _frames.length - 1
-              ? 0
-              : _currentFrameIndex + 1;
+          _currentFrameIndex = nextFrame;
           _draftPoints = null;
         });
+        _playAudioForFrame(nextFrame);
       },
     );
   }
@@ -347,6 +380,47 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
     if (assetId == null || !mounted) return;
     await _insertAsset(assetId);
+  }
+
+  Future<void> _openAudioLibrary() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AudioLibraryScreen(
+          projectUid: widget.project.uid,
+          initialFrame: _currentFrameIndex,
+          frameCount: _frames.length,
+          requirePro: (feature) => ProAccessService.requirePro(context, feature: feature),
+        ),
+      ),
+    );
+    await _reloadAudioClips();
+  }
+
+  Future<void> _openAudioTools() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF202332),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.library_music_rounded, color: Color(0xFF70D7E6)),
+            title: const Text('Biblioteca de áudio'),
+            subtitle: const Text('Importar, ouvir preview e posicionar sons na timeline'),
+            onTap: () => Navigator.of(sheetContext).pop('library'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.record_voice_over_rounded),
+            title: const Text('Sincronização labial experimental'),
+            subtitle: const Text('Marcação manual de poses da boca; não é IA automática'),
+            onTap: () => Navigator.of(sheetContext).pop('lipsync'),
+          ),
+        ]),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'library') await _openAudioLibrary();
+    if (action == 'lipsync') await _openAudioLipSync();
   }
 
   Future<void> _openAudioLipSync() async {
@@ -1151,7 +1225,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
             _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects),
             _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
             _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
-            _bottomItem(icon: Icons.graphic_eq_rounded, label: 'Áudio', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
+            _bottomItem(icon: Icons.graphic_eq_rounded, label: 'Áudio', color: const Color(0xFF50D3E4), onPressed: _openAudioTools),
             _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
             _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
           ]),
