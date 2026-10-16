@@ -460,7 +460,7 @@ class AppLocalizedText extends material.StatelessWidget {
 typedef Text = AppLocalizedText;
 ).firstMatch(source);
     if (audioPlaced != null) {
-      return 'Audio “\${audioPlaced.group(1)}” placed at frame \${audioPlaced.group(2)}.';
+      return 'Audio “${audioPlaced.group(1)}” placed at frame ${audioPlaced.group(2)}.';
     }
 
     final startFrame = RegExp(r'^Começa no frame (\d+)(?: · Pro)?
@@ -890,8 +890,8 @@ typedef Text = AppLocalizedText;
 ).firstMatch(source);
     if (startFrame != null) {
       return source.endsWith(' · Pro')
-          ? 'Starts at frame \${startFrame.group(1)} · Pro'
-          : 'Starts at frame \${startFrame.group(1)}';
+          ? 'Starts at frame ${startFrame.group(1)} · Pro'
+          : 'Starts at frame ${startFrame.group(1)}';
     }
 
     final exportFrameProgress = RegExp(r'^A renderizar frame (\d+) de (\d+)…
@@ -1320,7 +1320,7 @@ class AppLocalizedText extends material.StatelessWidget {
 typedef Text = AppLocalizedText;
 ).firstMatch(source);
     if (exportFrameProgress != null) {
-      return 'Rendering frame \${exportFrameProgress.group(1)} of \${exportFrameProgress.group(2)}…';
+      return 'Rendering frame ${exportFrameProgress.group(1)} of ${exportFrameProgress.group(2)}…';
     }
 
     final zipFrameProgress = RegExp(r'^A preparar frame (\d+) de (\d+)…
@@ -1749,7 +1749,7 @@ class AppLocalizedText extends material.StatelessWidget {
 typedef Text = AppLocalizedText;
 ).firstMatch(source);
     if (zipFrameProgress != null) {
-      return 'Preparing frame \${zipFrameProgress.group(1)} of \${zipFrameProgress.group(2)}…';
+      return 'Preparing frame ${zipFrameProgress.group(1)} of ${zipFrameProgress.group(2)}…';
     }
 
     final frameCount = RegExp(r'^(\d+) frames
