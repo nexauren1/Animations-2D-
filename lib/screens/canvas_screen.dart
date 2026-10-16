@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text;
@@ -1492,7 +1493,7 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
                             value: safeIndex.toDouble(),
                             min: 0,
                             max: math.max(1, widget.frames.length - 1).toDouble(),
-                            onChanged: (value) => setState(() => _index = value.round().clamp(0, widget.frames.length - 1)),
+                            onChanged: (value) => setState(() => _index = value.round().clamp(0, widget.frames.length - 1).toInt()),
                           ),
                         ],
                       ),
