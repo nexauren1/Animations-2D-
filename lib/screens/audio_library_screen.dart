@@ -85,10 +85,10 @@ class AudioLibraryScreen extends StatefulWidget {
 
 class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
   static final Uri _catalogUri = Uri.parse(
-    'https://nexauren1.github.io/Animations-2D/audio/catalog.json',
+    'https://nexauren1.github.io/Animations-2D-/audio/catalog.json',
   );
   static final Uri _audioBaseUri = Uri.parse(
-    'https://nexauren1.github.io/Animations-2D/audio/',
+    'https://nexauren1.github.io/Animations-2D-/audio/',
   );
   final AudioPlayer _player = AudioPlayer();
   List<_AudioLibraryItem> _items = const [];
