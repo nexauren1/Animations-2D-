@@ -81,11 +81,11 @@ class AudioTimelineClip {
   final String credit;
   final String license;
 
-  AudioTimelineClip copyWith({int? startFrame, double? volume}) => AudioTimelineClip(
+  AudioTimelineClip copyWith({String? localPath, int? startFrame, double? volume}) => AudioTimelineClip(
         instanceId: instanceId,
         catalogId: catalogId,
         title: title,
-        localPath: localPath,
+        localPath: localPath ?? this.localPath,
         startFrame: startFrame ?? this.startFrame,
         volume: volume ?? this.volume,
         isPro: isPro,
@@ -248,6 +248,24 @@ class AudioLibraryService {
     } finally {
       client.close(force: true);
     }
+  }
+
+  static Future<AudioTimelineClip> restoreBackupClip(
+    AudioTimelineClip clip,
+    List<int> bytes,
+  ) async {
+    if (bytes.isEmpty || bytes.length > 50 * 1024 * 1024) {
+      throw const FormatException('O clip de áudio do backup é inválido ou demasiado grande.');
+    }
+    final extension = clip.localPath.split('.').last.toLowerCase();
+    if (!const <String>{'mp3', 'wav', 'ogg', 'm4a', 'aac'}.contains(extension)) {
+      throw const FormatException('Formato de áudio não suportado no backup.');
+    }
+    final root = await _root();
+    final safeId = clip.instanceId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final file = File('${root.path}/backup_${safeId}_${DateTime.now().microsecondsSinceEpoch}.$extension');
+    await file.writeAsBytes(bytes, flush: true);
+    return clip.copyWith(localPath: file.path);
   }
 
   static Future<List<AudioTimelineClip>> loadClips(String projectUid) async {
