@@ -312,7 +312,7 @@ class _ExportScreenState extends State<ExportScreen> {
 
           try {
             await encodeMp4();
-          } catch (firstError) {
+          } catch (_) {
             // Some phones advertise H.264 but cannot encode the requested size.
             // Re-render the exact same frames smaller, then retry the native muxer.
             if (_resolution <= 360) rethrow;
