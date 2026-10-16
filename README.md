@@ -1,6 +1,6 @@
 # AnimPro — editor de animação 2D
 
-**Versão de atualização:** `1.4.0+6` · interface em português e inglês.
+**Versão de atualização:** `1.4.1+7` · interface em português e inglês.
 
 Editor de animação 2D para Android, construído com Flutter. O foco é desenhar, organizar frames, experimentar poses e exportar animações sem obrigar o utilizador a criar uma conta.
 
