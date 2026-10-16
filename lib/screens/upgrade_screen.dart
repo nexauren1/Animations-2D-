@@ -285,6 +285,16 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 detail: 'Ajusta poses com controlos de rigging e guarda-as como frames.',
               ),
               const _ProFeature(
+                icon: Icons.high_quality_rounded,
+                title: 'Exportação a 1080p',
+                detail: 'Exporta vídeo em alta resolução para trabalhos finais.',
+              ),
+              const _ProFeature(
+                icon: Icons.movie_creation_outlined,
+                title: 'GIF e sequência PNG',
+                detail: 'Desbloqueia formatos avançados para partilhar ou continuar a edição noutros programas.',
+              ),
+              const _ProFeature(
                 icon: Icons.speed_rounded,
                 title: 'Exportação até 60 FPS',
                 detail: 'Controla a fluidez da animação em exportações de vídeo.',
