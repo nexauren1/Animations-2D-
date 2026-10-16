@@ -34,6 +34,15 @@ class AppLocale {
   static String translate(BuildContext context, String source) {
     if (locale.value.languageCode != 'en') return source;
 
+    final editorFrame = RegExp(r'^Frame (\\d+) / (\\d+)$').firstMatch(source);
+    if (editorFrame != null) return 'Frame ${editorFrame.group(1)} / ${editorFrame.group(2)}';
+
+    final audioClip = RegExp(r'^“(.+?)” adicionado à timeline a partir do frame (\\d+)\\.$').firstMatch(source);
+    if (audioClip != null) return '“${audioClip.group(1)}” added to the timeline at frame ${audioClip.group(2)}.';
+
+    final audioImport = RegExp(r'^Áudio importado e colocado no frame (\\d+)\\.$').firstMatch(source);
+    if (audioImport != null) return 'Audio imported and placed at frame ${audioImport.group(1)}.';
+
     final frameCount = RegExp(r'^(\d+) frames$').firstMatch(source);
     if (frameCount != null) return '${frameCount.group(1)} frames';
 
@@ -337,6 +346,55 @@ class AppLocale {
     'Licença Pro não verificada': 'Pro licence not verified',
     'Inicia sessão para restaurar a tua licença Pro.': 'Sign in to restore your Pro licence.',
     'Não foi possível abrir o link. Tenta novamente.': 'Could not open the link. Try again.',
+    'Reproduzir animação': 'Play animation',
+    'Pausar animação': 'Pause animation',
+    'Cria pelo menos dois frames para pré-visualizar o movimento.': 'Create at least two frames to preview the motion.',
+    'Biblioteca de áudio': 'Audio library',
+    'Importar, ouvir preview e posicionar sons na timeline': 'Import, preview, and place sounds on the timeline',
+    'Sincronização labial experimental': 'Experimental lip sync',
+    'Marcação manual de poses da boca; não é IA automática': 'Manual mouth-pose markers; this is not automatic AI',
+    'Sons no tempo certo': 'Sounds at the right time',
+    'Pré-visualiza primeiro; depois adiciona o som à timeline. Os clips são guardados localmente com este projeto. Durante a pré-visualização do editor, cada som começa no frame indicado.': 'Preview a sound before adding it to the timeline. Clips are saved locally with this project. In editor preview, each sound starts at its assigned frame.',
+    'Colocar no frame': 'Place at frame',
+    'Importar áudio do dispositivo': 'Import audio from device',
+    'Sons disponíveis': 'Available sounds',
+    'Não foi possível atualizar a biblioteca online. Verifica a ligação e tenta novamente.': 'Could not refresh the online library. Check your connection and try again.',
+    'A biblioteca online ainda está vazia. Quando os ficheiros e as entradas forem adicionados a content/audio/catalog.json no repositório, aparecerão aqui automaticamente.': 'The online library is empty for now. Sounds added to the repository and listed in content/audio/catalog.json will appear here automatically.',
+    'Indica um frame válido, a partir de 1.': 'Enter a valid frame number starting at 1.',
+    'Não foi possível reproduzir a pré-visualização deste som.': 'Could not play this sound preview.',
+    'Não foi possível descarregar este som. Confirma a ligação à internet e tenta novamente.': 'Could not download this sound. Check your internet connection and try again.',
+    'Ouvir preview': 'Preview sound',
+    'Parar preview': 'Stop preview',
+    'Timeline do projeto': 'Project timeline',
+    'Ainda não há áudio nesta timeline. Importa um ficheiro ou adiciona um som da biblioteca.': 'There is no audio in this timeline yet. Import a file or add a library sound.',
+    'Remover da timeline': 'Remove from timeline',
+    'Crédito': 'Credit',
+    'Licença': 'Licence',
+    'Guardado automaticamente em Downloads/AnimPro.': 'Saved automatically to Downloads/AnimPro.',
+    'Ficheiro criado. Usa a partilha para o guardar no dispositivo.': 'File created. Use sharing to save it to your device.',
+    'A exportar a animação e a guardar o ficheiro no dispositivo…': 'Exporting the animation and saving the file to your device…',
+    'Exportação em 1080p': '1080p export',
+    'Exportação de sequência PNG': 'PNG sequence export',
+    'Pincéis avançados': 'Advanced brushes',
+    'Biblioteca de áudio Pro': 'Pro audio library',
+    'Exportação 1080p': '1080p export',
+    'Sequência PNG (ZIP)': 'PNG sequence (ZIP)',
+    'Pincéis e efeitos Pro': 'Pro brushes and effects',
+    'Pincéis e efeitos avançados': 'Advanced brushes and effects',
+    'Desenha com um único personagem por vez. O rigging atual é uma deformação experimental de traços; ainda não cria esqueletos independentes para duas pessoas nem para casas ou objetos rígidos.': 'Use one character at a time. Current rigging is experimental stroke deformation; it does not yet create independent skeletons for two people, houses, or rigid objects.',
+    'Rever ligação e tentar novamente': 'Check connection and try again',
+    'Não pagues de novo enquanto a licença existente não puder ser confirmada. Os recursos gratuitos continuam disponíveis.': 'Do not pay again while an existing licence cannot be verified. Free features remain available.',
+    'Entrada com Google cancelada.': 'Google sign-in was cancelled.',
+    'Falha de rede ao entrar com Google. Confirma que a internet está acessível e tenta novamente.': 'A network error occurred during Google sign-in. Check your connection and try again.',
+    'O Google não entregou o token de acesso. Confirma o Client ID Web OAuth no Firebase e recompila a aplicação.': 'Google did not return an ID token. Check the Firebase Web OAuth client ID and rebuild the app.',
+    'Este som está incluído no AnimPro Pro.': 'This sound is included with AnimPro Pro.',
+    'O áudio é reproduzido na pré-visualização do projeto, mas ainda não é misturado no MP4 exportado.': 'Audio plays in project preview but is not yet mixed into exported MP4 files.',
+    'Os clips de áudio são guardados neste dispositivo e não estão incluídos no backup .animpro.': 'Audio clips are stored on this device and are not yet included in the .animpro backup.',
+    'Drive e Dropbox': 'Drive and Dropbox',
+    'Exporta o backup .animpro e escolhe Google Drive ou Dropbox na partilha. Para restaurar, importa o ficheiro a partir do fornecedor de nuvem.': 'Export the .animpro backup and choose Google Drive or Dropbox in the share sheet. To restore, import the file from your cloud provider.',
+    'MP4 e GIF grátis até 720p; 1080p e sequência PNG são Pro.': 'MP4 and GIF up to 720p are free; 1080p and PNG sequences are Pro.',
+    'A exportação Pro de alta resolução requer uma licença verificada.': 'High-resolution Pro export requires a verified licence.',
+
   };
 }
 
