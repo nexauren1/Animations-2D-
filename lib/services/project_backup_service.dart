@@ -9,44 +9,49 @@ import 'package:share_plus/share_plus.dart';
 import '../models/project_model.dart';
 import 'audio_library_service.dart';
 
-/// Portable, offline backup/import format for AnimPro projects.
+/// Portable, offline .animpro backup containing editable frames and project audio.
 class ProjectBackupService {
   ProjectBackupService._();
 
+  static const int _maxBackupBytes = 30 * 1024 * 1024;
+  static const int _maxAudioBytes = 26 * 1024 * 1024;
+
   static Future<void> shareProject(ProjectModel project) async {
     final archive = Archive();
-    final audioClips = await AudioLibraryService.loadClips(project.uid);
+    final clips = await AudioLibraryService.loadClips(project.uid);
     final audioManifest = <Map<String, dynamic>>[];
     final audioEntries = <String, List<int>>{};
-    var audioIndex = 0;
-    var totalAudioBytes = 0;
+    var audioBytesTotal = 0;
 
-    for (final clip in audioClips) {
+    for (var index = 0; index < clips.length; index++) {
+      final clip = clips[index];
       final source = File(clip.localPath);
       if (!await source.exists()) {
         throw const FormatException(
           'Um dos áudios deste projeto não está disponível. Abre a biblioteca de áudio e remove ou importa novamente o clip em falta.',
         );
       }
+
       final extension = source.path.split('.').last.toLowerCase();
-      if (!const <String>{'mp3', 'wav', 'ogg', 'm4a', 'aac'}.contains(extension)) {
+      if (!_isSupportedAudioExtension(extension)) {
         throw const FormatException('O backup contém um formato de áudio não suportado.');
       }
+
       final audioBytes = await source.readAsBytes();
-      totalAudioBytes += audioBytes.length;
-      if (totalAudioBytes > 26 * 1024 * 1024) {
+      audioBytesTotal += audioBytes.length;
+      if (audioBytes.isEmpty || audioBytesTotal > _maxAudioBytes) {
         throw const FormatException(
-          'Os áudios deste projeto excedem 26 MB. Remove clips não utilizados ou cria um backup de projetos menores.',
+          'Os áudios deste projeto excedem o limite de 26 MB ou contêm um ficheiro vazio. Remove clips não utilizados ou cria um backup mais pequeno.',
         );
       }
-      final safeInstance = clip.instanceId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-      final archivePath = 'audio/clip_${audioIndex}_${safeInstance}.$extension';
+
+      final safeInstance = clip.instanceId.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+      final archivePath = 'audio/clip_${index}_${safeInstance}.$extension';
       audioEntries[archivePath] = audioBytes;
       audioManifest.add(<String, dynamic>{
         ...clip.toJson(),
         'localPath': archivePath,
       });
-      audioIndex++;
     }
 
     final payload = <String, dynamic>{
@@ -59,14 +64,15 @@ class ProjectBackupService {
       'frames': project.frames.map((frame) => frame.toJson()).toList(),
       'audioClips': audioManifest,
     };
-    final bytes = utf8.encode(jsonEncode(payload));
-    archive.addFile(ArchiveFile('project.json', bytes.length, bytes));
+    final projectBytes = utf8.encode(jsonEncode(payload));
+
+    archive.addFile(ArchiveFile('project.json', projectBytes.length, projectBytes));
     for (final entry in audioEntries.entries) {
       archive.addFile(ArchiveFile(entry.key, entry.value.length, entry.value));
     }
 
     final zipped = ZipEncoder().encode(archive);
-    if (zipped.isEmpty || zipped.length > 30 * 1024 * 1024) {
+    if (zipped.isEmpty || zipped.length > _maxBackupBytes) {
       throw const FormatException(
         'O backup excede o limite de 30 MB. Divide o projeto ou reduz o tamanho dos áudios.',
       );
@@ -74,12 +80,13 @@ class ProjectBackupService {
 
     final directory = await getTemporaryDirectory();
     final safeName = project.name
-        .replaceAll(RegExp(r'[^a-zA-Z0-9 _-]'), '')
+        .replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '')
         .trim()
         .replaceAll(RegExp(r'\s+'), '-');
     final fileName = safeName.isEmpty ? 'animpro-project' : safeName;
     final file = File('${directory.path}/${fileName}.animpro');
     await file.writeAsBytes(zipped, flush: true);
+
     await SharePlus.instance.share(
       ShareParams(
         files: <XFile>[XFile(file.path)],
@@ -89,30 +96,25 @@ class ProjectBackupService {
   }
 
   static Future<ImportedProject> pickAndReadProject() async {
-    final file = await FilePicker.pickFile(
+    final selected = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const <String>['animpro'],
     );
-    if (file == null) {
-      throw const BackupCancelledException();
-    }
-    final byteLength = file.lengthSync() ?? await file.length();
-    if (byteLength == null || byteLength > 30 * 1024 * 1024) {
+    if (selected == null) throw const BackupCancelledException();
+
+    final byteLength = selected.lengthSync() ?? await selected.length();
+    if (byteLength == null || byteLength > _maxBackupBytes) {
       throw const FormatException('O backup excede o limite de 30 MB ou não pode ser lido.');
     }
-    final bytes = await file.readAsBytes();
-    if (bytes.isEmpty) {
-      throw const FormatException('Não foi possível ler o ficheiro escolhido.');
-    }
+    final bytes = await selected.readAsBytes();
+    if (bytes.isEmpty) throw const FormatException('Não foi possível ler o ficheiro escolhido.');
 
     final archive = ZipDecoder().decodeBytes(bytes, verify: true);
-    ArchiveFile? projectFile;
+    final archiveFiles = <String, ArchiveFile>{};
     for (final entry in archive.files) {
-      if (entry.name == 'project.json' && entry.isFile) {
-        projectFile = entry;
-        break;
-      }
+      if (entry.isFile) archiveFiles[entry.name] = entry;
     }
+    final projectFile = archiveFiles['project.json'];
     if (projectFile == null) {
       throw const FormatException('O ficheiro não contém um projeto AnimPro válido.');
     }
@@ -125,13 +127,9 @@ class ProjectBackupService {
       throw const FormatException('Formato de backup não suportado.');
     }
 
-    final archiveFiles = <String, ArchiveFile>{
-      for (final entry in archive.files)
-        if (entry.isFile) entry.name: entry,
-    };
     final restoredAudioClips = <AudioTimelineClip>[];
     final audioAssets = <String, List<int>>{};
-    var totalRestoredAudioBytes = 0;
+    var restoredAudioBytes = 0;
     final rawAudio = decoded['audioClips'];
     if (rawAudio != null) {
       if (rawAudio is! List || rawAudio.length > 1000) {
@@ -143,22 +141,45 @@ class ProjectBackupService {
         }
         final clip = AudioTimelineClip.fromJson(Map<String, dynamic>.from(raw));
         final archivePath = clip.localPath;
-        if (!RegExp(r'^audio/[A-Za-z0-9_-]+\.(mp3|wav|ogg|m4a|aac)
+        if (!RegExp(
+          r'^audio/[A-Za-z0-9_-]+\.(mp3|wav|ogg|m4a|aac)$',
+          caseSensitive: false,
+        ).hasMatch(archivePath)) {
+          throw const FormatException('O caminho de áudio do backup não é válido.');
+        }
+
+        final entry = archiveFiles[archivePath];
+        if (entry == null) {
+          throw const FormatException('O backup referencia um áudio que não existe no arquivo.');
+        }
+        final fileBytes = entry.content as List<int>;
+        restoredAudioBytes += fileBytes.length;
+        if (fileBytes.isEmpty ||
+            fileBytes.length > 50 * 1024 * 1024 ||
+            restoredAudioBytes > _maxAudioBytes) {
+          throw const FormatException('Um dos áudios do backup é inválido ou o total excede 26 MB.');
+        }
+
+        restoredAudioClips.add(clip);
+        audioAssets[archivePath] = List<int>.from(fileBytes);
+      }
+    }
+
+    final rawFrames = decoded['frames'];
     if (rawFrames is! List || rawFrames.isEmpty || rawFrames.length > 20000) {
       throw const FormatException('O backup não tem uma lista de frames válida.');
     }
     final frames = rawFrames
         .map((raw) {
-          if (raw is! Map) {
-            throw const FormatException('Um dos frames é inválido.');
-          }
+          if (raw is! Map) throw const FormatException('Um dos frames é inválido.');
           return FrameModel.fromJson(Map<String, dynamic>.from(raw));
         })
         .toList(growable: false);
 
-    final name = (decoded['name'] as String? ?? 'Projeto importado').trim();
-    final fpsValue = decoded['fps'];
-    final fps = fpsValue is num ? fpsValue.toInt().clamp(1, 60).toInt() : 12;
+    final rawName = decoded['name'];
+    final name = (rawName is String ? rawName : 'Projeto importado').trim();
+    final rawFps = decoded['fps'];
+    final fps = rawFps is num ? rawFps.toInt().clamp(1, 60).toInt() : 12;
     return ImportedProject(
       name: name.isEmpty ? 'Projeto importado' : name,
       fps: fps,
@@ -167,6 +188,9 @@ class ProjectBackupService {
       audioAssets: audioAssets,
     );
   }
+
+  static bool _isSupportedAudioExtension(String extension) =>
+      const <String>{'mp3', 'wav', 'ogg', 'm4a', 'aac'}.contains(extension);
 }
 
 class ImportedProject {
@@ -181,64 +205,12 @@ class ImportedProject {
   final String name;
   final int fps;
   final List<FrameModel> frames;
+
+  /// Clips refer to their archive path until AudioLibraryService restores them.
   final List<AudioTimelineClip> audioClips;
+
+  /// Raw bytes for each clip, keyed by the archive path in [audioClips].
   final Map<String, List<int>> audioAssets;
-}
-
-class BackupCancelledException implements Exception {
-  const BackupCancelledException();
-}
-, caseSensitive: false).hasMatch(archivePath)) {
-          throw const FormatException('O caminho de áudio do backup não é válido.');
-        }
-        final entry = archiveFiles[archivePath];
-        if (entry == null || !entry.isFile) {
-          throw const FormatException('O backup referencia um áudio que não existe no arquivo.');
-        }
-        final audioBytes = entry.content as List<int>;
-        totalRestoredAudioBytes += audioBytes.length;
-        if (audioBytes.isEmpty || audioBytes.length > 50 * 1024 * 1024 || totalRestoredAudioBytes > 26 * 1024 * 1024) {
-          throw const FormatException('Um dos áudios do backup é inválido ou demasiado grande.');
-        }
-        restoredAudioClips.add(clip);
-        audioAssets[archivePath] = List<int>.from(audioBytes);
-      }
-    }
-
-    final rawFrames = decoded['frames'];
-    if (rawFrames is! List || rawFrames.isEmpty || rawFrames.length > 20000) {
-      throw const FormatException('O backup não tem uma lista de frames válida.');
-    }
-    final frames = rawFrames
-        .map((raw) {
-          if (raw is! Map) {
-            throw const FormatException('Um dos frames é inválido.');
-          }
-          return FrameModel.fromJson(Map<String, dynamic>.from(raw));
-        })
-        .toList(growable: false);
-
-    final name = (decoded['name'] as String? ?? 'Projeto importado').trim();
-    final fpsValue = decoded['fps'];
-    final fps = fpsValue is num ? fpsValue.toInt().clamp(1, 60).toInt() : 12;
-    return ImportedProject(
-      name: name.isEmpty ? 'Projeto importado' : name,
-      fps: fps,
-      frames: frames,
-    );
-  }
-}
-
-class ImportedProject {
-  const ImportedProject({
-    required this.name,
-    required this.fps,
-    required this.frames,
-  });
-
-  final String name;
-  final int fps;
-  final List<FrameModel> frames;
 }
 
 class BackupCancelledException implements Exception {
