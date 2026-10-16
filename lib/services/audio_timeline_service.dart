@@ -38,7 +38,7 @@ class AudioTimelineClip {
         id: (json['id'] ?? '').toString(),
         name: (json['name'] ?? 'Áudio').toString(),
         path: (json['path'] ?? '').toString(),
-        startFrame: (json['startFrame'] as num? ?? 0).toInt().clamp(0, 100000),
+        startFrame: (json['startFrame'] as num? ?? 0).toInt().clamp(0, 100000).toInt(),
         isPro: json['isPro'] == true,
       );
 }
