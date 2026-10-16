@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
+
+import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
@@ -51,6 +54,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
   bool _onionSkin = true;
   double _onionOpacity = .30;
   Future<void> _saveQueue = Future<void>.value();
+  Timer? _playbackTimer;
+  bool _isPlaying = false;
   Size _canvasSize = const Size(320, 420);
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
@@ -125,6 +130,52 @@ class _CanvasScreenState extends State<CanvasScreen> {
     super.initState();
     _frames = widget.project.frames.map((frame) => frame.copy()).toList();
     if (_frames.isEmpty) _frames = <FrameModel>[FrameModel.blank()];
+    unawaited(SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]));
+  }
+
+  @override
+  void dispose() {
+    _playbackTimer?.cancel();
+    unawaited(SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+    ]));
+    super.dispose();
+  }
+
+  void _stopPlayback() {
+    _playbackTimer?.cancel();
+    _playbackTimer = null;
+    if (_isPlaying && mounted) setState(() => _isPlaying = false);
+  }
+
+  void _togglePlayback() {
+    if (_isPlaying) {
+      _stopPlayback();
+      return;
+    }
+    if (_frames.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cria pelo menos dois frames para pré-visualizar o movimento.')),
+      );
+      return;
+    }
+    setState(() => _isPlaying = true);
+    final fps = widget.project.fps.clamp(1, 60);
+    _playbackTimer = Timer.periodic(
+      Duration(microseconds: (Duration.microsecondsPerSecond / fps).round()),
+      (_) {
+        if (!mounted || !_isPlaying) return;
+        setState(() {
+          _currentFrameIndex = _currentFrameIndex >= _frames.length - 1
+              ? 0
+              : _currentFrameIndex + 1;
+          _draftPoints = null;
+        });
+      },
+    );
   }
 
   List<LayerModel> _copyLayers(List<LayerModel> layers) =>
@@ -157,6 +208,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   void _startStroke(DragStartDetails details) {
+    _stopPlayback();
     setState(() => _draftPoints = <Offset>[details.localPosition]);
   }
 
@@ -842,15 +894,20 @@ class _CanvasScreenState extends State<CanvasScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: _isPlaying ? 'Pausar animação' : 'Reproduzir animação',
+            onPressed: _togglePlayback,
+            icon: Icon(_isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded),
+          ),
           IconButton(tooltip: 'Exportar', onPressed: _openExport, icon: const Icon(Icons.ios_share_rounded)),
           IconButton(tooltip: 'Guardar projeto', onPressed: _saveAndShowMessage, icon: const Icon(Icons.save_outlined)),
           const SizedBox(width: 3),
         ],
       ),
-      body: Column(
-        children: [
-          _buildLayerSelector(),
-          Padding(
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          final landscape = orientation == Orientation.landscape;
+          final controls =           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
             child: Row(
               children: [
@@ -883,8 +940,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ],
             ),
-          ),
-          Expanded(
+          ),;
+          final drawingSurface =           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 9),
               child: Container(
@@ -919,11 +976,37 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ),
             ),
-          ),
-          _buildToolBar(),
-        ],
+          ),;
+          if (landscape) {
+            return Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildLayerSelector(),
+                      controls,
+                      drawingSurface,
+                      _buildToolBar(compact: true),
+                    ],
+                  ),
+                ),
+                _buildBottomBar(vertical: true),
+              ],
+            );
+          }
+          return Column(
+            children: [
+              _buildLayerSelector(),
+              controls,
+              drawingSurface,
+              _buildToolBar(),
+            ],
+          );
+        },
       ),
-      bottomNavigationBar: _buildBottomBar(),
+      bottomNavigationBar: MediaQuery.orientationOf(context) == Orientation.landscape
+          ? null
+          : _buildBottomBar(),
     );
   }
 
@@ -995,7 +1078,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildToolBar() {
+  Widget _buildToolBar({bool compact = false}) {
     final tools = <({IconData icon, String label, _DrawingTool tool})>[
       (icon: Icons.edit_rounded, label: 'Caneta', tool: _DrawingTool.pen),
       (icon: Icons.auto_fix_normal_rounded, label: 'Borracha', tool: _DrawingTool.eraser),
@@ -1005,9 +1088,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
       (icon: Icons.straighten_rounded, label: 'Régua', tool: _DrawingTool.ruler),
     ];
     return Container(
-      height: 74,
-      margin: const EdgeInsets.fromLTRB(10, 0, 10, 7),
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      height: compact ? 54 : 74,
+      margin: EdgeInsets.fromLTRB(compact ? 6 : 10, 0, compact ? 6 : 10, compact ? 3 : 7),
+      padding: EdgeInsets.symmetric(vertical: compact ? 3 : 6),
       decoration: BoxDecoration(color: const Color(0xFF1B1E2C), borderRadius: BorderRadius.circular(15),
         border: Border.all(color: const Color(0xFF303447))),
       child: Row(children: [
@@ -1056,7 +1139,25 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar({bool vertical = false}) {
+    if (vertical) {
+      return SafeArea(
+        top: false,
+        child: Container(
+          width: 86,
+          color: const Color(0xFF11131F),
+          child: Column(children: [
+            _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings),
+            _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects),
+            _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
+            _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
+            _bottomItem(icon: Icons.graphic_eq_rounded, label: 'Áudio', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
+            _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
+            _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
+          ]),
+        ),
+      );
+    }
     return SafeArea(
       top: false,
       child: Container(
