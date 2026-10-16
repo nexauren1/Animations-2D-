@@ -2,6 +2,10 @@ package com.nexauren.animpro
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaCodecList
@@ -22,6 +26,25 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, exportChannel)
             .setMethodCallHandler { call, result ->
+                if (call.method == "saveToDownloads") {
+                    val sourcePath = call.argument<String>("sourcePath").orEmpty()
+                    Thread {
+                        try {
+                            val savedUri = saveToDownloads(sourcePath)
+                            Handler(Looper.getMainLooper()).post { result.success(savedUri) }
+                        } catch (error: Throwable) {
+                            Handler(Looper.getMainLooper()).post {
+                                result.error(
+                                    "SAVE_FAILED",
+                                    error.message ?: "Não foi possível guardar o ficheiro no dispositivo.",
+                                    null
+                                )
+                            }
+                        }
+                    }.start()
+                    return@setMethodCallHandler
+                }
+
                 if (call.method != "exportMp4") {
                     result.notImplemented()
                     return@setMethodCallHandler
@@ -50,6 +73,72 @@ class MainActivity : FlutterActivity() {
                     }
                 }.start()
             }
+    }
+
+    /// Copy a finished export into user-visible media/download storage.
+    /// Android 10+ uses MediaStore and does not require broad storage access.
+    private fun saveToDownloads(sourcePath: String): String {
+        val source = File(sourcePath)
+        require(source.isFile && source.length() > 0L) {
+            "O ficheiro exportado não existe ou está vazio."
+        }
+        val name = source.name
+        val mimeType = when (source.extension.lowercase()) {
+            "png" -> "image/png"
+            "jpg", "jpeg" -> "image/jpeg"
+            "gif" -> "image/gif"
+            "mp4" -> "video/mp4"
+            "zip" -> "application/zip"
+            else -> "application/octet-stream"
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val isImage = mimeType.startsWith("image/")
+            val isVideo = mimeType.startsWith("video/")
+            val relativePath = when {
+                isImage -> Environment.DIRECTORY_PICTURES + "/AnimPro"
+                isVideo -> Environment.DIRECTORY_MOVIES + "/AnimPro"
+                else -> Environment.DIRECTORY_DOWNLOADS + "/AnimPro"
+            }
+            val collection = when {
+                isImage -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                isVideo -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                else -> MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            }
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val uri = contentResolver.insert(collection, values)
+                ?: throw IllegalStateException("O Android não criou o destino para o ficheiro exportado.")
+            try {
+                val output = contentResolver.openOutputStream(uri, "w")
+                    ?: throw IllegalStateException("Não foi possível abrir o destino da exportação.")
+                output.use { stream ->
+                    source.inputStream().use { input -> input.copyTo(stream) }
+                }
+                val ready = ContentValues().apply {
+                    put(MediaStore.MediaColumns.IS_PENDING, 0)
+                }
+                contentResolver.update(uri, ready, null, null)
+                return uri.toString()
+            } catch (error: Throwable) {
+                contentResolver.delete(uri, null, null)
+                throw error
+            }
+        }
+
+        // Older Android versions keep the file inside app-specific external
+        // storage, which is writable without legacy broad-storage permissions.
+        val folder = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "AnimPro")
+        if (!folder.exists() && !folder.mkdirs()) {
+            throw IllegalStateException("Não foi possível criar a pasta de exportações.")
+        }
+        val target = File(folder, name)
+        source.copyTo(target, overwrite = true)
+        return target.absolutePath
     }
 }
 

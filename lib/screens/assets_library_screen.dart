@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
 
@@ -152,7 +154,10 @@ class _AssetsLibraryScreenState extends State<AssetsLibraryScreen> {
                                           color: asset.tint.withOpacity(.17),
                                           borderRadius: BorderRadius.circular(24),
                                         ),
-                                        child: Icon(asset.icon, color: asset.tint, size: 46),
+                                        child: CustomPaint(
+                                          painter: _AssetThumbnailPainter(asset.id, asset.tint),
+                                          child: const SizedBox.expand(),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -191,4 +196,170 @@ class _AssetsLibraryScreenState extends State<AssetsLibraryScreen> {
       ),
     );
   }
+}
+
+
+/// Hand-drawn miniature illustrations make each asset preview match its purpose.
+class _AssetThumbnailPainter extends CustomPainter {
+  const _AssetThumbnailPainter(this.id, this.tint);
+
+  final String id;
+  final Color tint;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 100, size.height / 100);
+    final dark = const Color(0xFF25283A);
+    final cream = const Color(0xFFFFE6C8);
+    final white = const Color(0xFFFFFFFF);
+    final ink = Paint()..color = dark;
+    final fill = Paint()..color = tint;
+    final soft = Paint()..color = tint.withOpacity(.2);
+    final outline = Paint()
+      ..color = dark
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    void circle(double x, double y, double radius, Paint paint) =>
+        canvas.drawCircle(Offset(x, y), radius, paint);
+    void line(List<Offset> points, Paint paint) {
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+      for (final point in points.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      canvas.drawPath(path, paint);
+    }
+
+    circle(50, 87, 25, soft);
+    switch (id) {
+      case 'fox':
+        final ears = Path()
+          ..moveTo(24, 39)..lineTo(29, 10)..lineTo(46, 29)
+          ..lineTo(54, 29)..lineTo(72, 10)..lineTo(77, 39)
+          ..close();
+        canvas.drawPath(ears, fill);
+        canvas.drawPath(ears, outline);
+        final face = RRect.fromRectAndRadius(
+          const Rect.fromLTWH(23, 24, 54, 53), const Radius.circular(23));
+        canvas.drawRRect(face, fill);
+        canvas.drawRRect(face, outline);
+        final muzzle = Path()
+          ..moveTo(30, 51)..quadraticBezierTo(50, 75, 70, 51)
+          ..quadraticBezierTo(50, 42, 30, 51)..close();
+        canvas.drawPath(muzzle, Paint()..color = cream);
+        circle(39, 45, 3.2, ink);
+        circle(61, 45, 3.2, ink);
+        circle(50, 54, 3.3, ink);
+        line([const Offset(47, 59), const Offset(50, 62), const Offset(53, 59)], outline);
+        break;
+      case 'robot':
+        line([const Offset(50, 20), const Offset(50, 12)], outline);
+        circle(50, 10, 4, Paint()..color = const Color(0xFF70D6E7));
+        final head = RRect.fromRectAndRadius(
+          const Rect.fromLTWH(24, 22, 52, 40), const Radius.circular(11));
+        canvas.drawRRect(head, Paint()..color = const Color(0xFFB9DDF9));
+        canvas.drawRRect(head, outline);
+        circle(39, 39, 4.2, Paint()..color = const Color(0xFF6353C8));
+        circle(61, 39, 4.2, Paint()..color = const Color(0xFF6353C8));
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(const Rect.fromLTWH(41, 48, 18, 5), const Radius.circular(3)),
+          Paint()..color = dark);
+        canvas.drawRRect(RRect.fromRectAndRadius(
+          const Rect.fromLTWH(32, 65, 36, 19), const Radius.circular(6)), fill);
+        canvas.drawRRect(RRect.fromRectAndRadius(
+          const Rect.fromLTWH(32, 65, 36, 19), const Radius.circular(6)), outline);
+        line([const Offset(32, 70), const Offset(22, 78)], outline);
+        line([const Offset(68, 70), const Offset(78, 78)], outline);
+        break;
+      case 'face':
+        circle(50, 49, 29, Paint()..color = const Color(0xFFFFD6AF));
+        circle(50, 49, 29, outline);
+        final hair = Path()
+          ..moveTo(22, 42)..quadraticBezierTo(18, 12, 48, 16)
+          ..quadraticBezierTo(76, 10, 79, 42)..lineTo(69, 34)
+          ..lineTo(58, 28)..lineTo(42, 31)..lineTo(30, 38)..close();
+        canvas.drawPath(hair, Paint()..color = const Color(0xFF65422E));
+        circle(39, 48, 3, ink);
+        circle(61, 48, 3, ink);
+        final smile = Path()
+          ..moveTo(39, 59)..quadraticBezierTo(50, 69, 61, 59);
+        canvas.drawPath(smile, outline);
+        break;
+      case 'tree':
+        canvas.drawRRect(RRect.fromRectAndRadius(
+          const Rect.fromLTWH(43, 54, 14, 33), const Radius.circular(3)),
+          Paint()..color = const Color(0xFF9A623C));
+        circle(34, 43, 19, Paint()..color = const Color(0xFF67C78D));
+        circle(64, 40, 21, Paint()..color = const Color(0xFF4BB879));
+        circle(49, 25, 22, Paint()..color = const Color(0xFF8FE0A8));
+        circle(34, 43, 19, outline);
+        circle(64, 40, 21, outline);
+        circle(49, 25, 22, outline);
+        break;
+      case 'cloud':
+        final cloud = Path()
+          ..moveTo(20, 65)..quadraticBezierTo(9, 62, 12, 49)
+          ..quadraticBezierTo(14, 36, 28, 38)
+          ..quadraticBezierTo(33, 18, 51, 25)
+          ..quadraticBezierTo(64, 28, 66, 39)
+          ..quadraticBezierTo(85, 34, 88, 51)
+          ..quadraticBezierTo(90, 65, 76, 67)..close();
+        canvas.drawPath(cloud, Paint()..color = const Color(0xFFCAE5FF));
+        canvas.drawPath(cloud, outline);
+        line([const Offset(33, 76), const Offset(24, 80)], Paint()
+          ..color = tint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5
+          ..strokeCap = StrokeCap.round);
+        line([const Offset(57, 78), const Offset(48, 82)], outline..color = tint);
+        break;
+      case 'star':
+        final star = Path();
+        for (var i = 0; i < 10; i++) {
+          final angle = -math.pi / 2 + i * math.pi / 5;
+          final radius = i.isEven ? 34.0 : 15.0;
+          final point = Offset(50 + math.cos(angle) * radius, 48 + math.sin(angle) * radius);
+          if (i == 0) star.moveTo(point.dx, point.dy); else star.lineTo(point.dx, point.dy);
+        }
+        star.close();
+        canvas.drawPath(star, Paint()..color = const Color(0xFFFFD166));
+        canvas.drawPath(star, outline);
+        circle(42, 42, 2.2, Paint()..color = white);
+        break;
+      case 'heart':
+        final heart = Path()
+          ..moveTo(50, 80)
+          ..cubicTo(39, 70, 15, 54, 18, 36)
+          ..cubicTo(21, 16, 42, 18, 50, 33)
+          ..cubicTo(60, 15, 80, 18, 83, 36)
+          ..cubicTo(86, 54, 61, 72, 50, 80)..close();
+        canvas.drawPath(heart, Paint()..color = const Color(0xFFFF7FA8));
+        canvas.drawPath(heart, outline);
+        break;
+      case 'house':
+        canvas.drawRRect(RRect.fromRectAndRadius(
+          const Rect.fromLTWH(24, 42, 52, 42), const Radius.circular(3)),
+          Paint()..color = const Color(0xFFE7D5FF));
+        line([const Offset(18, 44), const Offset(50, 16), const Offset(82, 44)], outline..strokeWidth = 6);
+        line([const Offset(18, 44), const Offset(50, 16), const Offset(82, 44)], Paint()
+          ..color = const Color(0xFF9D82D8)..style = PaintingStyle.stroke..strokeWidth = 4);
+        canvas.drawRRect(RRect.fromRectAndRadius(
+          const Rect.fromLTWH(43, 59, 14, 25), const Radius.circular(4)),
+          Paint()..color = const Color(0xFF9D82D8));
+        canvas.drawRect(const Rect.fromLTWH(29, 51, 9, 9), Paint()..color = const Color(0xFF9DCEEF));
+        canvas.drawRect(const Rect.fromLTWH(62, 51, 9, 9), Paint()..color = const Color(0xFF9DCEEF));
+        break;
+      default:
+        circle(50, 50, 27, fill);
+        circle(50, 50, 27, outline);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _AssetThumbnailPainter oldDelegate) =>
+      oldDelegate.id != id || oldDelegate.tint != tint;
 }

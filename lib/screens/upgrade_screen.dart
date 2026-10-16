@@ -200,9 +200,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 .snapshots()
             : null,
         builder: (context, snapshot) {
-          final entitlementPending = canReadEntitlement && !snapshot.hasData && !snapshot.hasError;
           final entitlementUnavailable = canReadEntitlement && snapshot.hasError;
-          final purchasesBlocked = entitlementPending || entitlementUnavailable;
           final data = snapshot.data?.data();
           final active = _isEntitled(data);
           final planName = data?['type'] == 'lifetime'
@@ -269,6 +267,14 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 style: TextStyle(color: Colors.white70, height: 1.4),
               ),
               const SizedBox(height: 14),
+              if (entitlementUnavailable)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Não foi possível consultar o estado da licença agora. O editor e as funções gratuitas continuam disponíveis; o servidor confirmará o estado ao abrir o checkout.',
+                    style: TextStyle(color: Colors.amberAccent, height: 1.45),
+                  ),
+                ),
               const _ProFeature(
                 icon: Icons.hub_outlined,
                 title: 'Rigging e poses',
@@ -300,16 +306,12 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   price: r'$5',
                   cadence: '/ mês',
                   description: 'Acesso Pro enquanto a subscrição estiver ativa.',
-                  buttonLabel: entitlementPending
-                      ? 'A verificar licença…'
-                      : entitlementUnavailable
-                          ? 'Licença não verificada'
-                          : active && data?['type'] == 'monthly'
-                              ? 'Subscrição ativa'
-                              : 'Assinar mensalmente',
+                  buttonLabel: active && data?['type'] == 'monthly'
+                      ? 'Subscrição ativa'
+                      : 'Continuar para pagamento',
                   recommended: true,
                   busy: _launching,
-                  disabled: purchasesBlocked || (active && data?['type'] == 'monthly'),
+                  disabled: active && data?['type'] == 'monthly',
                   onPressed: () => _buy('monthly'),
                 ),
                 const SizedBox(height: 12),
@@ -318,15 +320,11 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   price: r'$50',
                   cadence: 'pagamento único',
                   description: 'Uma compra, acesso vitalício à versão Pro atual e às funcionalidades Pro incluídas.',
-                  buttonLabel: entitlementPending
-                      ? 'A verificar licença…'
-                      : entitlementUnavailable
-                          ? 'Licença não verificada'
-                          : active && data?['type'] == 'lifetime'
-                              ? 'Licença permanente ativa'
-                              : 'Comprar permanentemente',
+                  buttonLabel: active && data?['type'] == 'lifetime'
+                      ? 'Licença permanente ativa'
+                      : 'Continuar para pagamento',
                   busy: _launching,
-                  disabled: purchasesBlocked || (active && data?['type'] == 'lifetime'),
+                  disabled: active && data?['type'] == 'lifetime',
                   onPressed: () => _buy('lifetime'),
                 ),
                 const SizedBox(height: 8),

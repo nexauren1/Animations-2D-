@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide Text;
+import 'package:path_provider/path_provider.dart';
 import '../services/app_locale.dart';
 
 import '../models/project_model.dart';
@@ -15,12 +17,16 @@ class AudioLipSyncScreen extends StatefulWidget {
     required this.frames,
     required this.canvasSize,
     required this.onApplyFrames,
+    required this.onAudioPathChanged,
+    this.initialAudioPath,
     super.key,
   });
 
   final List<FrameModel> frames;
   final Size canvasSize;
   final Future<void> Function(List<FrameModel>) onApplyFrames;
+  final Future<void> Function(String?) onAudioPathChanged;
+  final String? initialAudioPath;
 
   @override
   State<AudioLipSyncScreen> createState() => _AudioLipSyncScreenState();
@@ -45,11 +51,19 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
   bool _isPlaying = false;
   bool _isImporting = false;
   bool _showAutomaticMappingNote = false;
+  bool _isAttachedToProject = false;
   int _fps = 24;
 
   @override
   void initState() {
     super.initState();
+    final initial = widget.initialAudioPath;
+    if (initial != null && initial.isNotEmpty) {
+      _audioPath = initial;
+      _audioName = initial.split(Platform.pathSeparator).last;
+      _isAttachedToProject = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreProjectAudio(initial));
+    }
     _subscriptions.add(_player.onDurationChanged.listen((value) {
       if (mounted) setState(() => _duration = value);
     }));
@@ -70,6 +84,58 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
     super.dispose();
   }
 
+  Future<void> _restoreProjectAudio(String path) async {
+    try {
+      if (!await File(path).exists()) {
+        if (mounted) {
+          setState(() {
+            _audioPath = null;
+            _audioName = 'Nenhum áudio selecionado';
+            _isAttachedToProject = false;
+            _duration = Duration.zero;
+            _position = Duration.zero;
+          });
+          await widget.onAudioPathChanged(null);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('O áudio associado ao projeto já não está disponível neste dispositivo. Importa-o novamente.')),
+          );
+        }
+        return;
+      }
+      await _player.setSourceDeviceFile(path);
+      final duration = await _player.getDuration();
+      if (!mounted) return;
+      setState(() {
+        _duration = duration ?? Duration.zero;
+        _position = Duration.zero;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o áudio guardado. Importa novamente um ficheiro compatível.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _attachAudioToProject() async {
+    final path = _audioPath;
+    if (path == null || path.isEmpty) return;
+    try {
+      await widget.onAudioPathChanged(path);
+      if (!mounted) return;
+      setState(() => _isAttachedToProject = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Áudio aplicado ao projeto e guardado neste dispositivo.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível anexar o áudio ao projeto. Tenta novamente.')),
+      );
+    }
+  }
+
   String _timeLabel(Duration value) {
     final seconds = value.inSeconds;
     final minutes = seconds ~/ 60;
@@ -86,16 +152,26 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
       if (path == null || path.isEmpty) {
         throw StateError('Não foi possível obter o caminho do áudio selecionado.');
       }
+      // Copy into app-private storage so Android's temporary picker URI/path
+      // does not disappear before the project is reopened.
+      final documents = await getApplicationDocumentsDirectory();
+      final audioDirectory = Directory('${documents.path}/AnimPro/audio');
+      await audioDirectory.create(recursive: true);
+      final safeName = file.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final stablePath =
+          '${audioDirectory.path}/audio_${DateTime.now().millisecondsSinceEpoch}_$safeName';
+      final storedFile = await File(path).copy(stablePath);
       await _player.stop();
-      await _player.setSourceDeviceFile(path);
+      await _player.setSourceDeviceFile(storedFile.path);
       final duration = await _player.getDuration();
       if (!mounted) return;
       setState(() {
-        _audioPath = path;
+        _audioPath = storedFile.path;
         _audioName = file.name;
         _duration = duration ?? Duration.zero;
         _position = Duration.zero;
         _events.clear();
+        _isAttachedToProject = false;
       });
     } catch (error) {
       if (mounted) {
@@ -334,11 +410,13 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
                       await _player.stop();
                       setState(() {
                         _audioPath = null;
+                        _isAttachedToProject = false;
                         _audioName = 'Nenhum áudio selecionado';
                         _duration = Duration.zero;
                         _position = Duration.zero;
                         _events.clear();
                       });
+                      await widget.onAudioPathChanged(null);
                     },
                     icon: const Icon(Icons.close_rounded, size: 19),
                   ),
@@ -384,6 +462,20 @@ class _AudioLipSyncScreenState extends State<AudioLipSyncScreen> {
                   ),
                 ),
               ]),
+              const SizedBox(height: 9),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _audioPath == null ? null : _attachAudioToProject,
+                  icon: Icon(_isAttachedToProject ? Icons.check_circle_rounded : Icons.library_add_rounded),
+                  label: Text(_isAttachedToProject ? 'Áudio aplicado ao projeto' : 'Aplicar áudio ao projeto'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _isAttachedToProject
+                        ? const Color(0xFF206B58)
+                        : const Color(0xFF5145B6),
+                  ),
+                ),
+              ),
             ]),
           ),
           const SizedBox(height: 23),

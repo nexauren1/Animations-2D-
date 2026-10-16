@@ -48,6 +48,7 @@ class ProjectStore extends ChangeNotifier {
       ..updatedAt = now
       ..fps = source.fps
       ..thumbnailPath = source.thumbnailPath
+      ..audioPath = source.audioPath
       ..frames = source.frames.map((frame) => frame.copy()).toList();
 
     await _isar.writeTxn(() async {

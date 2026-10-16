@@ -1,6 +1,6 @@
 # AnimPro — editor de animação 2D
 
-**Versão de atualização:** `1.3.0+5` · interface em português e inglês.
+**Versão de atualização:** `1.3.1+6` · interface em português e inglês.
 
 Editor de animação 2D para Android, construído com Flutter. O foco é desenhar, organizar frames, experimentar poses e exportar animações sem obrigar o utilizador a criar uma conta.
 
@@ -14,12 +14,12 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 - **Interface bilingue:** português ou inglês, com a preferência guardada no dispositivo.
 - **Cores:** paleta com 36 cores de acesso rápido, código HEX personalizado e controlos HSV para matiz, saturação e luminosidade. A cor HEX permite definir qualquer cor RGB de 24 bits.
 - **Edição:** desfazer/refazer, grelha de referência, camadas e onion skin.
-- **Timeline:** criar frames vazios, duplicar/apagar frames e ajustar a reprodução para 6, 12, 24, 30 ou 60 FPS. O FPS fica guardado no projeto e é usado como valor inicial na exportação.
+- **Timeline e reprodução:** criar, duplicar e apagar frames; ajustar FPS e reproduzir a animação num botão diretamente no canvas. Quando existe uma faixa associada, a pré-visualização tenta reproduzi-la em simultâneo.
 - **Rigging simples:** pontos de controlo para modificar poses e guardá-las como frames.
-- **Áudio e lip sync:** importar uma faixa, reproduzi-la e marcar manualmente poses de boca na timeline. A aplicação ainda não tem edição de múltiplas faixas, mistura de áudio ou corte/fades estilo CapCut.
+- **Áudio do projeto:** importa uma faixa, guarda-a no projeto neste dispositivo e reproduz a animação com a faixa. A mistura do áudio na exportação MP4, múltiplas faixas, corte/fades ainda não estão implementados; o MP4 permanece silencioso.
 - **Projetos prontos:** seis exemplos de base e um combate Stickman estilizado de 16 frames com socos, esquivas, bloqueios, pontapé aéreo e impactos cartunescos. Todos os frames são editáveis.
-- **Biblioteca de assets e downloads:** formas vetoriais-base, modelos de animação e pacotes de conteúdo descarregáveis para guardar no dispositivo e editar offline.
-- **Exportação gratuita:** PNG do frame, sequência PNG em ZIP, GIF e MP4 a partir de todos os frames. O MP4 usa o codificador H.264/MediaCodec disponível no dispositivo; nem todos os aparelhos expõem combinações de resolução/FPS compatíveis. A exportação produz vídeo silencioso: a mistura/muxagem de áudio no MP4 ainda não está implementada. O limite de 60 FPS permanece Pro.
+- **Biblioteca de assets e downloads:** miniaturas vetoriais desenhadas para identificar personagens e objetos; os elementos continuam editáveis no canvas. Inclui modelos de animação e pacotes descarregáveis.
+- **Exportação gratuita:** mostra processamento, cria o ficheiro e grava-o automaticamente nas pastas públicas de Imagens/Vídeos/Downloads do Android (ou na pasta específica da aplicação em Android antigo). PNG, sequência PNG em ZIP, GIF e MP4. O MP4 usa H.264/MediaCodec e permanece silencioso; a mistura de áudio não está implementada. O limite de 60 FPS permanece Pro.
 - **Conta:** registo/entrada com e-mail e palavra-passe, redefinição de palavra-passe, verificação de e-mail e entrada Google, quando o projeto Firebase está configurado.
 - **Modo sem conta:** os projetos continuam disponíveis localmente no telefone.
 

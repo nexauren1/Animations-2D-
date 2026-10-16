@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
+
+import 'package:audioplayers/audioplayers.dart';
 
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
@@ -55,6 +59,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
   final List<List<LayerModel>> _redoStack = <List<LayerModel>>[];
+  Timer? _previewTimer;
+  bool _isPreviewPlaying = false;
+  final AudioPlayer _projectAudioPlayer = AudioPlayer();
+  StreamSubscription<PlayerState>? _projectAudioStateSubscription;
+  bool _isProjectAudioPlaying = false;
 
   FrameModel get _currentFrame => _frames[_currentFrameIndex];
   LayerModel get _activeLayer => _currentFrame.layers[_selectedLayerIndex];
@@ -125,6 +134,78 @@ class _CanvasScreenState extends State<CanvasScreen> {
     super.initState();
     _frames = widget.project.frames.map((frame) => frame.copy()).toList();
     if (_frames.isEmpty) _frames = <FrameModel>[FrameModel.blank()];
+    _projectAudioStateSubscription = _projectAudioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _isProjectAudioPlaying = state == PlayerState.playing);
+    });
+  }
+
+  @override
+  void dispose() {
+    _previewTimer?.cancel();
+    _projectAudioStateSubscription?.cancel();
+    _projectAudioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePreviewPlayback() async {
+    if (_isPreviewPlaying) {
+      _previewTimer?.cancel();
+      try {
+        await _projectAudioPlayer.pause();
+      } catch (_) {
+        // The animation preview can be paused even if no soundtrack is loaded.
+      }
+      if (mounted) setState(() => _isPreviewPlaying = false);
+      return;
+    }
+    if (_frames.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Adiciona pelo menos dois frames para reproduzir a animação.')),
+      );
+      return;
+    }
+    final fps = widget.project.fps.clamp(1, 60).toInt();
+    _previewTimer?.cancel();
+    setState(() => _isPreviewPlaying = true);
+    final audioPath = widget.project.audioPath;
+    if (audioPath.isNotEmpty && await File(audioPath).exists()) {
+      try {
+        await _projectAudioPlayer.play(DeviceFileSource(audioPath));
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A animação será reproduzida sem áudio. Não foi possível abrir a faixa do projeto.')),
+          );
+        }
+      }
+    }
+    _previewTimer = Timer.periodic(
+      Duration(microseconds: (1000000 / fps).round()),
+      (_) {
+        if (!mounted || _frames.isEmpty) return;
+        setState(() {
+          _currentFrameIndex = (_currentFrameIndex + 1) % _frames.length;
+          _selectedLayerIndex = _selectedLayerIndex.clamp(0, _currentFrame.layers.length - 1).toInt();
+        });
+      },
+    );
+  }
+
+  Future<void> _toggleProjectAudio() async {
+    final path = widget.project.audioPath;
+    if (path.isEmpty) return;
+    try {
+      if (_isProjectAudioPlaying) {
+        await _projectAudioPlayer.pause();
+      } else {
+        await _projectAudioPlayer.play(DeviceFileSource(path));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível reproduzir o áudio deste projeto. Abre Áudio e importa o ficheiro novamente.')),
+      );
+    }
   }
 
   List<LayerModel> _copyLayers(List<LayerModel> layers) =>
@@ -303,6 +384,18 @@ class _CanvasScreenState extends State<CanvasScreen> {
         builder: (_) => AudioLipSyncScreen(
           frames: _frames,
           canvasSize: _canvasSize,
+          initialAudioPath: widget.project.audioPath.isEmpty ? null : widget.project.audioPath,
+          onAudioPathChanged: (path) async {
+            if (mounted) {
+              setState(() => widget.project.audioPath = path ?? '');
+            } else {
+              widget.project.audioPath = path ?? '';
+            }
+            if (widget.project.audioPath.isEmpty && _isProjectAudioPlaying) {
+              await _projectAudioPlayer.stop();
+            }
+            await _persist();
+          },
           onApplyFrames: (updatedFrames) async {
             setState(() {
               _frames = updatedFrames;
@@ -439,6 +532,16 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       final value = style.toLowerCase();
                       final selected = value == _brushStyle;
                       return ChoiceChip(
+                        avatar: SizedBox(
+                          width: 38,
+                          height: 13,
+                          child: CustomPaint(
+                            painter: _BrushPreviewPainter(
+                              style: value,
+                              color: Color(_selectedColor).withOpacity(_opacity),
+                            ),
+                          ),
+                        ),
                         label: Text(style),
                         selected: selected,
                         onSelected: (_) {
@@ -596,7 +699,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   const SizedBox(height: 21),
                   Row(children: [
                     const Expanded(child: Text('Espessura', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${_brushSize.round()} px',
+                    Text('${_brushSize.round()} px',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -610,7 +713,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   ),
                   Row(children: [
                     const Expanded(child: Text('Opacidade', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${(_opacity * 100).round()}%',
+                    Text('${(_opacity * 100).round()}%',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -837,11 +940,22 @@ class _CanvasScreenState extends State<CanvasScreen> {
           children: [
             Text(widget.project.name, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            Text('Frame \${_currentFrameIndex + 1} / \${_frames.length}',
+            Text('Frame ${_currentFrameIndex + 1} / ${_frames.length}',
               style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55))),
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: _isPreviewPlaying ? 'Pausar animação' : 'Reproduzir animação',
+            onPressed: _togglePreviewPlayback,
+            icon: Icon(_isPreviewPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded),
+          ),
+          if (widget.project.audioPath.isNotEmpty)
+            IconButton(
+              tooltip: _isProjectAudioPlaying ? 'Pausar áudio do projeto' : 'Reproduzir áudio do projeto',
+              onPressed: _toggleProjectAudio,
+              icon: Icon(_isProjectAudioPlaying ? Icons.volume_up_rounded : Icons.music_note_rounded),
+            ),
           IconButton(tooltip: 'Exportar', onPressed: _openExport, icon: const Icon(Icons.ios_share_rounded)),
           IconButton(tooltip: 'Guardar projeto', onPressed: _saveAndShowMessage, icon: const Icon(Icons.save_outlined)),
           const SizedBox(width: 3),
@@ -850,6 +964,49 @@ class _CanvasScreenState extends State<CanvasScreen> {
       body: Column(
         children: [
           _buildLayerSelector(),
+          if (widget.project.audioPath.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 7),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF172B35),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF31515E)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.audiotrack_rounded, color: Color(0xFF65D6E8), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Áudio: ${widget.project.audioPath.split(Platform.pathSeparator).last}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: _isProjectAudioPlaying ? 'Pausar áudio' : 'Ouvir áudio',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: _toggleProjectAudio,
+                      icon: Icon(_isProjectAudioPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'Remover áudio do projeto',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () async {
+                        await _projectAudioPlayer.stop();
+                        widget.project.audioPath = '';
+                        await _persist();
+                        if (mounted) setState(() {});
+                      },
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
             child: Row(
@@ -864,7 +1021,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       Container(height: 20, width: 20,
                         decoration: BoxDecoration(color: Color(_selectedColor), shape: BoxShape.circle, border: Border.all(color: Colors.white24))),
                       const SizedBox(width: 7),
-                      Text('\${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text('${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                       const SizedBox(width: 5),
                       const Icon(Icons.tune_rounded, size: 15),
                     ]),
@@ -899,10 +1056,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
                     _canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
                     return GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onPanStart: _startStroke,
-                      onPanUpdate: _updateStroke,
-                      onPanEnd: _finishStroke,
-                      onPanCancel: () => setState(() => _draftPoints = null),
+                      onPanStart: _isPreviewPlaying ? null : _startStroke,
+                      onPanUpdate: _isPreviewPlaying ? null : _updateStroke,
+                      onPanEnd: _isPreviewPlaying ? null : _finishStroke,
+                      onPanCancel: _isPreviewPlaying ? null : () => setState(() => _draftPoints = null),
                       child: CustomPaint(
                         painter: _AnimationCanvasPainter(
                           frame: _currentFrame,
@@ -1313,4 +1470,105 @@ class _AnimationCanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AnimationCanvasPainter oldDelegate) => true;
+}
+
+
+/// Tiny live brush samples shown beside every brush name.
+class _BrushPreviewPainter extends CustomPainter {
+  const _BrushPreviewPainter({required this.style, required this.color});
+
+  final String style;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(1, size.height * .72)
+      ..cubicTo(size.width * .24, size.height * .05, size.width * .56,
+          size.height * .98, size.width - 1, size.height * .28);
+    final width = style == 'caneta técnica'
+        ? 1.1
+        : style == 'marcador' || style == 'marca-texto'
+            ? 4.8
+            : style == 'tinta chinesa'
+                ? 3.8
+                : 2.4;
+    if (style == 'brilho neon' || style == 'luz energética') {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withOpacity(.34)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width * 3
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.2),
+      );
+    }
+    if (style == 'rastro de movimento') {
+      canvas.drawPath(
+        path.shift(const Offset(-1.5, 2)),
+        Paint()
+          ..color = color.withOpacity(.28)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width * 1.6
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+    if (style == 'linha tracejada' || style == 'pixel') {
+      for (var x = 1.0; x < size.width; x += style == 'pixel' ? 4 : 6) {
+        if (style == 'pixel') {
+          canvas.drawRect(
+            Rect.fromLTWH(x, size.height * .42, 2.4, 2.4),
+            Paint()..color = color,
+          );
+        } else {
+          canvas.drawLine(
+            Offset(x, size.height * .52),
+            Offset(math.min(x + 3.4, size.width), size.height * .52),
+            Paint()
+              ..color = color
+              ..strokeWidth = width
+              ..strokeCap = StrokeCap.round,
+          );
+        }
+      }
+      return;
+    }
+    if (style == 'aerógrafo' || style == 'pincel suave') {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withOpacity(.6)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width * 2
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+      );
+    }
+    if (style == 'giz de cera' || style == 'pastel' || style == 'pincel seco') {
+      for (var i = -2; i <= 2; i++) {
+        canvas.drawPath(
+          path.shift(Offset(0, i * 1.15)),
+          Paint()
+            ..color = color.withOpacity(i == 0 ? .8 : .2)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = .7
+            ..strokeCap = StrokeCap.round,
+        );
+      }
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = style == 'marca-texto' ? color.withOpacity(.55) : color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BrushPreviewPainter oldDelegate) =>
+      oldDelegate.style != style || oldDelegate.color != color;
 }
