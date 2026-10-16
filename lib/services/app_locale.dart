@@ -389,7 +389,7 @@ class AppLocale {
     'O Google não entregou o token de acesso. Confirma o Client ID Web OAuth no Firebase e recompila a aplicação.': 'Google did not return an ID token. Check the Firebase Web OAuth client ID and rebuild the app.',
     'Este som está incluído no AnimPro Pro.': 'This sound is included with AnimPro Pro.',
     'O áudio é reproduzido na pré-visualização do projeto, mas ainda não é misturado no MP4 exportado.': 'Audio plays in project preview but is not yet mixed into exported MP4 files.',
-    'Os clips de áudio são guardados neste dispositivo e não estão incluídos no backup .animpro.': 'Audio clips are stored on this device and are not yet included in the .animpro backup.',
+    'Os clips ficam guardados neste dispositivo e também são incluídos no backup .animpro, para poderes copiá-los para o Google Drive ou Dropbox.': 'Audio clips are saved on this device and included in the .animpro backup, so you can copy them to Google Drive or Dropbox.',
     'Drive e Dropbox': 'Drive and Dropbox',
     'Exporta o backup .animpro e escolhe Google Drive ou Dropbox na partilha. Para restaurar, importa o ficheiro a partir do fornecedor de nuvem.': 'Export the .animpro backup and choose Google Drive or Dropbox in the share sheet. To restore, import the file from your cloud provider.',
     'MP4 e GIF grátis até 720p; 1080p e sequência PNG são Pro.': 'MP4 and GIF up to 720p are free; 1080p and PNG sequences are Pro.',
