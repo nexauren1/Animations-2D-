@@ -4,6 +4,7 @@ import '../services/app_locale.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import '../services/project_backup_service.dart';
+import '../services/audio_library_service.dart';
 import 'canvas_screen.dart';
 import 'account_screen.dart';
 import 'upgrade_screen.dart';
@@ -170,9 +171,20 @@ class HomeScreen extends StatelessWidget {
   Future<void> _importBackup(BuildContext context) async {
     try {
       final imported = await ProjectBackupService.pickAndReadProject();
+      final restoredAudio = <AudioTimelineClip>[];
+      for (final clip in imported.audioClips) {
+        final bytes = imported.audioAssets[clip.localPath];
+        if (bytes == null) {
+          throw const FormatException('O backup não contém os bytes de um dos clips de áudio.');
+        }
+        restoredAudio.add(await AudioLibraryService.restoreBackupClip(clip, bytes));
+      }
       final project = await store.createProject(imported.name);
       project.fps = imported.fps;
       await store.saveProject(project, frames: imported.frames);
+      if (restoredAudio.isNotEmpty) {
+        await AudioLibraryService.saveClips(project.uid, restoredAudio);
+      }
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Projeto "${project.name}" importado com sucesso.')),
@@ -284,7 +296,7 @@ class HomeScreen extends StatelessWidget {
                 showAboutDialog(
                   context: context,
                   applicationName: 'AnimPro',
-                  applicationVersion: '1.3.0',
+                  applicationVersion: '1.4.0',
                   children: const [
                     Text('Desenha, cria frames e experimenta poses 2D.'),
                   ],

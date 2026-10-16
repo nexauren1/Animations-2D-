@@ -1,4 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
+
+import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
@@ -6,6 +10,8 @@ import '../services/app_locale.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import '../services/pro_access_service.dart';
+import '../services/audio_library_service.dart';
+import 'audio_library_screen.dart';
 import 'assets_library_screen.dart';
 import 'audio_lip_sync_screen.dart';
 import 'export_screen.dart';
@@ -24,6 +30,11 @@ class CanvasScreen extends StatefulWidget {
 }
 
 class _CanvasScreenState extends State<CanvasScreen> {
+  static const Set<String> _proBrushStyles = <String>{
+    'aerógrafo', 'pincel suave', 'giz de cera', 'pastel', 'pincel seco',
+    'pixel', 'brilho neon', 'rastro de movimento', 'luz energética',
+  };
+
   static const _palette = <Color>[
     Color(0xFF000000), Color(0xFF333333), Color(0xFF707070),
     Color(0xFFAAAAAA), Colors.white, Color(0xFF7A202A),
@@ -51,6 +62,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
   bool _onionSkin = true;
   double _onionOpacity = .30;
   Future<void> _saveQueue = Future<void>.value();
+  Timer? _playbackTimer;
+  bool _isPlaying = false;
+  List<AudioTimelineClip> _audioClips = <AudioTimelineClip>[];
+  final Map<String, AudioPlayer> _audioPlayers = <String, AudioPlayer>{};
   Size _canvasSize = const Size(320, 420);
   List<Offset>? _draftPoints;
   final List<List<LayerModel>> _undoStack = <List<LayerModel>>[];
@@ -125,6 +140,80 @@ class _CanvasScreenState extends State<CanvasScreen> {
     super.initState();
     _frames = widget.project.frames.map((frame) => frame.copy()).toList();
     if (_frames.isEmpty) _frames = <FrameModel>[FrameModel.blank()];
+    unawaited(SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]));
+    unawaited(_reloadAudioClips());
+  }
+
+  @override
+  void dispose() {
+    _playbackTimer?.cancel();
+    for (final player in _audioPlayers.values) {
+      unawaited(player.dispose());
+    }
+    unawaited(SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+    ]));
+    super.dispose();
+  }
+
+  Future<void> _reloadAudioClips() async {
+    final clips = await AudioLibraryService.loadClips(widget.project.uid);
+    if (!mounted) return;
+    setState(() => _audioClips = clips);
+  }
+
+  void _playAudioForFrame(int frameIndex) {
+    for (final clip in _audioClips.where((item) => item.startFrame == frameIndex)) {
+      final player = _audioPlayers.putIfAbsent(clip.instanceId, AudioPlayer.new);
+      unawaited(
+        player.stop().then((_) => player.play(
+              DeviceFileSource(clip.localPath),
+              volume: clip.volume,
+            )).catchError((Object _) {}),
+      );
+    }
+  }
+
+  void _stopPlayback() {
+    _playbackTimer?.cancel();
+    _playbackTimer = null;
+    for (final player in _audioPlayers.values) {
+      unawaited(player.stop());
+    }
+    if (_isPlaying && mounted) setState(() => _isPlaying = false);
+  }
+
+  void _togglePlayback() {
+    if (_isPlaying) {
+      _stopPlayback();
+      return;
+    }
+    if (_frames.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cria pelo menos dois frames para pré-visualizar o movimento.')),
+      );
+      return;
+    }
+    setState(() => _isPlaying = true);
+    _playAudioForFrame(_currentFrameIndex);
+    final fps = widget.project.fps.clamp(1, 60);
+    _playbackTimer = Timer.periodic(
+      Duration(microseconds: (Duration.microsecondsPerSecond / fps).round()),
+      (_) {
+        if (!mounted || !_isPlaying) return;
+        final nextFrame = _currentFrameIndex >= _frames.length - 1
+            ? 0
+            : _currentFrameIndex + 1;
+        setState(() {
+          _currentFrameIndex = nextFrame;
+          _draftPoints = null;
+        });
+        _playAudioForFrame(nextFrame);
+      },
+    );
   }
 
   List<LayerModel> _copyLayers(List<LayerModel> layers) =>
@@ -157,6 +246,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   void _startStroke(DragStartDetails details) {
+    _stopPlayback();
     setState(() => _draftPoints = <Offset>[details.localPosition]);
   }
 
@@ -290,11 +380,52 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _openAssets() async {
-    final assetId = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(builder: (_) => const AssetsLibraryScreen()),
+    final asset = await Navigator.of(context).push<LibraryAsset>(
+      MaterialPageRoute<LibraryAsset>(builder: (_) => const AssetsLibraryScreen()),
     );
-    if (assetId == null || !mounted) return;
-    await _insertAsset(assetId);
+    if (asset == null || !mounted) return;
+    await _insertAsset(asset.id, tint: asset.tint.value);
+  }
+
+  Future<void> _openAudioLibrary() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AudioLibraryScreen(
+          projectUid: widget.project.uid,
+          initialFrame: _currentFrameIndex,
+          frameCount: _frames.length,
+          requirePro: (feature) => ProAccessService.requirePro(context, feature: feature),
+        ),
+      ),
+    );
+    await _reloadAudioClips();
+  }
+
+  Future<void> _openAudioTools() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF202332),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.library_music_rounded, color: Color(0xFF70D7E6)),
+            title: const Text('Biblioteca de áudio'),
+            subtitle: const Text('Importar, ouvir preview e posicionar sons na timeline'),
+            onTap: () => Navigator.of(sheetContext).pop('library'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.record_voice_over_rounded),
+            title: const Text('Sincronização labial experimental'),
+            subtitle: const Text('Marcação manual de poses da boca; não é IA automática'),
+            onTap: () => Navigator.of(sheetContext).pop('lipsync'),
+          ),
+        ]),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'library') await _openAudioLibrary();
+    if (action == 'lipsync') await _openAudioLipSync();
   }
 
   Future<void> _openAudioLipSync() async {
@@ -438,10 +569,34 @@ class _CanvasScreenState extends State<CanvasScreen> {
                     ].map((style) {
                       final value = style.toLowerCase();
                       final selected = value == _brushStyle;
+                      final isProBrush = _proBrushStyles.contains(value);
                       return ChoiceChip(
-                        label: Text(style),
+                        label: Row(mainAxisSize: MainAxisSize.min, children: [
+                          SizedBox(
+                            width: 52,
+                            height: 20,
+                            child: CustomPaint(
+                              painter: _BrushStyleSamplePainter(
+                                style: value,
+                                color: Color(_selectedColor),
+                                opacity: _opacity,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Text(style),
+                          if (isProBrush) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.lock_rounded, size: 12, color: Color(0xFFFFD166)),
+                          ],
+                        ]),
                         selected: selected,
-                        onSelected: (_) {
+                        onSelected: (_) async {
+                          if (isProBrush &&
+                              !await ProAccessService.requirePro(context, feature: 'Pincéis avançados')) {
+                            return;
+                          }
+                          if (!mounted) return;
                           setState(() => _brushStyle = value);
                           setSheetState(() {});
                         },
@@ -596,7 +751,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   const SizedBox(height: 21),
                   Row(children: [
                     const Expanded(child: Text('Espessura', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${_brushSize.round()} px',
+                    Text('${_brushSize.round()} px',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -610,7 +765,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   ),
                   Row(children: [
                     const Expanded(child: Text('Opacidade', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${(_opacity * 100).round()}%',
+                    Text('${(_opacity * 100).round()}%',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -688,7 +843,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
             children: [
               const Text('Efeitos de traço', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              const Text('Escolhe um efeito para os próximos traços. As opções ficam disponíveis gratuitamente.',
+              const Text('Linha tracejada é grátis. Neon, rastro e luz energética são efeitos Pro; podes ver as opções antes de desbloquear.',
                   style: TextStyle(color: Colors.white70, height: 1.35)),
               const SizedBox(height: 10),
               for (final effect in effects)
@@ -700,9 +855,15 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   trailing: _brushStyle == effect.$2
                       ? const Icon(Icons.check_circle_rounded, color: Color(0xFF7CE0CC))
                       : const Icon(Icons.circle_outlined, color: Colors.white38),
-                  onTap: () {
+                  onTap: () async {
+                    final isProEffect = effect.$2 != 'linha tracejada';
+                    if (isProEffect &&
+                        !await ProAccessService.requirePro(context, feature: effect.$1)) {
+                      return;
+                    }
+                    if (!mounted) return;
                     setState(() => _brushStyle = effect.$2);
-                    Navigator.of(sheetContext).pop();
+                    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Efeito aplicado aos próximos traços: ${effect.$1}')),
                     );
@@ -715,10 +876,12 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Future<void> _insertAsset(String id) async {
+  Future<void> _insertAsset(String id, {int? tint}) async {
     final center = Offset(_canvasSize.width / 2, _canvasSize.height / 2);
     final double unit = math.min(_canvasSize.width, _canvasSize.height).toDouble() * .14;
-    final color = const Color(0xFF1C2940).value;
+    final seed = Color(tint ?? 0xFF1C2940);
+    final hsv = HSVColor.fromColor(seed);
+    final color = hsv.withValue((hsv.value * .58).clamp(.25, .62).toDouble()).toColor().value;
     final newStrokes = <StrokeModel>[];
 
     void add(List<Offset> points, {String kind = 'pen', double width = 3}) {
@@ -800,6 +963,78 @@ class _CanvasScreenState extends State<CanvasScreen> {
         ], width: 3.2);
         add([Offset(center.dx - unit * .17, center.dy + unit * .25), Offset(center.dx + unit * .17, center.dy + unit * .8)], kind: 'rectangle', width: 2.5);
         break;
+      case 'bird':
+        add(oval(Offset(center.dx, center.dy + unit * .12), unit * .72, unit * .38), width: 3.2);
+        circle(Offset(center.dx + unit * .55, center.dy - unit * .26), unit * .24);
+        add([
+          Offset(center.dx + unit * .75, center.dy - unit * .27),
+          Offset(center.dx + unit * 1.02, center.dy - unit * .20),
+          Offset(center.dx + unit * .75, center.dy - unit * .12),
+        ]);
+        add([
+          Offset(center.dx - unit * .28, center.dy + unit * .08),
+          Offset(center.dx + unit * .22, center.dy - unit * .06),
+          Offset(center.dx + unit * .18, center.dy + unit * .28),
+        ], width: 2.6);
+        add([Offset(center.dx - unit * .22, center.dy + unit * .42), Offset(center.dx - unit * .28, center.dy + unit * .64)]);
+        add([Offset(center.dx + unit * .18, center.dy + unit * .42), Offset(center.dx + unit * .25, center.dy + unit * .64)]);
+        break;
+      case 'butterfly':
+        for (final part in <(double, double, double, double)>[
+          (-.44, -.25, .48, .48), (.45, -.25, .48, .48),
+          (-.39, .28, .42, .34), (.4, .28, .42, .34),
+        ]) {
+          circle(Offset(center.dx + unit * part.$1, center.dy + unit * part.$2), unit * part.$3);
+        }
+        add([Offset(center.dx, center.dy - unit * .55), Offset(center.dx, center.dy + unit * .55)], width: 4);
+        add([Offset(center.dx, center.dy - unit * .52), Offset(center.dx - unit * .20, center.dy - unit * .78)]);
+        add([Offset(center.dx, center.dy - unit * .52), Offset(center.dx + unit * .20, center.dy - unit * .78)]);
+        break;
+      case 'flower':
+        add([Offset(center.dx, center.dy + unit * .18), Offset(center.dx, center.dy + unit * 1.0)], width: 3.4);
+        add([Offset(center.dx, center.dy + unit * .56), Offset(center.dx - unit * .42, center.dy + unit * .33), Offset(center.dx - unit * .54, center.dy + unit * .48)], width: 3);
+        add([Offset(center.dx, center.dy + unit * .70), Offset(center.dx + unit * .42, center.dy + unit * .48), Offset(center.dx + unit * .54, center.dy + unit * .58)], width: 3);
+        for (var p = 0; p < 6; p++) {
+          final angle = p * math.pi / 3;
+          circle(Offset(center.dx + math.cos(angle) * unit * .36, center.dy - unit * .30 + math.sin(angle) * unit * .36), unit * .25);
+        }
+        circle(Offset(center.dx, center.dy - unit * .30), unit * .20);
+        break;
+      case 'sun':
+        for (var ray = 0; ray < 12; ray++) {
+          final angle = ray * math.pi / 6;
+          add([
+            Offset(center.dx + math.cos(angle) * unit * .62, center.dy + math.sin(angle) * unit * .62),
+            Offset(center.dx + math.cos(angle) * unit * .92, center.dy + math.sin(angle) * unit * .92),
+          ], width: 3);
+        }
+        circle(center, unit * .50);
+        break;
+      case 'moon':
+        final crescent = <Offset>[];
+        for (var p = 0; p <= 24; p++) {
+          final angle = math.pi * .35 + p / 24 * math.pi * 1.55;
+          crescent.add(Offset(center.dx + math.cos(angle) * unit * .78, center.dy + math.sin(angle) * unit * .78));
+        }
+        for (var p = 24; p >= 0; p--) {
+          final angle = math.pi * .58 + p / 24 * math.pi * 1.30;
+          crescent.add(Offset(center.dx + unit * .28 + math.cos(angle) * unit * .52, center.dy + math.sin(angle) * unit * .63));
+        }
+        add(crescent, width: 3.3);
+        break;
+      case 'balloon':
+        add([
+          Offset(center.dx, center.dy - unit * .9),
+          Offset(center.dx + unit * .62, center.dy - unit * .45),
+          Offset(center.dx + unit * .58, center.dy + unit * .18),
+          Offset(center.dx, center.dy + unit * .62),
+          Offset(center.dx - unit * .58, center.dy + unit * .18),
+          Offset(center.dx - unit * .62, center.dy - unit * .45),
+          Offset(center.dx, center.dy - unit * .9),
+        ], width: 3.3);
+        add([Offset(center.dx - unit * .12, center.dy + unit * .60), Offset(center.dx + unit * .12, center.dy + unit * .60), Offset(center.dx, center.dy + unit * .76)], width: 2.5);
+        add([Offset(center.dx, center.dy + unit * .76), Offset(center.dx + unit * .05, center.dy + unit * .96), Offset(center.dx - unit * .05, center.dy + unit * 1.18)], width: 2);
+        break;
       default:
         circle(center, unit * .6);
         break;
@@ -837,20 +1072,25 @@ class _CanvasScreenState extends State<CanvasScreen> {
           children: [
             Text(widget.project.name, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            Text('Frame \${_currentFrameIndex + 1} / \${_frames.length}',
+            Text('Frame ${_currentFrameIndex + 1} / ${_frames.length}',
               style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55))),
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: _isPlaying ? 'Pausar animação' : 'Reproduzir animação',
+            onPressed: _togglePlayback,
+            icon: Icon(_isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded),
+          ),
           IconButton(tooltip: 'Exportar', onPressed: _openExport, icon: const Icon(Icons.ios_share_rounded)),
           IconButton(tooltip: 'Guardar projeto', onPressed: _saveAndShowMessage, icon: const Icon(Icons.save_outlined)),
           const SizedBox(width: 3),
         ],
       ),
-      body: Column(
-        children: [
-          _buildLayerSelector(),
-          Padding(
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          final landscape = orientation == Orientation.landscape;
+          final controls =           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
             child: Row(
               children: [
@@ -864,7 +1104,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       Container(height: 20, width: 20,
                         decoration: BoxDecoration(color: Color(_selectedColor), shape: BoxShape.circle, border: Border.all(color: Colors.white24))),
                       const SizedBox(width: 7),
-                      Text('\${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text('${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                       const SizedBox(width: 5),
                       const Icon(Icons.tune_rounded, size: 15),
                     ]),
@@ -883,8 +1123,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ],
             ),
-          ),
-          Expanded(
+          );
+          final drawingSurface =           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 9),
               child: Container(
@@ -919,11 +1159,37 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ),
             ),
-          ),
-          _buildToolBar(),
-        ],
+          );
+          if (landscape) {
+            return Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildLayerSelector(),
+                      controls,
+                      drawingSurface,
+                      _buildToolBar(compact: true),
+                    ],
+                  ),
+                ),
+                _buildBottomBar(vertical: true),
+              ],
+            );
+          }
+          return Column(
+            children: [
+              _buildLayerSelector(),
+              controls,
+              drawingSurface,
+              _buildToolBar(),
+            ],
+          );
+        },
       ),
-      bottomNavigationBar: _buildBottomBar(),
+      bottomNavigationBar: MediaQuery.orientationOf(context) == Orientation.landscape
+          ? null
+          : _buildBottomBar(),
     );
   }
 
@@ -995,7 +1261,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildToolBar() {
+  Widget _buildToolBar({bool compact = false}) {
     final tools = <({IconData icon, String label, _DrawingTool tool})>[
       (icon: Icons.edit_rounded, label: 'Caneta', tool: _DrawingTool.pen),
       (icon: Icons.auto_fix_normal_rounded, label: 'Borracha', tool: _DrawingTool.eraser),
@@ -1005,9 +1271,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
       (icon: Icons.straighten_rounded, label: 'Régua', tool: _DrawingTool.ruler),
     ];
     return Container(
-      height: 74,
-      margin: const EdgeInsets.fromLTRB(10, 0, 10, 7),
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      height: compact ? 54 : 74,
+      margin: EdgeInsets.fromLTRB(compact ? 6 : 10, 0, compact ? 6 : 10, compact ? 3 : 7),
+      padding: EdgeInsets.symmetric(vertical: compact ? 3 : 6),
       decoration: BoxDecoration(color: const Color(0xFF1B1E2C), borderRadius: BorderRadius.circular(15),
         border: Border.all(color: const Color(0xFF303447))),
       child: Row(children: [
@@ -1056,7 +1322,25 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar({bool vertical = false}) {
+    if (vertical) {
+      return SafeArea(
+        top: false,
+        child: Container(
+          width: 86,
+          color: const Color(0xFF11131F),
+          child: Column(children: [
+            _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings),
+            _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects),
+            _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
+            _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
+            _bottomItem(icon: Icons.graphic_eq_rounded, label: 'Áudio', color: const Color(0xFF50D3E4), onPressed: _openAudioTools),
+            _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
+            _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
+          ]),
+        ),
+      );
+    }
     return SafeArea(
       top: false,
       child: Container(
@@ -1313,4 +1597,74 @@ class _AnimationCanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AnimationCanvasPainter oldDelegate) => true;
+}
+
+
+class _BrushStyleSamplePainter extends CustomPainter {
+  const _BrushStyleSamplePainter({
+    required this.style,
+    required this.color,
+    required this.opacity,
+  });
+
+  final String style;
+  final Color color;
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final background = Paint()..color = const Color(0xFFFAFAFF).withOpacity(.12);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(5)),
+      background,
+    );
+    final path = Path()
+      ..moveTo(3, size.height * .70)
+      ..quadraticBezierTo(size.width * .25, size.height * .12, size.width * .48, size.height * .55)
+      ..quadraticBezierTo(size.width * .72, size.height * .92, size.width - 3, size.height * .28);
+    final width = style == 'marcador' || style == 'marca-texto'
+        ? 6.0
+        : style == 'aerógrafo' || style == 'pincel suave' || style == 'pastel'
+            ? 4.7
+            : 2.2;
+    final isGlow = style == 'brilho neon' || style == 'luz energética';
+    final paint = Paint()
+      ..color = color.withOpacity(opacity * (style == 'marca-texto' ? .5 : 1))
+      ..strokeWidth = width
+      ..strokeCap = style == 'pixel' ? StrokeCap.square : StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    if (style == 'linha tracejada') {
+      for (final metric in path.computeMetrics()) {
+        for (var d = 0.0; d < metric.length; d += 8) {
+          canvas.drawPath(metric.extractPath(d, math.min(d + 5, metric.length).toDouble()), paint);
+        }
+      }
+    } else if (isGlow) {
+      final glow = Paint()
+        ..color = color.withOpacity(.7)
+        ..strokeWidth = width * 2.7
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+      canvas.drawPath(path, glow);
+      canvas.drawPath(path, paint..strokeWidth = 1.8);
+    } else {
+      if (style == 'aerógrafo' || style == 'pincel suave' || style == 'pastel') {
+        paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+      }
+      canvas.drawPath(path, paint);
+      if (style == 'pincel seco') {
+        final dots = Paint()..color = color.withOpacity(.45)..strokeWidth = 1;
+        for (var i = 0; i < 7; i++) {
+          final x = 6.0 + i * (size.width - 12) / 6;
+          canvas.drawPoints(PointMode.points, <Offset>[Offset(x, size.height * (.28 + (i % 3) * .2))], dots);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BrushStyleSamplePainter oldDelegate) =>
+      style != oldDelegate.style || color != oldDelegate.color || opacity != oldDelegate.opacity;
 }

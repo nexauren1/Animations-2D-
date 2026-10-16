@@ -93,6 +93,26 @@ class TemplateCatalog {
       frames: _cometFlight,
     ),
     AnimationTemplate(
+      id: 'walk-cycle',
+      title: 'Personagem a caminhar',
+      description: 'Ciclo contínuo de oito poses com braços, pernas e corpo a oscilar. Cada traço pode ser editado.',
+      iconCodePoint: 0xe87c,
+      tint: 0xFF68C7F1,
+      fps: 12,
+      tag: 'PERSONAGEM',
+      frames: _walkCycle,
+    ),
+    AnimationTemplate(
+      id: 'bird-flight',
+      title: 'Pássaro a voar',
+      description: 'Animação em loop com batimento de asas, deslocação, céu e rastos leves.',
+      iconCodePoint: 0xe543,
+      tint: 0xFF8EDCF3,
+      fps: 12,
+      tag: 'NATUREZA',
+      frames: _birdFlight,
+    ),
+    AnimationTemplate(
       id: 'stickman-fight',
       title: 'Stickman: Combate Cinematográfico',
       description: 'Uma sequência de luta estilizada, frame a frame, com socos, esquivas, bloqueios, um pontapé aéreo e um final amigável. Todos os frames são editáveis.',
@@ -371,6 +391,179 @@ class TemplateCatalog {
   }
 
   /// A friendly, non-graphic sparring sequence built entirely from editable vector strokes.
+  static List<FrameModel> _walkCycle() {
+    const outline = 0xFF25314A;
+    const shirt = 0xFF69BFE8;
+    const trousers = 0xFF4B5A92;
+    const skin = 0xFFFFC69C;
+    const shoe = 0xFF18233B;
+    return List<FrameModel>.generate(8, (index) {
+      final phase = index / 8 * math.pi * 2;
+      final swing = math.sin(phase);
+      final lift = math.max(0.0, math.cos(phase)).toDouble() * 7;
+      final x = 160.0 + math.sin(phase * 2) * 2.5;
+      final headY = 130.0 + math.sin(phase * 2).abs() * 2;
+      final shoulder = Offset(x, 174 - lift * .25);
+      final hip = Offset(x, 236 - lift);
+      final leftKnee = Offset(x - 15 - swing * 17, (277 - math.max(0.0, swing) * 9).toDouble());
+      final rightKnee = Offset(x + 15 + swing * 17, (277 + math.min(0.0, swing) * 9).toDouble());
+      final leftFoot = Offset(x - 25 - swing * 29, (331 - math.max(0.0, swing) * 15 - lift).toDouble());
+      final rightFoot = Offset(x + 25 + swing * 29, (331 + math.min(0.0, swing) * 15 - lift).toDouble());
+      final layers = _layers();
+      final contour = layers[0];
+      final colour = layers[1];
+      final guide = layers[2];
+
+      guide.strokes.add(_s(
+        const <Offset>[Offset(35, 350), Offset(285, 350)],
+        color: 0xFFBEC9DB, width: 2,
+      ));
+      guide.strokes.add(_s(
+        <Offset>[Offset(x - 34, 351), Offset(x + 34, 351)],
+        color: 0xFF9AA9C2, width: 1.8, kind: 'ellipse',
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 22, headY - 20), Offset(x + 22, headY + 20)],
+        color: skin, width: 3.2, kind: 'ellipse',
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 17, headY - 12), Offset(x - 3, headY - 18), Offset(x + 12, headY - 15)],
+        color: outline, width: 3.5,
+      ));
+      colour.strokes.add(_s(
+        <Offset>[Offset(x - 7, headY - 2), Offset(x - 3, headY - 2)],
+        color: outline, width: 2.2,
+      ));
+      colour.strokes.add(_s(
+        <Offset>[Offset(x + 5, headY - 2), Offset(x + 9, headY - 2)],
+        color: outline, width: 2.2,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 4, headY + 7), Offset(x + 2, headY + 10), Offset(x + 8, headY + 7)],
+        color: outline, width: 1.8,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 20, headY - 5), Offset(x - 23, headY + 3)],
+        color: skin, width: 2,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x + 20, headY - 5), Offset(x + 23, headY + 3)],
+        color: skin, width: 2,
+      ));
+
+      colour.strokes.add(_s(
+        <Offset>[
+          Offset(x - 18, 176 - lift * .25),
+          Offset(x + 18, 176 - lift * .25),
+          Offset(x + 14, 213 - lift),
+          Offset(x + 10, 237 - lift),
+          Offset(x - 10, 237 - lift),
+          Offset(x - 14, 213 - lift),
+          Offset(x - 18, 176 - lift * .25),
+        ],
+        color: shirt, width: 3.6,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 15, 184 - lift * .25), shoulder, Offset(x + 15, 184 - lift * .25)],
+        color: outline, width: 2.4,
+      ));
+      // Arms swing opposite to the legs for a readable walk cycle.
+      final leftHand = Offset(x - 38 + swing * 17, 227 - lift * .25);
+      final rightHand = Offset(x + 38 - swing * 17, 227 - lift * .25);
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 16, 185 - lift * .25), Offset(x - 26 - swing * 9, 204), leftHand],
+        color: skin, width: 5,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x + 16, 185 - lift * .25), Offset(x + 26 + swing * 9, 204), rightHand],
+        color: skin, width: 5,
+      ));
+      colour.strokes.add(_s(
+        <Offset>[Offset(x - 10, 236 - lift), leftKnee, leftFoot],
+        color: trousers, width: 6,
+      ));
+      colour.strokes.add(_s(
+        <Offset>[Offset(x + 10, 236 - lift), rightKnee, rightFoot],
+        color: trousers, width: 6,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(leftFoot.dx - 8, leftFoot.dy + 3), Offset(leftFoot.dx + 10, leftFoot.dy + 3)],
+        color: shoe, width: 5,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(rightFoot.dx - 8, rightFoot.dy + 3), Offset(rightFoot.dx + 10, rightFoot.dy + 3)],
+        color: shoe, width: 5,
+      ));
+      return FrameModel(layers: layers);
+    });
+  }
+
+  static List<FrameModel> _birdFlight() {
+    const ink = 0xFF24405F;
+    const feather = 0xFF50B7DE;
+    const beak = 0xFFFFBC59;
+    return List<FrameModel>.generate(8, (index) {
+      final phase = index / 8 * math.pi * 2;
+      final x = 100.0 + index * 17;
+      final y = 190.0 + math.sin(phase) * 12;
+      final wingLift = math.sin(phase) * 30;
+      final layers = _layers();
+      final contour = layers[0];
+      final colour = layers[1];
+      final guide = layers[2];
+      guide.strokes.add(_s(
+        const <Offset>[Offset(18, 340), Offset(302, 340)],
+        color: 0xFFDCE8F5, width: 1.5,
+      ));
+      guide.strokes.add(_s(
+        const <Offset>[Offset(247, 65), Offset(264, 65), Offset(278, 65)],
+        color: 0xFFFFD166, width: 2.4,
+      ));
+      guide.strokes.add(_s(
+        <Offset>[Offset(x - 45, y + 3), Offset(x - 65, y - 2)],
+        color: 0xFF83CFE9, width: 2.0, brushStyle: 'rastro de movimento',
+      ));
+      guide.strokes.add(_s(
+        <Offset>[Offset(x - 50, y + 15), Offset(x - 63, y + 13)],
+        color: 0xFF83CFE9, width: 1.5, brushStyle: 'rastro de movimento',
+      ));
+      colour.strokes.add(_s(
+        <Offset>[Offset(x - 25, y - 10), Offset(x + 13, y + 9)],
+        color: feather, width: 3.2, kind: 'ellipse',
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x + 9, y - 10), Offset(x + 23, y - 19)],
+        color: feather, width: 3, kind: 'ellipse',
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x + 30, y - 18), Offset(x + 43, y - 13), Offset(x + 30, y - 8)],
+        color: beak, width: 3,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[
+          Offset(x - 8, y + 2),
+          Offset(x - 18, y - 13 - wingLift),
+          Offset(x - 1, y - 18 - wingLift),
+          Offset(x + 9, y + 1),
+        ],
+        color: feather, width: 4.3,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 22, y), Offset(x - 37, y - 8), Offset(x - 30, y + 8)],
+        color: ink, width: 2.7,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x + 22, y - 19), Offset(x + 24, y - 20)],
+        color: ink, width: 3,
+      ));
+      contour.strokes.add(_s(
+        <Offset>[Offset(x - 1, y + 13), Offset(x - 2, y + 22), Offset(x + 7, y + 22)],
+        color: ink, width: 2.0,
+      ));
+      return FrameModel(layers: layers);
+    });
+  }
+
   static List<FrameModel> _stickmanFight() {
     const leftTravel = <double>[0, 4, 8, 16, 20, 12, 4, -7, -15, -12, -4, 0, 0, 0, 0, 0];
     const rightTravel = <double>[0, -2, -4, -6, -10, -18, -20, -10, 0, 6, 12, 3, 0, 0, 0, 0];
@@ -694,12 +887,13 @@ class TemplateCatalog {
     required int color,
     double width = 3,
     String kind = 'pen',
+    String brushStyle = 'tinta',
   }) =>
       StrokeModel(
         points: points,
         color: color,
         width: width,
         kind: kind,
-        brushStyle: 'tinta',
+        brushStyle: brushStyle,
       );
 }

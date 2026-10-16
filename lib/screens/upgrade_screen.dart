@@ -28,6 +28,7 @@ class UpgradeScreen extends StatefulWidget {
 
 class _UpgradeScreenState extends State<UpgradeScreen> {
   bool _launching = false;
+  int _entitlementRetryKey = 0;
 
   static const _site = 'https://nexauren1.github.io/Animations-2D-/';
   static const _checkoutEndpoint =
@@ -193,6 +194,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         ],
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        key: ValueKey<int>(_entitlementRetryKey),
         stream: canReadEntitlement
             ? FirebaseFirestore.instance
                 .collection('proEntitlements')
@@ -265,19 +267,34 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
               const SizedBox(height: 12),
               const Text(
-                'O desenho, os efeitos visuais, o áudio e a exportação MP4 continuam gratuitos. O Pro desbloqueia apenas ferramentas avançadas.',
+                'Desenho, pincéis básicos, áudio importado e exportação MP4 até 720p são gratuitos. Pro desbloqueia ferramentas avançadas e opções de exportação profissionais.',
                 style: TextStyle(color: Colors.white70, height: 1.4),
               ),
               const SizedBox(height: 14),
               const _ProFeature(
                 icon: Icons.hub_outlined,
                 title: 'Rigging e poses',
-                detail: 'Ajusta poses com controlos de rigging e guarda-as como frames.',
+                detail: 'Ajusta poses com controlos de deformação e guarda-as como frames. A versão atual é experimental e não faz rigs independentes para várias personagens.',
+              ),
+              const _ProFeature(
+                icon: Icons.brush_rounded,
+                title: 'Pincéis e efeitos avançados',
+                detail: 'Aerógrafo, pincel suave, seco, pastel, pixel, neon, rastos e luz energética.',
+              ),
+              const _ProFeature(
+                icon: Icons.high_quality_rounded,
+                title: 'Exportação 1080p e sequências PNG',
+                detail: 'Renderiza em alta resolução e exporta sequências de frames em ZIP.',
               ),
               const _ProFeature(
                 icon: Icons.speed_rounded,
                 title: 'Exportação até 60 FPS',
                 detail: 'Controla a fluidez da animação em exportações de vídeo.',
+              ),
+              const _ProFeature(
+                icon: Icons.library_music_rounded,
+                title: 'Sons premium',
+                detail: 'Descarrega os sons da biblioteca assinalados como Pro depois da pré-visualização.',
               ),
               const SizedBox(height: 22),
               if (user == null) ...[
@@ -355,12 +372,21 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   ),
                 ],
               ),
-              if (snapshot.hasError)
+              if (snapshot.hasError) ...[
+                const SizedBox(height: 12),
                 const Text(
-                  'Não foi possível atualizar o estado Pro. Verifica a ligação ao Firestore.',
+                  'Não foi possível confirmar a licença no Firestore. Não pagues de novo enquanto o estado não for confirmado; os recursos gratuitos continuam disponíveis.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                  style: TextStyle(color: Colors.orangeAccent, fontSize: 12, height: 1.45),
                 ),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _entitlementRetryKey++),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Rever ligação e tentar novamente'),
+                  ),
+                ),
+              ],
             ],
           );
         },

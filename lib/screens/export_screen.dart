@@ -27,6 +27,7 @@ class ExportScreen extends StatefulWidget {
 
 class _ExportScreenState extends State<ExportScreen> {
   static const MethodChannel _nativeVideoChannel = MethodChannel('animpro/native_video_export');
+  static const MethodChannel _storageChannel = MethodChannel('animpro/export_storage');
   String _format = 'PNG';
   int _resolution = 720;
   late int _fps;
@@ -259,6 +260,22 @@ class _ExportScreenState extends State<ExportScreen> {
     if (data == null) throw StateError('Não foi possível codificar o PNG.');
     return data.buffer.asUint8List();
   }
+  Future<void> _setResolution(int resolution) async {
+    if (resolution == 1080 &&
+        !await ProAccessService.requirePro(context, feature: 'Exportação em 1080p')) {
+      return;
+    }
+    if (mounted) setState(() => _resolution = resolution);
+  }
+
+  Future<void> _setFormat(String format) async {
+    if (format == 'PNG Sequence' &&
+        !await ProAccessService.requirePro(context, feature: 'Exportação de sequência PNG')) {
+      return;
+    }
+    if (mounted) setState(() => _format = format);
+  }
+
   Future<void> _export() async {
     if (_format == 'MP4' && _fps == 60 &&
         !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
@@ -374,6 +391,31 @@ class _ExportScreenState extends State<ExportScreen> {
       }
 
       if (!mounted) return;
+      var savedToDownloads = false;
+      try {
+        await _storageChannel.invokeMethod<String>(
+          'saveToDownloads',
+          <String, String>{
+            'sourcePath': exported.path,
+            'fileName': exported.uri.pathSegments.isNotEmpty
+                ? exported.uri.pathSegments.last
+                : exported.path.split(Platform.pathSeparator).last,
+          },
+        );
+        savedToDownloads = true;
+      } catch (_) {
+        // Keep the share/export path available when auto-save is unavailable
+        // (for example, older Android versions or a host without the channel).
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(savedToDownloads
+                ? 'Guardado automaticamente em Downloads/AnimPro.'
+                : 'Ficheiro criado. Usa a partilha para o guardar no dispositivo.'),
+          ),
+        );
+      }
       await SharePlus.instance.share(
         ShareParams(
           files: <XFile>[XFile(exported.path)],
@@ -421,6 +463,15 @@ class _ExportScreenState extends State<ExportScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
         children: [
+          if (_isExporting) ...[
+            const LinearProgressIndicator(minHeight: 3),
+            const SizedBox(height: 8),
+            const Text(
+              'A exportar a animação e a guardar o ficheiro no dispositivo…',
+              style: TextStyle(color: Color(0xFFB9AEFF), fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+          ],
           const Text('Pré-visualização',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white70)),
           const SizedBox(height: 10),
@@ -450,9 +501,9 @@ class _ExportScreenState extends State<ExportScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _choice('540p', _resolution == 540, () => setState(() => _resolution = 540)),
+              _choice('540p', _resolution == 540, () => _setResolution(540)),
               const SizedBox(width: 9),
-              _choice('720p', _resolution == 720, () => setState(() => _resolution = 720)),
+              _choice('720p', _resolution == 720, () => _setResolution(720)),
               const SizedBox(width: 9),
               _choice('1080p', _resolution == 1080, () => setState(() => _resolution = 1080)),
             ],
@@ -467,7 +518,7 @@ class _ExportScreenState extends State<ExportScreen> {
               final selected = _format == format;
               return ChoiceChip(
                 selected: selected,
-                label: Text(format),
+                label: Text(format == 'PNG Sequence' ? 'PNG Sequence · PRO' : format),
                 avatar: Icon(
                   format == 'MP4' ? Icons.movie_outlined
                       : format == 'GIF' ? Icons.gif_box_outlined
@@ -475,9 +526,7 @@ class _ExportScreenState extends State<ExportScreen> {
                       : Icons.folder_zip_outlined,
                   size: 18,
                 ),
-                onSelected: (_) async {
-                  if (mounted) setState(() => _format = format);
-                },
+                onSelected: (_) => _setFormat(format),
                 selectedColor: const Color(0xFF5445C6),
                 backgroundColor: const Color(0xFF242737),
                 labelStyle: TextStyle(

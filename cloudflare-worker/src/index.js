@@ -9,6 +9,12 @@ const JSON_HEADERS = {
 let cachedGoogleToken = "";
 let cachedGoogleTokenExpiresAt = 0;
 
+const PAYPAL_SANDBOX_API_BASE = "https://api-m.sandbox.paypal.com";
+const PAYPAL_LIVE_API_BASE = "https://api-m.paypal.com";
+// Resolve the PayPal environment from the credentials server-side. This keeps
+// the mobile app independent of Sandbox/Live switches and supports key rotation.
+const paypalResolvedBases = new WeakMap();
+
 class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -262,32 +268,86 @@ async function queryDocByField(env, collection, fieldName, value) {
   };
 }
 
-function paypalApiBase(env) {
-  const configured = (env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com").replace(/\/$/, "");
-  // This build is deliberately Sandbox-only to prevent accidental live charges.
-  if (configured !== "https://api-m.sandbox.paypal.com") {
-    throw new HttpError(503, "O ambiente de pagamentos está configurado incorretamente.");
+function paypalMode(env) {
+  const mode = String(env.PAYPAL_MODE || env.PAYPAL_ENVIRONMENT || "").trim().toLowerCase();
+  if (mode === "live" || mode === "production") return "live";
+  if (mode === "sandbox" || mode === "test") return "sandbox";
+  if (mode) {
+    throw new HttpError(503, "PAYPAL_MODE deve ser Sandbox ou Live.");
   }
-  return configured;
+  return "";
 }
+
+function paypalApiBase(env) {
+  const resolved = paypalResolvedBases.get(env);
+  if (resolved) return resolved;
+  const mode = paypalMode(env);
+  if (mode === "live") return PAYPAL_LIVE_API_BASE;
+  if (mode === "sandbox") return PAYPAL_SANDBOX_API_BASE;
+  const configured = String(env.PAYPAL_API_BASE || "").trim().replace(/\/$/, "");
+  if (configured === PAYPAL_SANDBOX_API_BASE || configured === PAYPAL_LIVE_API_BASE) {
+    return configured;
+  }
+  if (configured) {
+    throw new HttpError(503, "PAYPAL_API_BASE não corresponde a um endpoint oficial suportado.");
+  }
+  return PAYPAL_SANDBOX_API_BASE;
+}
+
+function paypalCandidateBases(env) {
+  const mode = paypalMode(env);
+  if (mode === "live") return [PAYPAL_LIVE_API_BASE];
+  if (mode === "sandbox") return [PAYPAL_SANDBOX_API_BASE];
+
+  const configured = String(env.PAYPAL_API_BASE || "").trim().replace(/\/$/, "");
+  if (configured && configured !== PAYPAL_SANDBOX_API_BASE && configured !== PAYPAL_LIVE_API_BASE) {
+    throw new HttpError(503, "PAYPAL_API_BASE não corresponde a um endpoint oficial suportado.");
+  }
+  // Try the configured endpoint first, then infer the real environment from
+  // OAuth. If only the Client ID/Secret are switched in Cloudflare, no APK
+  // update (and no manual base-URL switch) is needed.
+  const first = configured || PAYPAL_SANDBOX_API_BASE;
+  const second = first === PAYPAL_SANDBOX_API_BASE
+    ? PAYPAL_LIVE_API_BASE
+    : PAYPAL_SANDBOX_API_BASE;
+  return [first, second];
+}
+
 async function paypalAccessToken(env) {
   if (!env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
     throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
-  const response = await fetch(paypalApiBase(env) + "/v1/oauth2/token", {
-    method: "POST",
-    headers: {
-      authorization: "Basic " + btoa(env.PAYPAL_CLIENT_ID + ":" + env.PAYPAL_CLIENT_SECRET),
-      "content-type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload.access_token) {
-    console.error("PayPal OAuth failed with HTTP " + response.status);
-    throw new HttpError(503, "Não foi possível autenticar no PayPal Sandbox.");
+
+  let lastStatus = 0;
+  for (const base of paypalCandidateBases(env)) {
+    try {
+      const response = await fetch(base + "/v1/oauth2/token", {
+        method: "POST",
+        headers: {
+          authorization: "Basic " + btoa(env.PAYPAL_CLIENT_ID + ":" + env.PAYPAL_CLIENT_SECRET),
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: "grant_type=client_credentials",
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (response.ok && payload.access_token) {
+        paypalResolvedBases.set(env, base);
+        return payload.access_token;
+      }
+      lastStatus = response.status;
+      // Wrong-environment credentials normally return 401. Try the other
+      // official endpoint when mode was not explicitly pinned.
+      if (paypalMode(env)) break;
+    } catch (_) {
+      if (paypalMode(env)) break;
+    }
   }
-  return payload.access_token;
+
+  console.error("PayPal OAuth failed after checking the configured environment(s); HTTP " + lastStatus);
+  throw new HttpError(
+    503,
+    "Não foi possível autenticar no PayPal. Confirma se o Client ID e o Secret pertencem ao mesmo ambiente (Sandbox ou Live).",
+  );
 }
 
 async function paypalRequest(env, token, method, path, body, requestId) {
@@ -310,21 +370,37 @@ async function paypalRequest(env, token, method, path, body, requestId) {
   return payload;
 }
 
-function approvalUrl(payload) {
+function approvalUrl(payload, env) {
   const link = (payload.links || []).find((item) =>
     item.rel === "approve" || item.rel === "payer-action");
   if (!link || typeof link.href !== "string") {
     throw new HttpError(502, "O PayPal não devolveu um link de aprovação.");
   }
   const url = new URL(link.href);
-  const allowed = url.hostname === "paypal.com" ||
-    url.hostname.endsWith(".paypal.com") ||
-    url.hostname === "sandbox.paypal.com" ||
-    url.hostname.endsWith(".sandbox.paypal.com");
-  if (url.protocol !== "https:" || !allowed) {
-    throw new HttpError(502, "O PayPal devolveu um endereço de aprovação inválido.");
+  const host = url.hostname.toLowerCase();
+  const sandboxHost = host === "sandbox.paypal.com" || host.endsWith(".sandbox.paypal.com");
+  const liveHost = (host === "paypal.com" || host.endsWith(".paypal.com")) && !sandboxHost;
+  const expectedHost = paypalApiBase(env) === PAYPAL_SANDBOX_API_BASE ? sandboxHost : liveHost;
+  if (url.protocol !== "https:" || !expectedHost) {
+    throw new HttpError(502, "O PayPal devolveu um link de aprovação incompatível com o ambiente ativo.");
   }
   return url.toString();
+}
+
+function paypalWebhookId(env) {
+  const live = paypalApiBase(env) === PAYPAL_LIVE_API_BASE;
+  const configured = live
+    ? (env.PAYPAL_WEBHOOK_ID_LIVE || env.PAYPAL_WEBHOOK_ID)
+    : (env.PAYPAL_WEBHOOK_ID_SANDBOX || env.PAYPAL_WEBHOOK_ID);
+  if (!configured) {
+    throw new HttpError(
+      503,
+      live
+        ? "O Webhook Live do PayPal ainda não está configurado."
+        : "O Webhook Sandbox do PayPal ainda não está configurado.",
+    );
+  }
+  return configured;
 }
 
 function entitlementIsActive(entitlement) {
@@ -362,9 +438,17 @@ async function startCheckout(request, env) {
     "https://nexauren1.github.io/Animations-2D-/payment-return.html?cancelled=1";
 
   if (plan === "monthly") {
-    const monthlyPlanId = env.PAYPAL_MONTHLY_PLAN_ID;
+    const liveEnvironment = paypalApiBase(env) === PAYPAL_LIVE_API_BASE;
+    const monthlyPlanId = liveEnvironment
+      ? (env.PAYPAL_MONTHLY_PLAN_ID_LIVE || env.PAYPAL_MONTHLY_PLAN_ID)
+      : (env.PAYPAL_MONTHLY_PLAN_ID_SANDBOX || env.PAYPAL_MONTHLY_PLAN_ID);
     if (!monthlyPlanId) {
-      throw new HttpError(503, "O plano mensal ainda não está disponível.");
+      throw new HttpError(
+        503,
+        liveEnvironment
+          ? "O plano mensal Live ainda não está configurado. Adiciona PAYPAL_MONTHLY_PLAN_ID_LIVE no Cloudflare."
+          : "O plano mensal Sandbox ainda não está disponível.",
+      );
     }
     const subscription = await paypalRequest(
       env,
@@ -397,7 +481,7 @@ async function startCheckout(request, env) {
     return json({
       plan: "monthly",
       subscriptionId: subscription.id,
-      approvalUrl: approvalUrl(subscription),
+      approvalUrl: approvalUrl(subscription, env),
     });
   }
 
@@ -434,7 +518,7 @@ async function startCheckout(request, env) {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-  return json({ plan: "lifetime", orderId: order.id, approvalUrl: approvalUrl(order) });
+  return json({ plan: "lifetime", orderId: order.id, approvalUrl: approvalUrl(order, env) });
 }
 
 async function grantLifetime(env, uid, orderId, captureId) {
@@ -732,7 +816,9 @@ async function handleSubscriptionEvent(env, event, token) {
 }
 
 async function handleWebhook(request, env) {
-  if (!env.PAYPAL_WEBHOOK_ID) {
+  if (!env.PAYPAL_WEBHOOK_ID &&
+      !env.PAYPAL_WEBHOOK_ID_LIVE &&
+      !env.PAYPAL_WEBHOOK_ID_SANDBOX) {
     throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   const event = await request.json().catch(() => null);
@@ -746,7 +832,7 @@ async function handleWebhook(request, env) {
     transmission_id: request.headers.get("paypal-transmission-id"),
     transmission_sig: request.headers.get("paypal-transmission-sig"),
     transmission_time: request.headers.get("paypal-transmission-time"),
-    webhook_id: env.PAYPAL_WEBHOOK_ID,
+    webhook_id: paypalWebhookId(env),
     webhook_event: event,
   };
   if (
