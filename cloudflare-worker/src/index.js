@@ -387,6 +387,22 @@ function approvalUrl(payload, env) {
   return url.toString();
 }
 
+function paypalWebhookId(env) {
+  const live = paypalApiBase(env) === PAYPAL_LIVE_API_BASE;
+  const configured = live
+    ? (env.PAYPAL_WEBHOOK_ID_LIVE || env.PAYPAL_WEBHOOK_ID)
+    : (env.PAYPAL_WEBHOOK_ID_SANDBOX || env.PAYPAL_WEBHOOK_ID);
+  if (!configured) {
+    throw new HttpError(
+      503,
+      live
+        ? "O Webhook Live do PayPal ainda não está configurado."
+        : "O Webhook Sandbox do PayPal ainda não está configurado.",
+    );
+  }
+  return configured;
+}
+
 function entitlementIsActive(entitlement) {
   if (!entitlement || entitlement.active !== true) return false;
   if (entitlement.type === "lifetime" && entitlement.expiresAt == null) return true;
@@ -424,7 +440,7 @@ async function startCheckout(request, env) {
   if (plan === "monthly") {
     const liveEnvironment = paypalApiBase(env) === PAYPAL_LIVE_API_BASE;
     const monthlyPlanId = liveEnvironment
-      ? env.PAYPAL_MONTHLY_PLAN_ID_LIVE
+      ? (env.PAYPAL_MONTHLY_PLAN_ID_LIVE || env.PAYPAL_MONTHLY_PLAN_ID)
       : (env.PAYPAL_MONTHLY_PLAN_ID_SANDBOX || env.PAYPAL_MONTHLY_PLAN_ID);
     if (!monthlyPlanId) {
       throw new HttpError(
@@ -814,7 +830,7 @@ async function handleWebhook(request, env) {
     transmission_id: request.headers.get("paypal-transmission-id"),
     transmission_sig: request.headers.get("paypal-transmission-sig"),
     transmission_time: request.headers.get("paypal-transmission-time"),
-    webhook_id: env.PAYPAL_WEBHOOK_ID,
+    webhook_id: paypalWebhookId(env),
     webhook_event: event,
   };
   if (
