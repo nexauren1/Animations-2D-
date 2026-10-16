@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text;
@@ -1579,7 +1580,7 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
     }
     if (widget.frames.isEmpty) return;
     setState(() => _playing = true);
-    _playAudioAtFrame(_index);
+    unawaited(_playAudioAtFrame(_index));
     _timer?.cancel();
     _timer = Timer.periodic(
       Duration(milliseconds: (1000 / widget.fps.clamp(1, 60)).round()),
@@ -1591,7 +1592,7 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
           return;
         }
         setState(() => _index = (_index + 1) % widget.frames.length);
-        _playAudioAtFrame(_index);
+        unawaited(_playAudioAtFrame(_index));
       },
     );
   }
