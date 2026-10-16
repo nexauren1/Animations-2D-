@@ -474,9 +474,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                               ? Icon(
                                   Icons.check_rounded,
                                   size: 17,
-                                  color: color.computeLuminance() > .5
-                                      ? Colors.black
-                                      : Colors.white,
+                                  color: color.computeLuminance() > .5 ? Colors.black : Colors.white,
                                 )
                               : null,
                         ),
@@ -514,7 +512,84 @@ class _CanvasScreenState extends State<CanvasScreen> {
                           ),
                           onSubmitted: (text) {
                             final cleaned = text.trim().replaceFirst('#', '');
-                            if (RegExp(r'^[0-9a-fA-F]{6}
+                            if (RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(cleaned)) {
+                              applyColor(
+                                Color(0xFF000000 | int.parse(cleaned, radix: 16)),
+                                setSheetState,
+                              );
+                            } else {
+                              colorController.text = colorHex(Color(_selectedColor));
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        height: 48,
+                        width: 48,
+                        decoration: BoxDecoration(
+                          color: Color(_selectedColor),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white38),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Expanded(child: Text('Matiz')),
+                      Text(hue.round().toString() + '°',
+                          style: const TextStyle(color: Color(0xFFB7A9FF))),
+                    ],
+                  ),
+                  Slider(
+                    value: hue.clamp(0, 360).toDouble(),
+                    min: 0,
+                    max: 360,
+                    divisions: 360,
+                    activeColor: const Color(0xFF8B70FF),
+                    onChanged: (value) {
+                      hue = value;
+                      applyHsv(setSheetState);
+                    },
+                  ),
+                  Row(
+                    children: [
+                      const Expanded(child: Text('Saturação')),
+                      Text((saturation * 100).round().toString() + '%',
+                          style: const TextStyle(color: Color(0xFFB7A9FF))),
+                    ],
+                  ),
+                  Slider(
+                    value: saturation.clamp(0, 1).toDouble(),
+                    min: 0,
+                    max: 1,
+                    divisions: 100,
+                    activeColor: const Color(0xFF8B70FF),
+                    onChanged: (value) {
+                      saturation = value;
+                      applyHsv(setSheetState);
+                    },
+                  ),
+                  Row(
+                    children: [
+                      const Expanded(child: Text('Luminosidade')),
+                      Text((brightness * 100).round().toString() + '%',
+                          style: const TextStyle(color: Color(0xFFB7A9FF))),
+                    ],
+                  ),
+                  Slider(
+                    value: brightness.clamp(0, 1).toDouble(),
+                    min: 0,
+                    max: 1,
+                    divisions: 100,
+                    activeColor: const Color(0xFF8B70FF),
+                    onChanged: (value) {
+                      brightness = value;
+                      applyHsv(setSheetState);
+                    },
+                  ),
+                  const SizedBox(height: 21),
                   Row(children: [
                     const Expanded(child: Text('Espessura', style: TextStyle(fontWeight: FontWeight.w800))),
                     Text('\${_brushSize.round()} px',
@@ -1111,153 +1186,3 @@ class _AnimationCanvasPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _AnimationCanvasPainter oldDelegate) => true;
 }
-).hasMatch(cleaned)) {
-                              applyColor(
-                                Color(0xFF000000 | int.parse(cleaned, radix: 16)),
-                                setSheetState,
-                              );
-                            } else {
-                              colorController.text = colorHex(Color(_selectedColor));
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          color: Color(_selectedColor),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white38),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Expanded(child: Text('Matiz')),
-                      Text(hue.round().toString() + '°',
-                          style: const TextStyle(color: Color(0xFFB7A9FF))),
-                    ],
-                  ),
-                  Slider(
-                    value: hue.clamp(0, 360).toDouble(),
-                    min: 0,
-                    max: 360,
-                    divisions: 360,
-                    activeColor: const Color(0xFF8B70FF),
-                    onChanged: (value) {
-                      hue = value;
-                      applyHsv(setSheetState);
-                    },
-                  ),
-                  Row(
-                    children: [
-                      const Expanded(child: Text('Saturação')),
-                      Text((saturation * 100).round().toString() + '%',
-                          style: const TextStyle(color: Color(0xFFB7A9FF))),
-                    ],
-                  ),
-                  Slider(
-                    value: saturation.clamp(0, 1).toDouble(),
-                    min: 0,
-                    max: 1,
-                    divisions: 100,
-                    activeColor: const Color(0xFF8B70FF),
-                    onChanged: (value) {
-                      saturation = value;
-                      applyHsv(setSheetState);
-                    },
-                  ),
-                  Row(
-                    children: [
-                      const Expanded(child: Text('Luminosidade')),
-                      Text((brightness * 100).round().toString() + '%',
-                          style: const TextStyle(color: Color(0xFFB7A9FF))),
-                    ],
-                  ),
-                  Slider(
-                    value: brightness.clamp(0, 1).toDouble(),
-                    min: 0,
-                    max: 1,
-                    divisions: 100,
-                    activeColor: const Color(0xFF8B70FF),
-                    onChanged: (value) {
-                      brightness = value;
-                      applyHsv(setSheetState);
-                    },
-                  ),
-                  const SizedBox(height: 21),
-                  Row(children: [
-                    const Expanded(child: Text('Espessura', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${_brushSize.round()} px',
-                      style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
-                  ]),
-                  Slider(
-                    value: _brushSize.clamp(1, 40).toDouble(),
-                    min: 1, max: 40, divisions: 39,
-                    activeColor: const Color(0xFF8B70FF),
-                    onChanged: (value) {
-                      setState(() => _brushSize = value);
-                      setSheetState(() {});
-                    },
-                  ),
-                  Row(children: [
-                    const Expanded(child: Text('Opacidade', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${(_opacity * 100).round()}%',
-                      style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
-                  ]),
-                  Slider(
-                    value: _opacity, min: .1, max: 1, divisions: 9,
-                    activeColor: const Color(0xFF8B70FF),
-                    onChanged: (value) {
-                      setState(() => _opacity = value);
-                      setSheetState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: const Color(0xFF171A28), borderRadius: BorderRadius.circular(15)),
-                    child: Row(children: [
-                      Container(
-                        width: 60, height: 45,
-                        decoration: BoxDecoration(color: const Color(0xFFFAFAFF), borderRadius: BorderRadius.circular(10)),
-                        child: Center(
-                          child: Container(
-                            height: _brushSize.clamp(1, 40).toDouble(),
-                            width: _brushSize.clamp(1, 40).toDouble(),
-                            decoration: BoxDecoration(color: Color(_selectedColor).withOpacity(_opacity), shape: BoxShape.circle),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Pré-visualização', style: TextStyle(fontWeight: FontWeight.w800)),
-                          SizedBox(height: 3),
-                          Text('As definições aplicam-se aos novos traços.',
-                            style: TextStyle(fontSize: 11, color: Colors.white60)),
-                        ],
-                      )),
-                    ]),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity, height: 48,
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(sheetContext),
-                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6650DE)),
-                      child: const Text('Aplicar pincel'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
