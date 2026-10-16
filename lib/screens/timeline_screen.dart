@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 import '../models/project_model.dart';
 
 /// Bottom sheet da timeline, com duplicação e playback em loop.
