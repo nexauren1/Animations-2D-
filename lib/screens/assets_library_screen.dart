@@ -170,7 +170,7 @@ class _AssetsLibraryScreenState extends State<AssetsLibraryScreen> {
                                   width: double.infinity,
                                   height: 36,
                                   child: FilledButton.icon(
-                                    onPressed: () => Navigator.of(context).pop(asset.id),
+                                    onPressed: () => Navigator.of(context).pop(asset),
                                     icon: const Icon(Icons.add, size: 17),
                                     label: const Text('Adicionar'),
                                     style: FilledButton.styleFrom(
