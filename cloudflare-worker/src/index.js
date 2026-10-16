@@ -816,7 +816,9 @@ async function handleSubscriptionEvent(env, event, token) {
 }
 
 async function handleWebhook(request, env) {
-  if (!env.PAYPAL_WEBHOOK_ID) {
+  if (!env.PAYPAL_WEBHOOK_ID &&
+      !env.PAYPAL_WEBHOOK_ID_LIVE &&
+      !env.PAYPAL_WEBHOOK_ID_SANDBOX) {
     throw new HttpError(503, "O serviço de pagamentos está temporariamente indisponível.");
   }
   const event = await request.json().catch(() => null);
