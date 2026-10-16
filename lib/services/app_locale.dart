@@ -43,6 +43,47 @@ class AppLocale {
     final frameRate = RegExp(r'^(\d+) FPS$').firstMatch(source);
     if (frameRate != null) return '${frameRate.group(1)} FPS';
 
+    final renderedFrame = RegExp(r'^A renderizar frame (\d+)/(\d+)…$').firstMatch(source);
+    if (renderedFrame != null) {
+      return 'Rendering frame ${renderedFrame.group(1)} of ${renderedFrame.group(2)}…';
+    }
+    final preparingFrame = RegExp(r'^A preparar frame (\d+)/(\d+)…$').firstMatch(source);
+    if (preparingFrame != null) {
+      return 'Preparing frame ${preparingFrame.group(1)} of ${preparingFrame.group(2)}…';
+    }
+    final markerCount = RegExp(r'^(\d+) marcas$').firstMatch(source);
+    if (markerCount != null) return '${markerCount.group(1)} markers';
+    final projectAudio = RegExp(r'^Áudio: (.+)$').firstMatch(source);
+    if (projectAudio != null) return 'Audio: ${projectAudio.group(1)}';
+    final appliedEffect = RegExp(r'^Efeito aplicado aos próximos traços: (.+)$').firstMatch(source);
+    if (appliedEffect != null) {
+      return 'Effect applied to upcoming strokes: ${appliedEffect.group(1)}';
+    }
+
+    final projectFrameLabel = RegExp(r'^Frame (\d+) / (\d+)$').firstMatch(source);
+    if (projectFrameLabel != null) {
+      return 'Frame ${projectFrameLabel.group(1)} / ${projectFrameLabel.group(2)}';
+    }
+    final projectCount = RegExp(r'^(\d+) projeto\(s\)$').firstMatch(source);
+    if (projectCount != null) {
+      return '${projectCount.group(1)} project(s)';
+    }
+    final removedProject = RegExp(r'^“(.+)” será removido deste dispositivo\.$').firstMatch(source);
+    if (removedProject != null) {
+      return '“${removedProject.group(1)}” will be removed from this device.';
+    }
+    final importedProject = RegExp(r'^Projeto "(.+)" importado com sucesso\.$').firstMatch(source);
+    if (importedProject != null) {
+      return 'Project "${importedProject.group(1)}" imported successfully.';
+    }
+
+    final reducedVideoResolution = RegExp(
+      r'^O dispositivo precisou de uma resolução reduzida para exportar o MP4 \((\d+)p\)\.$',
+    ).firstMatch(source);
+    if (reducedVideoResolution != null) {
+      return 'The device needed a lower resolution to export MP4 (${reducedVideoResolution.group(1)}p).';
+    }
+
     final templateFrameCount = RegExp(r'^(\d+) frames · (\d+) FPS$').firstMatch(source);
     if (templateFrameCount != null) {
       return '${templateFrameCount.group(1)} frames · ${templateFrameCount.group(2)} FPS';
@@ -54,6 +95,13 @@ class AppLocale {
     final removedPack = RegExp(r'^"(.+)" será removido do armazenamento deste dispositivo.$').firstMatch(source);
     if (removedPack != null) {
       return '"${removedPack.group(1)}" will be removed from this device storage.';
+    }
+
+    final savedExport = RegExp(
+      r'^Exportação concluída\. Ficheiro guardado em (.+) \(ou na pasta da aplicação em Android antigo\)\.$',
+    ).firstMatch(source);
+    if (savedExport != null) {
+      return 'Export complete. File saved to ${savedExport.group(1)} (or in app-specific storage on older Android).';
     }
 
     return _english[source] ?? source;
@@ -337,6 +385,123 @@ class AppLocale {
     'Licença Pro não verificada': 'Pro licence not verified',
     'Inicia sessão para restaurar a tua licença Pro.': 'Sign in to restore your Pro licence.',
     'Não foi possível abrir o link. Tenta novamente.': 'Could not open the link. Try again.',
+
+    'O Google recusou a configuração desta aplicação. Confirma no Firebase se o método Google está ativado e se o SHA-1/SHA-256 do certificado desta versão está registado na aplicação Android.': 'Google rejected this app configuration. In Firebase, enable the Google sign-in provider and register this Android release certificate\'s SHA-1/SHA-256 fingerprints.',
+    'A configuração OAuth do Google está incompleta. Confirma o ID de cliente Web no Firebase e o fornecedor Google em Authentication.': 'Google OAuth is not fully configured. Check the Web client ID and the Google provider under Firebase Authentication.',
+    'O Google não conseguiu estabelecer ligação. Verifica a internet e tenta novamente.': 'Google could not connect. Check your internet connection and try again.',
+    'O início de sessão com Google falhou. Confirma a configuração do fornecedor Google no Firebase e tenta novamente.': 'Google sign-in failed. Check the Google provider configuration in Firebase and try again.',
+    'O áudio associado ao projeto já não está disponível neste dispositivo. Importa-o novamente.': 'The project\'s audio file is no longer available on this device. Import it again.',
+    'Não foi possível abrir o áudio guardado. Importa novamente um ficheiro compatível.': 'Could not open the saved audio. Import a compatible file again.',
+    'Áudio aplicado ao projeto e guardado neste dispositivo.': 'Audio applied to the project and saved on this device.',
+    'Não foi possível anexar o áudio ao projeto. Tenta novamente.': 'Could not attach the audio to the project. Try again.',
+    'Áudio aplicado ao projeto': 'Audio applied to project',
+    'Aplicar áudio ao projeto': 'Apply audio to project',
+    'Reproduzir animação': 'Play animation',
+    'Pausar animação': 'Pause animation',
+    'Reproduzir áudio do projeto': 'Play project audio',
+    'Pausar áudio do projeto': 'Pause project audio',
+    'Pausar áudio': 'Pause audio',
+    'Ouvir áudio': 'Listen to audio',
+    'Remover áudio do projeto': 'Remove audio from project',
+    'Adiciona pelo menos dois frames para reproduzir a animação.': 'Add at least two frames to play the animation.',
+    'Não foi possível reproduzir o áudio deste projeto. Abre Áudio e importa o ficheiro novamente.': 'Could not play this project\'s audio. Open Audio and import the file again.',
+    'A exportar o projeto': 'Exporting project',
+    'A preparar a exportação…': 'Preparing export…',
+    'A desenhar o frame…': 'Rendering frame…',
+    'A guardar o ficheiro no dispositivo…': 'Saving file to device…',
+    'Concluído! Ficheiro guardado no dispositivo.': 'Done! File saved on device.',
+    'Exportação concluída. Ficheiro guardado automaticamente em Downloads/AnimPro ou na pasta de imagens/vídeos AnimPro.': 'Export complete. The file was saved automatically to Downloads/AnimPro or the AnimPro pictures/videos folder.',
+    'Partilhar ficheiro guardado': 'Share saved file',
+    'Guarda o frame atual como imagem PNG no dispositivo.': 'Save the current frame as a PNG image on your device.',
+    'Guarda todos os frames como ficheiros PNG dentro de um ZIP.': 'Save all frames as PNG files in a ZIP archive.',
+    'O ficheiro será criado a partir dos frames do projeto e guardado automaticamente no dispositivo.': 'The file will be created from the project\'s frames and automatically saved on your device.',
+    'A exportação fica guardada no dispositivo. Usa o botão Partilhar depois de concluída para enviar o ficheiro.': 'The export is saved on your device. Use the Share button when it finishes to send the file.',
+
+    'Não foi possível guardar o ficheiro no dispositivo.': 'Could not save the file to your device.',
+    'Não foi possível abrir o destino da exportação.': 'Could not open the export destination.',
+    'O Android não confirmou a gravação do ficheiro.': 'Android did not confirm that the file was saved.',
+    'O ficheiro exportado não existe ou está vazio.': 'The exported file does not exist or is empty.',
+    'Verificação temporariamente indisponível': 'Verification temporarily unavailable',
+    'Não foi possível consultar o estado da licença agora. O editor e as funções gratuitas continuam disponíveis; o servidor confirmará o estado ao abrir o checkout.': 'The license status could not be checked right now. The editor and free features remain available; the server will confirm status at checkout.',
+    'A importar…': 'Importing…',
+    'Limpar marcações': 'Clear markers',
+    'Procurar assets…': 'Search assets…',
+    'Personagens': 'Characters',
+    'Natureza': 'Nature',
+    'Objetos': 'Objects',
+    'Todos': 'All',
+    'Raposa simpática': 'Friendly fox',
+    'Rosto expressivo': 'Expressive face',
+    'Árvore': 'Tree',
+    'Nuvem': 'Cloud',
+    'Estrela': 'Star',
+    'Coração': 'Heart',
+    'Casa': 'House',
+    'Robot de formas básicas': 'Simple-shape robot',
+    'Robot Buddy': 'Robot Buddy',
+    'Pincel': 'Brush',
+    'Continuar para pagamento': 'Continue to payment',
+    'Nota: o áudio está guardado no projeto, mas a exportação MP4 ainda não mistura a faixa de som.': 'Note: audio is saved with the project, but MP4 export does not yet mix in the soundtrack.',
+    'O ficheiro foi criado, mas o Android não conseguiu guardá-lo nas pastas visíveis. Verifica o espaço disponível e tenta novamente.': 'The file was created, but Android could not save it to a shared folder. Check available storage and try again.',
+    'Falha ao codificar MP4 neste dispositivo. Tenta uma resolução menor e 12/24 FPS, ou exporta GIF.': 'MP4 encoding failed on this device. Try a lower resolution and 12/24 FPS, or export a GIF.',
+    'Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.': 'Could not export the file. Check available storage and try again.',
+    'Exportação a 60 FPS': '60 FPS export',
+    'Licença permanente ativa': 'Lifetime license active',
+    'Comprar permanentemente': 'Buy lifetime',
+    '/ mês': '/ month',
+    'pagamento único': 'one-time payment',
+    'A tua sessão expirou. Entra novamente na tua conta.': 'Your session expired. Sign in again.',
+    'Não foi possível iniciar esta compra. Seleciona um plano e tenta novamente.': 'Could not start this purchase. Select a plan and try again.',
+    'As compras estão temporariamente indisponíveis. Tenta novamente mais tarde.': 'Purchases are temporarily unavailable. Try again later.',
+    'Inicia sessão ou cria uma conta antes de comprar.': 'Sign in or create an account before purchasing.',
+    'Conclui o pagamento no PayPal e regressa aqui. A licença é ativada pelo servidor depois da confirmação.': 'Complete payment with PayPal and return here. The server activates the license after confirmation.',
+    'O PayPal não devolveu um link de pagamento válido.': 'PayPal did not return a valid payment link.',
+    'Não foi possível iniciar o pagamento. Tenta novamente.': 'Could not start the payment. Try again.',
+    'Geral': 'General',
+    'E-mail de verificação enviado. Consulta a caixa de entrada e o spam.': 'Verification email sent. Check your inbox and spam folder.',
+    'A entrada com Google está temporariamente indisponível. Podes usar o e-mail ou tentar mais tarde.': 'Google sign-in is temporarily unavailable. You can use email or try again later.',
+    'O endereço de e-mail não é válido.': 'The email address is invalid.',
+    'Este e-mail já tem uma conta. Experimenta iniciar sessão.': 'An account already exists for this email. Try signing in.',
+    'A palavra-passe é demasiado fraca. Usa pelo menos 6 caracteres.': 'The password is too weak. Use at least 6 characters.',
+    'E-mail ou palavra-passe incorretos.': 'Incorrect email or password.',
+    'Este método de entrada está temporariamente indisponível. Tenta outra opção.': 'This sign-in method is temporarily unavailable. Try another option.',
+    'Operação cancelada.': 'Operation cancelled.',
+    'A animação será reproduzida sem áudio. Não foi possível abrir a faixa do projeto.': 'Animation will play without audio. The project\'s soundtrack could not be opened.',
+    'O início de sessão falhou. Confirma a configuração do fornecedor Google no Firebase e tenta novamente.': 'Sign-in failed. Check the Google provider configuration in Firebase and try again.',
+    'A licença está indisponível, mas as funções gratuitas continuam abertas.': 'The license service is unavailable, but free features remain accessible.',
+    'A faixa de áudio está aplicada ao projeto.': 'The soundtrack is attached to the project.',
+    'Não foi possível guardar o projeto. Tenta novamente.': 'Could not save the project. Try again.',
+    'O codificador Android não criou um MP4 válido.': 'The Android encoder did not create a valid MP4.',
+    'O dispositivo não conseguiu codificar o MP4. Tenta 540p/360p e 12 ou 24 FPS, ou exporta GIF.': 'The device could not encode MP4. Try 540p/360p at 12 or 24 FPS, or export a GIF.',
+    'A tua licença Pro está ativa.': 'Your Pro license is active.',
+    'A licença Pro já está ativa.': 'The Pro license is already active.',
+    'O editor e as ferramentas gratuitas continuam disponíveis.': 'The editor and free tools remain available.',
+    'O Google não devolveu um ID token.': 'Google did not return an ID token.',
+    'Sessão iniciada com sucesso.': 'Signed in successfully.',
+    'Introduz primeiro o teu e-mail no campo acima.': 'Enter your email in the field above first.',
+    'Ainda não foi detetada a verificação. Abre o link recebido por e-mail e tenta novamente.': 'Verification has not been detected yet. Open the link sent by email and try again.',
+    'A conta está temporariamente indisponível.': 'The account service is temporarily unavailable.',
+    'Pincel seleccionado': 'Selected brush',
+    'Audio': 'Audio',
+    'Os recursos gratuitos estão disponíveis mesmo sem iniciar sessão.': 'Free features are available even when signed out.',
+    'A animação precisa de pelo menos dois frames.': 'The animation needs at least two frames.',
+    'A licença Pro é necessária apenas para funções avançadas. O editor e as funções gratuitas continuam disponíveis.': 'The Pro license is only needed for advanced features. The editor and free features remain available.',
+    'Personagem simples': 'Simple character',
+    'Rosto com olhos e sorriso': 'Face with eyes and a smile',
+    'Árvore e tronco': 'Tree and trunk',
+    'Nuvem leve': 'Soft cloud',
+    'Estrela de cinco pontas': 'Five-point star',
+    'Coração desenhado': 'Drawn heart',
+    'Casa com telhado': 'House with roof',
+    'Ajuda': 'Help',
+    'Personagem': 'Character',
+    'Robot': 'Robot',
+    'Desenha, experimenta poses, organiza os teus frames e exporta animações no Android.': 'Draw, experiment with poses, organize frames, and export animations on Android.',
+    'O estado da licença é confirmado pelo servidor.': 'License status is confirmed by the server.',
+    'O pagamento é processado de forma segura pelo PayPal.': 'Payment is processed securely by PayPal.',
+    'A faixa de áudio está guardada no projeto, mas a exportação MP4 ainda não mistura a faixa de som.': 'The soundtrack is saved with the project, but MP4 export does not yet mix in the audio track.',
+    'Selecionar tudo': 'Select all',
+    'Aguardar…': 'Please wait…',
   };
 }
 

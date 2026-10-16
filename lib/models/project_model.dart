@@ -17,6 +17,8 @@ class ProjectModel {
   late DateTime createdAt;
   late DateTime updatedAt;
   String thumbnailPath = '';
+  /// Stable app-private copy of the project's soundtrack, or empty when absent.
+  String audioPath = '';
   String framesJson = '[]';
   int fps = 12;
 

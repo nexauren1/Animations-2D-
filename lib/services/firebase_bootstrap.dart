@@ -27,9 +27,20 @@ class FirebaseBootstrap {
 
   static bool get isInitialized => _initialized;
   static String? get initializationError => _initializationError;
+  // OAuth Web client ID from the native Firebase configuration checked into this
+  // project. Google Sign-In needs this client ID to request an ID token for
+  // Firebase Auth when the CI variable is not supplied.
+  static const String _bundledWebClientId =
+      '1062438516387-i2plli4d5mq9gkaauik6q2tf4nb1bqq7.apps.googleusercontent.com';
+
+  static String get resolvedGoogleWebClientId {
+    final configured = googleWebClientId.trim();
+    if (configured.isNotEmpty) return configured;
+    return nativeAndroidConfig ? _bundledWebClientId : '';
+  }
+
   static bool get canUseGoogleSignIn =>
-      _initialized &&
-      (googleWebClientId.trim().isNotEmpty || nativeAndroidConfig);
+      _initialized && resolvedGoogleWebClientId.isNotEmpty;
 
   static List<String> get missingValues => nativeAndroidConfig
       ? const <String>[]

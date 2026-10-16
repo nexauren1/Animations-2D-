@@ -78,10 +78,25 @@ class _AccountScreenState extends State<AccountScreen> {
     }
     final text = error.toString().toLowerCase();
     if (text.contains('cancel')) return 'Operação cancelada.';
-    if (text.contains('network') || text.contains('socket')) {
-      return 'Falha de ligação. Verifica a internet e tenta novamente.';
+    if (text.contains('developer_error') ||
+        text.contains('apiexception: 10') ||
+        text.contains('status=10') ||
+        text.contains('code 10')) {
+      return 'O Google recusou a configuração desta aplicação. Confirma no Firebase se o método Google está ativado e se o SHA-1/SHA-256 do certificado desta versão está registado na aplicação Android.';
     }
-    return 'Não foi possível concluir a operação. Verifica a ligação à internet e tenta novamente.';
+    if (text.contains('clientconfigurationerror') ||
+        text.contains('id token') ||
+        text.contains('invalid_audience') ||
+        text.contains('audience') ||
+        text.contains('google oauth configuration')) {
+      return 'A configuração OAuth do Google está incompleta. Confirma o ID de cliente Web no Firebase e o fornecedor Google em Authentication.';
+    }
+    if (text.contains('network') ||
+        text.contains('socket') ||
+        text.contains('network_error')) {
+      return 'O Google não conseguiu estabelecer ligação. Verifica a internet e tenta novamente.';
+    }
+    return 'O início de sessão com Google falhou. Confirma a configuração do fornecedor Google no Firebase e tenta novamente.';
   }
 
   Future<void> _runBusy(Future<void> Function() operation) async {
@@ -135,7 +150,7 @@ class _AccountScreenState extends State<AccountScreen> {
     }
 
     await _runBusy(() async {
-      final clientId = FirebaseBootstrap.googleWebClientId.trim();
+      final clientId = FirebaseBootstrap.resolvedGoogleWebClientId.trim();
       final initialization = _googleInitialization ??=
           GoogleSignIn.instance.initialize(
         // Android can read this value from google-services.json. Passing an
@@ -155,7 +170,16 @@ class _AccountScreenState extends State<AccountScreen> {
         throw StateError('O Google não devolveu um ID token.');
       }
       final credential = GoogleAuthProvider.credential(idToken: idToken);
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      try {
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      } on FirebaseAuthException catch (error) {
+        if (error.code == 'invalid-credential' ||
+            error.code == 'app-not-authorized' ||
+            error.code == 'operation-not-allowed') {
+          throw StateError('Google OAuth configuration: ${error.code}');
+        }
+        rethrow;
+      }
       _message('Sessão iniciada com Google.');
     });
   }

@@ -18,6 +18,14 @@ void main() {
       expect(project.frames.single.layers.every((layer) => layer.strokes.isEmpty), isTrue);
     });
 
+    test('project stores an optional local audio path', () {
+      final project = ProjectModel.create('Projeto com áudio');
+
+      expect(project.audioPath, isEmpty);
+      project.audioPath = '/app/AnimPro/audio/music.mp3';
+      expect(project.audioPath, '/app/AnimPro/audio/music.mp3');
+    });
+
     test('frame JSON round-trip keeps strokes, brush style, color and points', () {
       final frame = FrameModel(
         uid: 'frame-a',

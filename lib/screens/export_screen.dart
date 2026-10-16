@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -33,11 +34,37 @@ class _ExportScreenState extends State<ExportScreen> {
   String _aspectRatio = '16:9';
   String _shareTarget = 'Geral';
   bool _isExporting = false;
+  final ValueNotifier<String> _progressStatus = ValueNotifier<String>('A preparar a exportação…');
+  String? _lastExportPath;
 
   @override
   void initState() {
     super.initState();
     _fps = widget.project.fps.clamp(1, 60).toInt();
+  }
+
+  @override
+  void dispose() {
+    _progressStatus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _shareLastExport() async {
+    final path = _lastExportPath;
+    if (path == null || !await File(path).exists()) return;
+    await SharePlus.instance.share(
+      ShareParams(
+        files: <XFile>[XFile(path)],
+        subject: 'Exportação AnimPro',
+        text: switch (_shareTarget) {
+          'TikTok' => 'Vídeo criado no AnimPro, pronto para publicar no TikTok.',
+          'Instagram Reels' => 'Vídeo criado no AnimPro para Instagram Reels.',
+          'YouTube Shorts' => 'Vídeo criado no AnimPro para YouTube Shorts.',
+          'WhatsApp' => 'Criado com AnimPro — partilhado pelo WhatsApp.',
+          _ => 'Ficheiro criado no AnimPro.',
+        },
+      ),
+    );
   }
 
   List<FrameModel> get _frames => widget.project.frames;
@@ -260,9 +287,35 @@ class _ExportScreenState extends State<ExportScreen> {
     return data.buffer.asUint8List();
   }
   Future<void> _export() async {
+    if (_isExporting) return;
     if (_format == 'MP4' && _fps == 60 &&
         !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
+    _progressStatus.value = 'A preparar a exportação…';
     setState(() => _isExporting = true);
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope<void>(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('A exportar o projeto'),
+          content: ValueListenableBuilder<String>(
+            valueListenable: _progressStatus,
+            builder: (context, status, _) => Row(
+              children: [
+                const SizedBox(
+                  width: 25,
+                  height: 25,
+                  child: CircularProgressIndicator(strokeWidth: 3),
+                ),
+                const SizedBox(width: 14),
+                Expanded(child: Text(status)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ));
     Directory? framesDirectory;
     try {
       final directory = await getTemporaryDirectory();
@@ -271,12 +324,14 @@ class _ExportScreenState extends State<ExportScreen> {
       final frames = _frames.isEmpty ? <FrameModel>[FrameModel.blank()] : _frames;
 
       if (_format == 'PNG') {
+        _progressStatus.value = 'A desenhar o frame…';
         final bytes = await _renderPng(_frame, _resolution);
         exported = File('${directory.path}/animpro_${time}.png');
         await exported.writeAsBytes(bytes, flush: true);
       } else if (_format == 'PNG Sequence') {
         final archive = Archive();
         for (var index = 0; index < frames.length; index++) {
+          _progressStatus.value = 'A renderizar frame ${index + 1}/${frames.length}…';
           final bytes = await _renderPng(frames[index], _resolution);
           final filename = 'frame_${(index + 1).toString().padLeft(5, '0')}.png';
           archive.addFile(ArchiveFile(filename, bytes.length, bytes));
@@ -288,6 +343,7 @@ class _ExportScreenState extends State<ExportScreen> {
         framesDirectory = Directory('${directory.path}/animpro_sequence_${time}');
         await framesDirectory.create(recursive: true);
         for (var index = 0; index < frames.length; index++) {
+          _progressStatus.value = 'A preparar frame ${index + 1}/${frames.length}…';
           final bytes = await _renderPng(frames[index], _resolution);
           final filename = 'frame_${index.toString().padLeft(5, '0')}.png';
           await File('${framesDirectory.path}/${filename}').writeAsBytes(bytes, flush: true);
@@ -373,35 +429,51 @@ class _ExportScreenState extends State<ExportScreen> {
         }
       }
 
+      _progressStatus.value = 'A guardar o ficheiro no dispositivo…';
+      final savedUri = await _nativeVideoChannel.invokeMethod<String>(
+        'saveToDownloads',
+        <String, String>{'sourcePath': exported.path},
+      );
+      if (savedUri == null || savedUri.isEmpty) {
+        throw StateError('O Android não confirmou a gravação do ficheiro.');
+      }
       if (!mounted) return;
-      await SharePlus.instance.share(
-        ShareParams(
-          files: <XFile>[XFile(exported.path)],
-          subject: 'Exportação AnimPro',
-          text: switch (_shareTarget) {
-            'TikTok' => 'Vídeo criado no AnimPro, pronto para publicar no TikTok.',
-            'Instagram Reels' => 'Vídeo criado no AnimPro para Instagram Reels.',
-            'YouTube Shorts' => 'Vídeo criado no AnimPro para YouTube Shorts.',
-            'WhatsApp' => 'Criado com AnimPro — partilhado pelo WhatsApp.',
-            _ => switch (_format) {
-              'PNG' => 'Frame exportado do AnimPro.',
-              'PNG Sequence' => 'Sequência de frames PNG exportada do AnimPro.',
-              'MP4' => 'Vídeo MP4 exportado do AnimPro a $_fps FPS.',
-              _ => 'GIF animado exportado do AnimPro.',
-            },
-          },
+      setState(() => _lastExportPath = exported.path);
+      _progressStatus.value = 'Concluído! Ficheiro guardado no dispositivo.';
+      final savedFolder = _format == 'MP4'
+          ? 'Movies/AnimPro'
+          : (_format == 'PNG' || _format == 'GIF')
+              ? 'Pictures/AnimPro'
+              : 'Downloads/AnimPro';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Exportação concluída. Ficheiro guardado em $savedFolder (ou na pasta da aplicação em Android antigo).',
+          ),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Partilhar',
+            onPressed: _shareLastExport,
+          ),
         ),
       );
     } catch (error) {
       if (mounted) {
-        final message = _format == 'MP4' && error is PlatformException
-            ? 'Falha ao codificar MP4 neste dispositivo. Tenta uma resolução menor e 12/24 FPS, ou exporta GIF.'
-            : 'Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.';
+        final message = error is PlatformException && error.code == 'SAVE_FAILED'
+            ? 'O ficheiro foi criado, mas o Android não conseguiu guardá-lo nas pastas visíveis. Verifica o espaço disponível e tenta novamente.'
+            : _format == 'MP4' && error is PlatformException
+                ? 'Falha ao codificar MP4 neste dispositivo. Tenta uma resolução menor e 12/24 FPS, ou exporta GIF.'
+                : error is StateError
+                    ? error.message.toString()
+                    : 'Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message)),
         );
       }
     } finally {
+      if (mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       if (framesDirectory != null && await framesDirectory.exists()) {
         try {
           await framesDirectory.delete(recursive: true);
@@ -417,6 +489,14 @@ class _ExportScreenState extends State<ExportScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exportar', style: TextStyle(fontWeight: FontWeight.w800)),
+        actions: [
+          if (_lastExportPath != null)
+            IconButton(
+              tooltip: 'Partilhar ficheiro guardado',
+              onPressed: _shareLastExport,
+              icon: const Icon(Icons.share_rounded),
+            ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
@@ -445,6 +525,15 @@ class _ExportScreenState extends State<ExportScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 12),
           ),
+          if (widget.project.audioPath.isNotEmpty && _format == 'MP4')
+            const Padding(
+              padding: EdgeInsets.only(top: 10),
+              child: Text(
+                'Nota: o áudio está guardado no projeto, mas a exportação MP4 ainda não mistura a faixa de som.',
+                style: TextStyle(color: Colors.amberAccent, fontSize: 12, height: 1.4),
+                textAlign: TextAlign.center,
+              ),
+            ),
           const SizedBox(height: 26),
           const Text('Resolução', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
@@ -491,10 +580,10 @@ class _ExportScreenState extends State<ExportScreen> {
           const SizedBox(height: 7),
           Text(
             _format == 'PNG'
-                ? 'Exporta o frame atual como imagem PNG e abre as opções de partilha do telefone.'
+                ? 'Guarda o frame atual como imagem PNG no dispositivo.'
                 : _format == 'PNG Sequence'
-                    ? 'Exporta todos os frames para ficheiros PNG dentro de um ZIP.'
-                    : 'Será codificado a partir de todos os frames do projeto e partilhado para guardar no telefone.',
+                    ? 'Guarda todos os frames como ficheiros PNG dentro de um ZIP.'
+                    : 'O ficheiro será criado a partir dos frames do projeto e guardado automaticamente no dispositivo.',
             style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12, height: 1.4),
           ),
           const SizedBox(height: 24),
@@ -518,7 +607,7 @@ class _ExportScreenState extends State<ExportScreen> {
           const SizedBox(height: 24),
           const Text('Partilhar para', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 7),
-          Text('Depois da exportação, o Android mostra as aplicações compatíveis instaladas no telefone.',
+          Text('A exportação fica guardada no dispositivo. Usa o botão Partilhar depois de concluída para enviar o ficheiro.',
               style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12, height: 1.4)),
           const SizedBox(height: 12),
           Wrap(
