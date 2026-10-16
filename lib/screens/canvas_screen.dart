@@ -360,13 +360,32 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _addLayer() async {
-    final index = (_currentFrame.layers.length - 1).clamp(0, _currentFrame.layers.length).toInt();
-    final name = 'Camada ${_currentFrame.layers.length - 2}';
+    final referenceFrame = _frames.reduce(
+      (currentLongest, candidate) =>
+          candidate.layers.length > currentLongest.layers.length
+              ? candidate
+              : currentLongest,
+    );
+    final referenceNames = referenceFrame.layers.map((layer) => layer.name).toList();
+    final targetLayerCount = referenceNames.length;
+    final insertIndex = targetLayerCount - 1;
+    final newName = 'Camada ${math.max(1, targetLayerCount - 2)}';
+
+    // Keep layer indices aligned across every frame. Some older projects may
+    // have frames with different layer counts, so fill missing layers before
+    // adding the new shared layer.
     for (final frame in _frames) {
-      frame.layers.insert(index, LayerModel(name: name));
+      while (frame.layers.length < targetLayerCount) {
+        final missingIndex = frame.layers.length - 1;
+        final name = missingIndex >= 0 && missingIndex < referenceNames.length
+            ? referenceNames[missingIndex]
+            : 'Camada ${missingIndex}';
+        frame.layers.insert(missingIndex, LayerModel(name: name));
+      }
+      frame.layers.insert(insertIndex, LayerModel(name: newName));
     }
     setState(() {
-      _selectedLayerIndex = index;
+      _selectedLayerIndex = insertIndex;
       _draftPoints = null;
     });
     await _persist();
@@ -412,9 +431,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _deleteLayer(int index) async {
-    if (_currentFrame.layers.length <= 3) {
+    if (index < 2 ||
+        index >= _currentFrame.layers.length - 1 ||
+        _currentFrame.layers.length <= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('As três camadas base são protegidas. Cria uma camada adicional para a poderes remover.')),
+        const SnackBar(content: Text('As camadas base Linha/Fundo são protegidas. Seleciona uma camada adicional para a remover.')),
       );
       return;
     }
@@ -432,7 +453,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
     if (confirmed != true || !mounted) return;
     for (final frame in _frames) {
-      if (index < frame.layers.length && frame.layers.length > 3) frame.layers.removeAt(index);
+      if (index >= 2 && index < frame.layers.length - 1 && frame.layers.length > 3) {
+        frame.layers.removeAt(index);
+      }
     }
     setState(() {
       _selectedLayerIndex = _selectedLayerIndex.clamp(0, _currentFrame.layers.length - 1).toInt();
