@@ -405,10 +405,10 @@ class TemplateCatalog {
       final headY = 130.0 + math.sin(phase * 2).abs() * 2;
       final shoulder = Offset(x, 174 - lift * .25);
       final hip = Offset(x, 236 - lift);
-      final leftKnee = Offset(x - 15 - swing * 17, 277 - math.max(0.0, swing) * 9);
-      final rightKnee = Offset(x + 15 + swing * 17, 277 + math.min(0.0, swing) * 9);
-      final leftFoot = Offset(x - 25 - swing * 29, 331 - math.max(0.0, swing) * 15 - lift);
-      final rightFoot = Offset(x + 25 + swing * 29, 331 + math.min(0.0, swing) * 15 - lift);
+      final leftKnee = Offset(x - 15 - swing * 17, (277 - math.max(0.0, swing) * 9).toDouble());
+      final rightKnee = Offset(x + 15 + swing * 17, (277 + math.min(0.0, swing) * 9).toDouble());
+      final leftFoot = Offset(x - 25 - swing * 29, (331 - math.max(0.0, swing) * 15 - lift).toDouble());
+      final rightFoot = Offset(x + 25 + swing * 29, (331 + math.min(0.0, swing) * 15 - lift).toDouble());
       final layers = _layers();
       final contour = layers[0];
       final colour = layers[1];
@@ -887,12 +887,13 @@ class TemplateCatalog {
     required int color,
     double width = 3,
     String kind = 'pen',
+    String brushStyle = 'tinta',
   }) =>
       StrokeModel(
         points: points,
         color: color,
         width: width,
         kind: kind,
-        brushStyle: 'tinta',
+        brushStyle: brushStyle,
       );
 }
