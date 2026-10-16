@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
