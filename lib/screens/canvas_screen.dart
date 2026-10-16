@@ -1123,7 +1123,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ],
             ),
-          ),;
+          );
           final drawingSurface =           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 9),
@@ -1159,7 +1159,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ),
             ),
-          ),;
+          );
           if (landscape) {
             return Row(
               children: [
