@@ -397,7 +397,29 @@ class _ExportScreenState extends State<ExportScreen> {
         }
       }
 
-      _updateExportProgress(.92, 'Ficheiro guardado. A abrir opções de partilha…');
+      String? savedLocation;
+      try {
+        final mimeType = switch (_format) {
+          'PNG' => 'image/png',
+          'GIF' => 'image/gif',
+          'MP4' => 'video/mp4',
+          _ => 'application/zip',
+        };
+        savedLocation = await _nativeVideoChannel.invokeMethod<String>(
+          'saveToDownloads',
+          <String, Object>{
+            'sourcePath': exported.path,
+            'fileName': exported.uri.pathSegments.last,
+            'mimeType': mimeType,
+          },
+        );
+        _updateExportProgress(.88, 'Guardado em Downloads/AnimPro…');
+      } catch (_) {
+        // Keep the persistent app-private export and allow sharing even if
+        // Android cannot expose the public Downloads folder on this device.
+        _updateExportProgress(.88, 'Ficheiro guardado na pasta interna do AnimPro…');
+      }
+      _updateExportProgress(.94, 'A abrir opções de partilha…');
       if (!mounted) return;
       await SharePlus.instance.share(
         ShareParams(
@@ -417,6 +439,14 @@ class _ExportScreenState extends State<ExportScreen> {
           },
         ),
       );
+      if (mounted) {
+        final message = savedLocation?.startsWith('content://') == true
+            ? 'Exportação guardada em Downloads/AnimPro e pronta para partilhar.'
+            : savedLocation != null
+                ? 'Exportação guardada no armazenamento do AnimPro e pronta para partilhar.'
+                : 'Exportação guardada na pasta interna do AnimPro; o acesso a Downloads não está disponível neste dispositivo.';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
     } catch (error) {
       if (mounted) {
         final message = _format == 'MP4' && error is PlatformException
