@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 
 import '../models/project_model.dart';
 import '../services/project_store.dart';
@@ -297,7 +298,6 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _openAudioLipSync() async {
-    if (!await ProAccessService.requirePro(context, feature: 'Áudio e marcação de boca')) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => AudioLipSyncScreen(
@@ -431,6 +431,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       'Pastel',
                       'Pincel seco',
                       'Pixel',
+                      'Brilho neon',
+                      'Rastro de movimento',
+                      'Linha tracejada',
+                      'Luz energética',
                     ].map((style) {
                       final value = style.toLowerCase();
                       final selected = value == _brushStyle;
@@ -662,6 +666,53 @@ class _CanvasScreenState extends State<CanvasScreen> {
       ),
     );
     colorController.dispose();
+  }
+
+  Future<void> _openEffects() async {
+    const effects = <(String, String, String, IconData)>[
+      ('Brilho neon', 'brilho neon', 'Brilho suave e colorido para contornos luminosos.', Icons.flare_rounded),
+      ('Rastro de movimento', 'rastro de movimento', 'Cria um rasto subtil atrás dos traços.', Icons.blur_on_rounded),
+      ('Linha tracejada', 'linha tracejada', 'Desenha uma linha interrompida.', Icons.more_horiz_rounded),
+      ('Luz energética', 'luz energética', 'Um brilho mais intenso para impactos e energia.', Icons.bolt_rounded),
+    ];
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF202231),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Efeitos de traço', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 6),
+              const Text('Escolhe um efeito para os próximos traços. As opções ficam disponíveis gratuitamente.',
+                  style: TextStyle(color: Colors.white70, height: 1.35)),
+              const SizedBox(height: 10),
+              for (final effect in effects)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  leading: Icon(effect.$4, color: const Color(0xFFB5A8FF)),
+                  title: Text(effect.$1),
+                  subtitle: Text(effect.$3),
+                  trailing: _brushStyle == effect.$2
+                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF7CE0CC))
+                      : const Icon(Icons.circle_outlined, color: Colors.white38),
+                  onTap: () {
+                    setState(() => _brushStyle = effect.$2);
+                    Navigator.of(sheetContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Efeito aplicado aos próximos traços: ${effect.$1}')),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _insertAsset(String id) async {
@@ -1014,6 +1065,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
         decoration: const BoxDecoration(color: Color(0xFF11131F), border: Border(top: BorderSide(color: Color(0xFF292D40)))),
         child: Row(children: [
           _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings),
+          _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects),
           _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
           _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
           _bottomItem(icon: Icons.graphic_eq_rounded, label: 'Áudio', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
@@ -1138,6 +1190,18 @@ class _AnimationCanvasPainter extends CustomPainter {
         width *= 1.8;
         paint.maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(1.0, width * .12).toDouble());
         break;
+      case 'brilho neon':
+        width *= 1.25;
+        break;
+      case 'luz energética':
+        width *= 1.6;
+        break;
+      case 'rastro de movimento':
+        width *= 1.2;
+        alpha *= .75;
+        break;
+      case 'linha tracejada':
+        break;
       case 'pixel':
         paint.strokeCap = StrokeCap.square;
         paint.strokeJoin = StrokeJoin.miter;
@@ -1150,15 +1214,89 @@ class _AnimationCanvasPainter extends CustomPainter {
       ..strokeWidth = width;
 
     if (stroke.points.length == 1) {
-      canvas.drawCircle(stroke.points.first, width / 2, paint..style = PaintingStyle.fill);
+      final point = stroke.points.first;
+      if (stroke.brushStyle == 'brilho neon' || stroke.brushStyle == 'luz energética') {
+        final glowPaint = Paint()
+          ..color = baseColor.withOpacity((alpha * .8).clamp(0.0, 1.0).toDouble())
+          ..maskFilter = MaskFilter.blur(
+            BlurStyle.normal,
+            math.max(2.0, width * .65).toDouble(),
+          );
+        canvas.drawCircle(point, width * 1.15, glowPaint);
+        canvas.drawCircle(
+          point,
+          math.max(1.0, width * .3).toDouble(),
+          Paint()..color = baseColor.withOpacity(alpha),
+        );
+      } else {
+        canvas.drawCircle(point, width / 2, paint..style = PaintingStyle.fill);
+      }
       return;
     }
+
     final first = stroke.points.first;
     final last = stroke.points.last;
-    if (stroke.kind == 'line') {
-      canvas.drawLine(first, last, paint);
-    } else if (stroke.kind == 'ruler') {
-      canvas.drawLine(first, last, paint);
+    final path = Path();
+    if (stroke.kind == 'line' || stroke.kind == 'ruler') {
+      path.moveTo(first.dx, first.dy);
+      path.lineTo(last.dx, last.dy);
+    } else if (stroke.kind == 'rectangle') {
+      path.addRect(Rect.fromPoints(first, last));
+    } else if (stroke.kind == 'ellipse') {
+      path.addOval(Rect.fromPoints(first, last));
+    } else {
+      path.moveTo(first.dx, first.dy);
+      for (final point in stroke.points.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+
+    if (stroke.brushStyle == 'linha tracejada') {
+      for (final metric in path.computeMetrics()) {
+        for (var distance = 0.0; distance < metric.length; distance += 16.0) {
+          final end = math.min(distance + 9.0, metric.length).toDouble();
+          canvas.drawPath(metric.extractPath(distance, end), paint);
+        }
+      }
+    } else if (stroke.brushStyle == 'brilho neon' || stroke.brushStyle == 'luz energética') {
+      final intensity = stroke.brushStyle == 'luz energética' ? 2.8 : 2.0;
+      final blur = stroke.brushStyle == 'luz energética' ? width * .9 : width * .6;
+      final glowPaint = Paint()
+        ..color = baseColor.withOpacity((alpha * .78).clamp(0.0, 1.0).toDouble())
+        ..strokeWidth = width * intensity
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          math.max(2.0, blur).toDouble(),
+        );
+      canvas.drawPath(path, glowPaint);
+      final corePaint = Paint()
+        ..color = baseColor.withOpacity(alpha)
+        ..strokeWidth = math.max(1.0, width * .48).toDouble()
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+      canvas.drawPath(path, corePaint);
+    } else if (stroke.brushStyle == 'rastro de movimento') {
+      final trailPaint = Paint()
+        ..color = baseColor.withOpacity((alpha * .24).clamp(0.0, 1.0).toDouble())
+        ..strokeWidth = math.max(1.0, width * .85).toDouble()
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          math.max(1.0, width * .22).toDouble(),
+        );
+      canvas.drawPath(path.shift(Offset(-width * 1.2, width * .35)), trailPaint);
+      canvas.drawPath(path, paint);
+    } else {
+      canvas.drawPath(path, paint);
+    }
+
+    if (stroke.kind == 'ruler') {
       final delta = last - first;
       final length = delta.distance;
       if (length > 1) {
@@ -1170,16 +1308,6 @@ class _AnimationCanvasPainter extends CustomPainter {
           canvas.drawLine(point - perpendicular * tickSize, point + perpendicular * tickSize, paint);
         }
       }
-    } else if (stroke.kind == 'rectangle') {
-      canvas.drawRect(Rect.fromPoints(first, last), paint);
-    } else if (stroke.kind == 'ellipse') {
-      canvas.drawOval(Rect.fromPoints(first, last), paint);
-    } else {
-      final path = Path()..moveTo(first.dx, first.dy);
-      for (final point in stroke.points.skip(1)) {
-        path.lineTo(point.dx, point.dy);
-      }
-      canvas.drawPath(path, paint);
     }
   }
 
