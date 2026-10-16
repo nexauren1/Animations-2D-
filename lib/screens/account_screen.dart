@@ -48,6 +48,24 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   String _friendlyError(Object error) {
+    if (error is GoogleSignInException) {
+      final code = error.code.name.toLowerCase();
+      if (code.contains('cancel')) return 'Entrada com Google cancelada.';
+      if (code.contains('network')) {
+        return 'Falha de rede ao entrar com Google. Confirma que a internet está acessível e tenta novamente.';
+      }
+      if (code.contains('configuration') ||
+          code.contains('client') ||
+          code.contains('provider') ||
+          code.contains('server')) {
+        return 'O Google recusou a configuração desta versão. É necessário confirmar o fornecedor Google no Firebase Authentication e os certificados SHA-1/SHA-256 da assinatura Android. Código: ${error.code.name}.';
+      }
+      return 'A entrada com Google falhou (código: ${error.code.name}). Confirma o fornecedor Google e os certificados OAuth no Firebase.';
+    }
+    if (error is StateError &&
+        error.toString().contains('não devolveu um ID token')) {
+      return 'O Google não entregou o token de acesso. Confirma o Client ID Web OAuth no Firebase e recompila a aplicação.';
+    }
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'invalid-email':
