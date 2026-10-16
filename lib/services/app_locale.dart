@@ -77,7 +77,7 @@ class AppLocale {
       return 'Project "${importedProject.group(1)}" imported successfully.';
     }
 
-        final reducedVideoResolution = RegExp(
+    final reducedVideoResolution = RegExp(
       r'^O dispositivo precisou de uma resolução reduzida para exportar o MP4 \((\d+)p\)\.$',
     ).firstMatch(source);
     if (reducedVideoResolution != null) {
@@ -478,6 +478,22 @@ class AppLocale {
     'Os recursos gratuitos estão disponíveis mesmo sem iniciar sessão.': 'Free features are available even when signed out.',
     'A animação precisa de pelo menos dois frames.': 'The animation needs at least two frames.',
     'A licença Pro é necessária apenas para funções avançadas. O editor e as funções gratuitas continuam disponíveis.': 'The Pro license is only needed for advanced features. The editor and free features remain available.',
+    'Personagem simples': 'Simple character',
+    'Rosto com olhos e sorriso': 'Face with eyes and a smile',
+    'Árvore e tronco': 'Tree and trunk',
+    'Nuvem leve': 'Soft cloud',
+    'Estrela de cinco pontas': 'Five-point star',
+    'Coração desenhado': 'Drawn heart',
+    'Casa com telhado': 'House with roof',
+    'Ajuda': 'Help',
+    'Personagem': 'Character',
+    'Robot': 'Robot',
+    'Desenha, experimenta poses, organiza os teus frames e exporta animações no Android.': 'Draw, experiment with poses, organize frames, and export animations on Android.',
+    'O estado da licença é confirmado pelo servidor.': 'License status is confirmed by the server.',
+    'O pagamento é processado de forma segura pelo PayPal.': 'Payment is processed securely by PayPal.',
+    'A faixa de áudio está guardada no projeto, mas a exportação MP4 ainda não mistura a faixa de som.': 'The soundtrack is saved with the project, but MP4 export does not yet mix in the audio track.',
+    'Selecionar tudo': 'Select all',
+    'Aguardar…': 'Please wait…',
   };
 }
 
