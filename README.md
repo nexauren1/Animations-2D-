@@ -16,16 +16,16 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 - **Edição:** desfazer/refazer, grelha de referência, camadas e onion skin.
 - **Timeline:** criar frames vazios, duplicar/apagar frames e ajustar a reprodução para 6, 12, 24, 30 ou 60 FPS. O FPS fica guardado no projeto e é usado como valor inicial na exportação.
 - **Rigging simples:** pontos de controlo para modificar poses e guardá-las como frames.
-- **Áudio e lip sync:** importar uma faixa, reproduzi-la e marcar manualmente poses de boca na timeline. A aplicação ainda não tem edição de múltiplas faixas, mistura de áudio ou corte/fades estilo CapCut.
-- **Projetos prontos:** seis exemplos de base e um combate Stickman estilizado de 16 frames com socos, esquivas, bloqueios, pontapé aéreo e impactos cartunescos. Todos os frames são editáveis.
+- **Biblioteca de áudio:** importar MP3/WAV/OGG/M4A/AAC locais ou ouvir preview dos sons remotos, descarregar e colocar clips a partir de um frame escolhido; clips podem ter volume ajustado e ser removidos. O catálogo vive em `content/audio/catalog.json` e atualiza-se sem novo APK. A mistura de som no MP4 continua por implementar.
+- **Projetos prontos:** bola, flor, foguetão, pêndulo, rosto, cometa, ciclo de caminhada, pássaro a voar e combate Stickman estilizado de 16 frames. Os frames são editáveis.
 - **Biblioteca de assets e downloads:** formas vetoriais-base, modelos de animação e pacotes de conteúdo descarregáveis para guardar no dispositivo e editar offline.
-- **Exportação gratuita:** PNG do frame, sequência PNG em ZIP, GIF e MP4 a partir de todos os frames. O MP4 usa o codificador H.264/MediaCodec disponível no dispositivo; nem todos os aparelhos expõem combinações de resolução/FPS compatíveis. A exportação produz vídeo silencioso: a mistura/muxagem de áudio no MP4 ainda não está implementada. O limite de 60 FPS permanece Pro.
+- **Exportação:** PNG, GIF, MP4 e sequência PNG; MP4/GIF até 720p são gratuitos. 1080p, ZIP de sequência PNG e 60 FPS são Pro. A app mostra o estado do processamento e tenta guardar em `Downloads/AnimPro` no Android 10+ antes de abrir a partilha. MP4 continua sem mistura de áudio e o codificador H.264 tem de ser validado no dispositivo.
 - **Conta:** registo/entrada com e-mail e palavra-passe, redefinição de palavra-passe, verificação de e-mail e entrada Google, quando o projeto Firebase está configurado.
 - **Modo sem conta:** os projetos continuam disponíveis localmente no telefone.
 
 ### Limites conhecidos
 
-O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
+O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. Os clips de áudio guardados na biblioteca local ainda não são incluídos no backup `.animpro`. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
 
 ## Instalar e escolher uma versão
 
