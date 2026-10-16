@@ -380,11 +380,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Future<void> _openAssets() async {
-    final assetId = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(builder: (_) => const AssetsLibraryScreen()),
+    final asset = await Navigator.of(context).push<LibraryAsset>(
+      MaterialPageRoute<LibraryAsset>(builder: (_) => const AssetsLibraryScreen()),
     );
-    if (assetId == null || !mounted) return;
-    await _insertAsset(assetId);
+    if (asset == null || !mounted) return;
+    await _insertAsset(asset.id, tint: asset.tint.value);
   }
 
   Future<void> _openAudioLibrary() async {
@@ -876,10 +876,12 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Future<void> _insertAsset(String id) async {
+  Future<void> _insertAsset(String id, {int? tint}) async {
     final center = Offset(_canvasSize.width / 2, _canvasSize.height / 2);
     final double unit = math.min(_canvasSize.width, _canvasSize.height).toDouble() * .14;
-    final color = const Color(0xFF1C2940).value;
+    final seed = Color(tint ?? 0xFF1C2940);
+    final hsv = HSVColor.fromColor(seed);
+    final color = hsv.withValue((hsv.value * .58).clamp(.25, .62).toDouble()).toColor().value;
     final newStrokes = <StrokeModel>[];
 
     void add(List<Offset> points, {String kind = 'pen', double width = 3}) {
@@ -960,6 +962,78 @@ class _CanvasScreenState extends State<CanvasScreen> {
           Offset(center.dx + unit * .95, center.dy - unit * .1),
         ], width: 3.2);
         add([Offset(center.dx - unit * .17, center.dy + unit * .25), Offset(center.dx + unit * .17, center.dy + unit * .8)], kind: 'rectangle', width: 2.5);
+        break;
+      case 'bird':
+        add(oval(Offset(center.dx, center.dy + unit * .12), unit * .72, unit * .38), width: 3.2);
+        circle(Offset(center.dx + unit * .55, center.dy - unit * .26), unit * .24);
+        add([
+          Offset(center.dx + unit * .75, center.dy - unit * .27),
+          Offset(center.dx + unit * 1.02, center.dy - unit * .20),
+          Offset(center.dx + unit * .75, center.dy - unit * .12),
+        ]);
+        add([
+          Offset(center.dx - unit * .28, center.dy + unit * .08),
+          Offset(center.dx + unit * .22, center.dy - unit * .06),
+          Offset(center.dx + unit * .18, center.dy + unit * .28),
+        ], width: 2.6);
+        add([Offset(center.dx - unit * .22, center.dy + unit * .42), Offset(center.dx - unit * .28, center.dy + unit * .64)]);
+        add([Offset(center.dx + unit * .18, center.dy + unit * .42), Offset(center.dx + unit * .25, center.dy + unit * .64)]);
+        break;
+      case 'butterfly':
+        for (final part in <(double, double, double, double)>[
+          (-.44, -.25, .48, .48), (.45, -.25, .48, .48),
+          (-.39, .28, .42, .34), (.4, .28, .42, .34),
+        ]) {
+          circle(Offset(center.dx + unit * part.$1, center.dy + unit * part.$2), unit * part.$3);
+        }
+        add([Offset(center.dx, center.dy - unit * .55), Offset(center.dx, center.dy + unit * .55)], width: 4);
+        add([Offset(center.dx, center.dy - unit * .52), Offset(center.dx - unit * .20, center.dy - unit * .78)]);
+        add([Offset(center.dx, center.dy - unit * .52), Offset(center.dx + unit * .20, center.dy - unit * .78)]);
+        break;
+      case 'flower':
+        add([Offset(center.dx, center.dy + unit * .18), Offset(center.dx, center.dy + unit * 1.0)], width: 3.4);
+        add([Offset(center.dx, center.dy + unit * .56), Offset(center.dx - unit * .42, center.dy + unit * .33), Offset(center.dx - unit * .54, center.dy + unit * .48)], width: 3);
+        add([Offset(center.dx, center.dy + unit * .70), Offset(center.dx + unit * .42, center.dy + unit * .48), Offset(center.dx + unit * .54, center.dy + unit * .58)], width: 3);
+        for (var p = 0; p < 6; p++) {
+          final angle = p * math.pi / 3;
+          circle(Offset(center.dx + math.cos(angle) * unit * .36, center.dy - unit * .30 + math.sin(angle) * unit * .36), unit * .25);
+        }
+        circle(Offset(center.dx, center.dy - unit * .30), unit * .20);
+        break;
+      case 'sun':
+        for (var ray = 0; ray < 12; ray++) {
+          final angle = ray * math.pi / 6;
+          add([
+            Offset(center.dx + math.cos(angle) * unit * .62, center.dy + math.sin(angle) * unit * .62),
+            Offset(center.dx + math.cos(angle) * unit * .92, center.dy + math.sin(angle) * unit * .92),
+          ], width: 3);
+        }
+        circle(center, unit * .50);
+        break;
+      case 'moon':
+        final crescent = <Offset>[];
+        for (var p = 0; p <= 24; p++) {
+          final angle = math.pi * .35 + p / 24 * math.pi * 1.55;
+          crescent.add(Offset(center.dx + math.cos(angle) * unit * .78, center.dy + math.sin(angle) * unit * .78));
+        }
+        for (var p = 24; p >= 0; p--) {
+          final angle = math.pi * .58 + p / 24 * math.pi * 1.30;
+          crescent.add(Offset(center.dx + unit * .28 + math.cos(angle) * unit * .52, center.dy + math.sin(angle) * unit * .63));
+        }
+        add(crescent, width: 3.3);
+        break;
+      case 'balloon':
+        add([
+          Offset(center.dx, center.dy - unit * .9),
+          Offset(center.dx + unit * .62, center.dy - unit * .45),
+          Offset(center.dx + unit * .58, center.dy + unit * .18),
+          Offset(center.dx, center.dy + unit * .62),
+          Offset(center.dx - unit * .58, center.dy + unit * .18),
+          Offset(center.dx - unit * .62, center.dy - unit * .45),
+          Offset(center.dx, center.dy - unit * .9),
+        ], width: 3.3);
+        add([Offset(center.dx - unit * .12, center.dy + unit * .60), Offset(center.dx + unit * .12, center.dy + unit * .60), Offset(center.dx, center.dy + unit * .76)], width: 2.5);
+        add([Offset(center.dx, center.dy + unit * .76), Offset(center.dx + unit * .05, center.dy + unit * .96), Offset(center.dx - unit * .05, center.dy + unit * 1.18)], width: 2);
         break;
       default:
         circle(center, unit * .6);
