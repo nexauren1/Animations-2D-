@@ -821,19 +821,41 @@ class _CanvasScreenState extends State<CanvasScreen> {
   Future<void> _insertAsset(String id) async {
     final center = Offset(_canvasSize.width / 2, _canvasSize.height / 2);
     final double unit = math.min(_canvasSize.width, _canvasSize.height).toDouble() * .14;
-    final color = const Color(0xFF1C2940).value;
     final newStrokes = <StrokeModel>[];
 
-    void add(List<Offset> points, {String kind = 'pen', double width = 3}) {
-      newStrokes.add(StrokeModel(points: points, color: color, width: width, kind: kind));
+    const ink = Color(0xFF1C2940).value;
+    const orange = Color(0xFFF39A4A).value;
+    const coral = Color(0xFFEC7193).value;
+    const blue = Color(0xFF4CADD2).value;
+    const green = Color(0xFF4FB878).value;
+    const brown = Color(0xFF9A623C).value;
+    const yellow = Color(0xFFF3BC42).value;
+    const sky = Color(0xFF83C8F1).value;
+
+    void add(
+      List<Offset> points, {
+      String kind = 'pen',
+      double width = 3,
+      int colorOverride = ink,
+    }) {
+      newStrokes.add(StrokeModel(
+        points: points,
+        color: colorOverride,
+        width: width,
+        kind: kind,
+      ));
     }
     List<Offset> oval(Offset c, double rx, double ry, {int count = 36}) =>
         List<Offset>.generate(count + 1, (i) {
           final angle = i / count * math.pi * 2;
           return Offset(c.dx + math.cos(angle) * rx, c.dy + math.sin(angle) * ry);
         });
-    void circle(Offset c, double radius) {
-      add([Offset(c.dx - radius, c.dy - radius), Offset(c.dx + radius, c.dy + radius)], kind: 'ellipse');
+    void circle(Offset c, double radius, {int colorOverride = ink}) {
+      add(
+        [Offset(c.dx - radius, c.dy - radius), Offset(c.dx + radius, c.dy + radius)],
+        kind: 'ellipse',
+        colorOverride: colorOverride,
+      );
     }
 
     switch (id) {
@@ -844,6 +866,15 @@ class _CanvasScreenState extends State<CanvasScreen> {
           return Offset(center.dx + math.cos(angle) * radius, center.dy + math.sin(angle) * radius);
         });
         add([...points, points.first], width: 3.5);
+        circle(Offset(center.dx - unit * .14, center.dy - unit * .24), unit * .06, colorOverride: yellow);
+        add([
+          Offset(center.dx + unit * .22, center.dy - unit * .18),
+          Offset(center.dx + unit * .42, center.dy - unit * .18),
+        ], width: 2.2, colorOverride: yellow);
+        add([
+          Offset(center.dx + unit * .32, center.dy - unit * .28),
+          Offset(center.dx + unit * .32, center.dy - unit * .08),
+        ], width: 2.2, colorOverride: yellow);
         break;
       case 'heart':
         final heart = List<Offset>.generate(81, (i) {
@@ -852,19 +883,26 @@ class _CanvasScreenState extends State<CanvasScreen> {
           final y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t);
           return Offset(center.dx + x * unit / 18, center.dy - y * unit / 18);
         });
-        add(heart, width: 3.4);
+        add(heart, width: 3.4, colorOverride: coral);
+        add([
+          Offset(center.dx - unit * .45, center.dy - unit * .45),
+          Offset(center.dx - unit * .27, center.dy - unit * .61),
+        ], width: 2.2, colorOverride: 0xFFFFBCD0);
+        circle(Offset(center.dx + unit * .4, center.dy - unit * .5), unit * .06, colorOverride: coral);
         break;
       case 'face':
       case 'fox':
         add([Offset(center.dx - unit * .82, center.dy - unit * .75), Offset(center.dx + unit * .82, center.dy + unit * .75)], kind: 'ellipse', width: 3.2);
         circle(Offset(center.dx - unit * .28, center.dy - unit * .12), unit * .09);
         circle(Offset(center.dx + unit * .28, center.dy - unit * .12), unit * .09);
+        circle(Offset(center.dx - unit * .47, center.dy + unit * .12), unit * .08, colorOverride: coral);
+        circle(Offset(center.dx + unit * .47, center.dy + unit * .12), unit * .08, colorOverride: coral);
         add([
           Offset(center.dx - unit * .28, center.dy + unit * .22),
           Offset(center.dx - unit * .18, center.dy + unit * .34), center,
           Offset(center.dx + unit * .18, center.dy + unit * .34),
           Offset(center.dx + unit * .28, center.dy + unit * .22),
-        ]);
+        ], width: 2.7, colorOverride: coral);
         if (id == 'fox') {
           add([
             Offset(center.dx - unit * .68, center.dy - unit * .55),
@@ -874,25 +912,91 @@ class _CanvasScreenState extends State<CanvasScreen> {
             Offset(center.dx + unit * .52, center.dy - unit * 1.25),
             Offset(center.dx + unit * .68, center.dy - unit * .55),
           ], width: 3.2);
+          add([
+            Offset(center.dx - unit * .49, center.dy - unit * .72),
+            Offset(center.dx - unit * .43, center.dy - unit * 1.02),
+            Offset(center.dx - unit * .24, center.dy - unit * .77),
+          ], width: 2.1, colorOverride: orange);
+          add([
+            Offset(center.dx + unit * .24, center.dy - unit * .77),
+            Offset(center.dx + unit * .43, center.dy - unit * 1.02),
+            Offset(center.dx + unit * .49, center.dy - unit * .72),
+          ], width: 2.1, colorOverride: orange);
+          add([
+            Offset(center.dx - unit * .32, center.dy + unit * .12),
+            Offset(center.dx - unit * .63, center.dy + unit * .08),
+          ], width: 1.5, colorOverride: ink);
+          add([
+            Offset(center.dx + unit * .32, center.dy + unit * .12),
+            Offset(center.dx + unit * .63, center.dy + unit * .08),
+          ], width: 1.5, colorOverride: ink);
+        } else {
+          add([
+            Offset(center.dx - unit * .55, center.dy - unit * .37),
+            Offset(center.dx - unit * .24, center.dy - unit * .32),
+          ], width: 2.5, colorOverride: brown);
+          add([
+            Offset(center.dx + unit * .24, center.dy - unit * .32),
+            Offset(center.dx + unit * .55, center.dy - unit * .37),
+          ], width: 2.5, colorOverride: brown);
         }
         break;
       case 'robot':
         add([Offset(center.dx - unit * .72, center.dy - unit * .85), Offset(center.dx + unit * .72, center.dy + unit * .05)], kind: 'rectangle', width: 3.2);
         add([Offset(center.dx - unit * .5, center.dy + unit * .15), Offset(center.dx + unit * .5, center.dy + unit * .95)], kind: 'rectangle', width: 3.2);
-        circle(Offset(center.dx - unit * .28, center.dy - unit * .48), unit * .08);
-        circle(Offset(center.dx + unit * .28, center.dy - unit * .48), unit * .08);
+        circle(Offset(center.dx - unit * .28, center.dy - unit * .48), unit * .08, colorOverride: blue);
+        circle(Offset(center.dx + unit * .28, center.dy - unit * .48), unit * .08, colorOverride: blue);
+        add([
+          Offset(center.dx - unit * .21, center.dy - unit * .24),
+          Offset(center.dx, center.dy - unit * .17),
+          Offset(center.dx + unit * .21, center.dy - unit * .24),
+        ], width: 2.5, colorOverride: blue);
         add([Offset(center.dx, center.dy - unit * .86), Offset(center.dx, center.dy - unit * 1.15)]);
-        circle(Offset(center.dx, center.dy - unit * 1.22), unit * .08);
+        circle(Offset(center.dx, center.dy - unit * 1.22), unit * .08, colorOverride: coral);
+        add([
+          Offset(center.dx - unit * .28, center.dy + unit * .43),
+          Offset(center.dx + unit * .28, center.dy + unit * .43),
+        ], width: 3, colorOverride: blue);
+        circle(Offset(center.dx - unit * .16, center.dy + unit * .64), unit * .05, colorOverride: coral);
+        circle(Offset(center.dx, center.dy + unit * .64), unit * .05, colorOverride: yellow);
+        circle(Offset(center.dx + unit * .16, center.dy + unit * .64), unit * .05, colorOverride: green);
+        add([
+          Offset(center.dx - unit * .72, center.dy - unit * .1),
+          Offset(center.dx - unit * 1.02, center.dy + unit * .12),
+          Offset(center.dx - unit * .85, center.dy + unit * .42),
+        ], width: 2.8, colorOverride: blue);
+        add([
+          Offset(center.dx + unit * .72, center.dy - unit * .1),
+          Offset(center.dx + unit * 1.02, center.dy + unit * .12),
+          Offset(center.dx + unit * .85, center.dy + unit * .42),
+        ], width: 2.8, colorOverride: blue);
         break;
       case 'tree':
-        add([Offset(center.dx - unit * .18, center.dy + unit * .2), Offset(center.dx + unit * .18, center.dy + unit)], kind: 'rectangle', width: 3.3);
-        add([Offset(center.dx - unit * .78, center.dy - unit * .1), Offset(center.dx + unit * .78, center.dy + unit * .66)], kind: 'ellipse', width: 3.3);
-        add([Offset(center.dx - unit * .58, center.dy - unit * .35), Offset(center.dx + unit * .58, center.dy + unit * .4)], kind: 'ellipse', width: 3.3);
+        add([Offset(center.dx - unit * .18, center.dy + unit * .2), Offset(center.dx + unit * .18, center.dy + unit)], kind: 'rectangle', width: 3.3, colorOverride: brown);
+        add([Offset(center.dx - unit * .78, center.dy - unit * .1), Offset(center.dx + unit * .78, center.dy + unit * .66)], kind: 'ellipse', width: 3.3, colorOverride: green);
+        add([Offset(center.dx - unit * .58, center.dy - unit * .35), Offset(center.dx + unit * .58, center.dy + unit * .4)], kind: 'ellipse', width: 3.3, colorOverride: green);
+        add([
+          Offset(center.dx - unit * .12, center.dy + unit * .45),
+          Offset(center.dx - unit * .42, center.dy + unit * .12),
+        ], width: 2.4, colorOverride: brown);
+        add([
+          Offset(center.dx + unit * .12, center.dy + unit * .58),
+          Offset(center.dx + unit * .43, center.dy + unit * .18),
+        ], width: 2.4, colorOverride: brown);
+        circle(Offset(center.dx - unit * .32, center.dy - unit * .22), unit * .08, colorOverride: 0xFF93D5A8);
+        circle(Offset(center.dx + unit * .28, center.dy - unit * .09), unit * .08, colorOverride: 0xFF93D5A8);
         break;
       case 'cloud':
-        add(oval(center, unit, unit * .45), width: 3.2);
-        add(oval(Offset(center.dx - unit * .4, center.dy - unit * .22), unit * .48, unit * .42), width: 3.2);
-        add(oval(Offset(center.dx + unit * .28, center.dy - unit * .28), unit * .55, unit * .48), width: 3.2);
+        add(oval(center, unit, unit * .45), width: 3.2, colorOverride: sky);
+        add(oval(Offset(center.dx - unit * .4, center.dy - unit * .22), unit * .48, unit * .42), width: 3.2, colorOverride: sky);
+        add(oval(Offset(center.dx + unit * .28, center.dy - unit * .28), unit * .55, unit * .48), width: 3.2, colorOverride: sky);
+        for (var drop = -1; drop <= 1; drop++) {
+          final x = center.dx + drop * unit * .48;
+          add([
+            Offset(x, center.dy + unit * .56),
+            Offset(x - unit * .08, center.dy + unit * .79),
+          ], width: 2.7, colorOverride: blue);
+        }
         break;
       case 'house':
         add([Offset(center.dx - unit * .75, center.dy - unit * .1), Offset(center.dx + unit * .75, center.dy + unit * .8)], kind: 'rectangle', width: 3.2);
@@ -900,8 +1004,23 @@ class _CanvasScreenState extends State<CanvasScreen> {
           Offset(center.dx - unit * .95, center.dy - unit * .1),
           Offset(center.dx, center.dy - unit * .95),
           Offset(center.dx + unit * .95, center.dy - unit * .1),
-        ], width: 3.2);
-        add([Offset(center.dx - unit * .17, center.dy + unit * .25), Offset(center.dx + unit * .17, center.dy + unit * .8)], kind: 'rectangle', width: 2.5);
+        ], width: 3.2, colorOverride: coral);
+        add([Offset(center.dx - unit * .17, center.dy + unit * .25), Offset(center.dx + unit * .17, center.dy + unit * .8)], kind: 'rectangle', width: 2.5, colorOverride: brown);
+        add([
+          Offset(center.dx - unit * .6, center.dy + unit * .12),
+          Offset(center.dx - unit * .34, center.dy + unit * .12),
+          Offset(center.dx - unit * .34, center.dy + unit * .37),
+          Offset(center.dx - unit * .6, center.dy + unit * .37),
+          Offset(center.dx - unit * .6, center.dy + unit * .12),
+        ], width: 2.4, colorOverride: blue);
+        add([
+          Offset(center.dx + unit * .34, center.dy + unit * .12),
+          Offset(center.dx + unit * .6, center.dy + unit * .12),
+          Offset(center.dx + unit * .6, center.dy + unit * .37),
+          Offset(center.dx + unit * .34, center.dy + unit * .37),
+          Offset(center.dx + unit * .34, center.dy + unit * .12),
+        ], width: 2.4, colorOverride: blue);
+        circle(Offset(center.dx + unit * .09, center.dy + unit * .56), unit * .025, colorOverride: yellow);
         break;
       default:
         circle(center, unit * .6);
