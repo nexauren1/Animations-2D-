@@ -139,7 +139,7 @@ class _AssetsLibraryScreenState extends State<AssetsLibraryScreen> {
                       return Card(
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
-                          onTap: () => Navigator.of(context).pop(asset.id),
+                          onTap: () => Navigator.of(context).pop(asset),
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
                             child: Column(
