@@ -34,26 +34,47 @@ class AppLocale {
   static String translate(BuildContext context, String source) {
     if (locale.value.languageCode != 'en') return source;
 
-    final audioPlaced = RegExp(r'^Áudio “(.+)” colocado no frame (\d+)\.
-    if (frameCount != null) return '${frameCount.group(1)} frames';
+    final audioPlaced = RegExp(r'^Áudio “(.+)” colocado no frame (\d+)\.$').firstMatch(source);
+    if (audioPlaced != null) {
+      return 'Audio “' + audioPlaced.group(1)! + '” placed at frame ' + audioPlaced.group(2)! + '.';
+    }
+
+    final startFrame = RegExp(r'^Começa no frame (\d+)(?: · Pro)?$').firstMatch(source);
+    if (startFrame != null) {
+      final suffix = source.endsWith(' · Pro') ? ' · Pro' : '';
+      return 'Starts at frame ' + startFrame.group(1)! + suffix;
+    }
+
+    final exportFrameProgress = RegExp(r'^A renderizar frame (\d+) de (\d+)…$').firstMatch(source);
+    if (exportFrameProgress != null) {
+      return 'Rendering frame ' + exportFrameProgress.group(1)! + ' of ' + exportFrameProgress.group(2)! + '…';
+    }
+
+    final zipFrameProgress = RegExp(r'^A preparar frame (\d+) de (\d+)…$').firstMatch(source);
+    if (zipFrameProgress != null) {
+      return 'Preparing frame ' + zipFrameProgress.group(1)! + ' of ' + zipFrameProgress.group(2)! + '…';
+    }
+
+    final frameCount = RegExp(r'^(\d+) frames$').firstMatch(source);
+    if (frameCount != null) return frameCount.group(1)! + ' frames';
 
     final packageCount = RegExp(r'^(\d+) pacote(s)$').firstMatch(source);
-    if (packageCount != null) return '${packageCount.group(1)} pack(s)';
+    if (packageCount != null) return packageCount.group(1)! + ' pack(s)';
 
     final frameRate = RegExp(r'^(\d+) FPS$').firstMatch(source);
-    if (frameRate != null) return '${frameRate.group(1)} FPS';
+    if (frameRate != null) return frameRate.group(1)! + ' FPS';
 
     final templateFrameCount = RegExp(r'^(\d+) frames · (\d+) FPS$').firstMatch(source);
     if (templateFrameCount != null) {
-      return '${templateFrameCount.group(1)} frames · ${templateFrameCount.group(2)} FPS';
+      return templateFrameCount.group(1)! + ' frames · ' + templateFrameCount.group(2)! + ' FPS';
     }
 
-    final savedPack = RegExp(r'^Pacote "(.+)" guardado no dispositivo.$').firstMatch(source);
-    if (savedPack != null) return 'Pack "${savedPack.group(1)}" saved on this device.';
+    final savedPack = RegExp(r'^Pacote "(.+)" guardado no dispositivo\.$').firstMatch(source);
+    if (savedPack != null) return 'Pack "' + savedPack.group(1)! + '" saved on this device.';
 
-    final removedPack = RegExp(r'^"(.+)" será removido do armazenamento deste dispositivo.$').firstMatch(source);
+    final removedPack = RegExp(r'^"(.+)" será removido do armazenamento deste dispositivo\.$').firstMatch(source);
     if (removedPack != null) {
-      return '"${removedPack.group(1)}" will be removed from this device storage.';
+      return '"' + removedPack.group(1)! + '" will be removed from this device storage.';
     }
 
     return _english[source] ?? source;
