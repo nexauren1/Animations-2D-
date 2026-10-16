@@ -239,6 +239,7 @@ class AppLocale {
     'Novo pacote': 'New pack',
     'Aplicação': 'App',
     'Português e Inglês': 'Portuguese and English',
+    'O desenho, os efeitos visuais, o áudio e a exportação MP4 continuam gratuitos. O Pro desbloqueia apenas ferramentas avançadas.': 'Drawing, visual effects, audio, and MP4 export stay free. Pro unlocks advanced tools only.',
     'As contas online ainda não estão disponíveis': 'Online accounts are not available yet',
     'Podes continuar a desenhar, animar e guardar os teus projetos neste dispositivo. A entrada com conta estará disponível quando o serviço for ativado.': 'You can keep drawing, animating, and saving projects on this device. Account sign-in will be available when the service is activated.',
     'Os projetos locais continuam guardados no teu telefone. Não precisas de criar uma conta para usar o editor.': 'Your local projects remain stored on your phone. You do not need an account to use the editor.',
