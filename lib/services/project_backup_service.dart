@@ -131,6 +131,7 @@ class ProjectBackupService {
     };
     final restoredAudioClips = <AudioTimelineClip>[];
     final audioAssets = <String, List<int>>{};
+    var totalRestoredAudioBytes = 0;
     final rawAudio = decoded['audioClips'];
     if (rawAudio != null) {
       if (rawAudio is! List || rawAudio.length > 1000) {
@@ -195,7 +196,8 @@ class BackupCancelledException implements Exception {
           throw const FormatException('O backup referencia um áudio que não existe no arquivo.');
         }
         final audioBytes = entry.content as List<int>;
-        if (audioBytes.isEmpty || audioBytes.length > 50 * 1024 * 1024) {
+        totalRestoredAudioBytes += audioBytes.length;
+        if (audioBytes.isEmpty || audioBytes.length > 50 * 1024 * 1024 || totalRestoredAudioBytes > 26 * 1024 * 1024) {
           throw const FormatException('Um dos áudios do backup é inválido ou demasiado grande.');
         }
         restoredAudioClips.add(clip);
