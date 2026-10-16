@@ -116,6 +116,41 @@ void main() {
     });
   });
   group('TemplateCatalog', () {
+    test('two-character starter keeps people in separate editable layers', () {
+      final template = TemplateCatalog.all.singleWhere(
+        (item) => item.id == 'two-characters',
+      );
+      final frames = template.createFrames();
+
+      expect(frames, hasLength(8));
+      expect(frames.every((frame) => frame.layers.length == 4), isTrue);
+      expect(frames.first.layers.map((layer) => layer.name).toList(),
+          <String>['Personagem A', 'Personagem B', 'Cenário', 'Guias']);
+      expect(frames.every((frame) => frame.layers[0].strokes.isNotEmpty), isTrue);
+      expect(frames.every((frame) => frame.layers[1].strokes.isNotEmpty), isTrue);
+
+      frames.first.layers[0].strokes.clear();
+      expect(frames.first.layers[1].strokes, isNotEmpty);
+    });
+
+    test('house starter separates the door from the house and scenery', () {
+      final template = TemplateCatalog.all.singleWhere(
+        (item) => item.id == 'house-door',
+      );
+      final frames = template.createFrames();
+
+      expect(frames, hasLength(8));
+      expect(frames.every((frame) => frame.layers.length == 3), isTrue);
+      expect(frames.first.layers.map((layer) => layer.name).toList(),
+          <String>['Porta', 'Casa', 'Paisagem']);
+      expect(frames.every((frame) => frame.layers[0].strokes.isNotEmpty), isTrue);
+      expect(frames.every((frame) => frame.layers[1].strokes.isNotEmpty), isTrue);
+      expect(
+        frames.map((frame) => frame.layers[0].strokes.first.points.first.dx).toSet().length,
+        1,
+      );
+    });
+
     test('stickman sparring starter contains editable fight poses and visual effects', () {
       final template = TemplateCatalog.all.singleWhere(
         (item) => item.id == 'stickman-fight',
