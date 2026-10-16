@@ -2,6 +2,10 @@ package com.nexauren.animpro
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaCodecList
@@ -20,6 +24,63 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "animpro/export_storage")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "saveToDownloads") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+                val sourcePath = call.argument<String>("sourcePath").orEmpty()
+                val requestedName = call.argument<String>("fileName").orEmpty()
+                val source = File(sourcePath)
+                if (!source.isFile || source.length() <= 0L) {
+                    result.error("SOURCE_INVALID", "O ficheiro exportado não está disponível.", null)
+                    return@setMethodCallHandler
+                }
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                    result.error("STORAGE_UNSUPPORTED", "O salvamento automático para Downloads requer Android 10 ou superior.", null)
+                    return@setMethodCallHandler
+                }
+                val cleanName = requestedName.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                    .takeIf { it.isNotBlank() } ?: source.name
+                val extension = cleanName.substringAfterLast('.', "").lowercase()
+                val mimeType = when (extension) {
+                    "mp4" -> "video/mp4"
+                    "gif" -> "image/gif"
+                    "png" -> "image/png"
+                    "zip" -> "application/zip"
+                    else -> "application/octet-stream"
+                }
+                Thread {
+                    var savedUri: android.net.Uri? = null
+                    try {
+                        val values = ContentValues().apply {
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, cleanName)
+                            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/AnimPro")
+                            put(MediaStore.MediaColumns.IS_PENDING, 1)
+                        }
+                        val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                            ?: throw IllegalStateException("Android não conseguiu criar o ficheiro em Downloads/AnimPro.")
+                        savedUri = uri
+                        val output = contentResolver.openOutputStream(uri)
+                            ?: throw IllegalStateException("Não foi possível abrir o ficheiro de destino.")
+                        output.use { stream ->
+                            source.inputStream().use { input -> input.copyTo(stream) }
+                        }
+                        if (source.length() <= 0L) throw IllegalStateException("O ficheiro exportado está vazio.")
+                        val ready = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+                        contentResolver.update(uri, ready, null, null)
+                        Handler(Looper.getMainLooper()).post { result.success(uri.toString()) }
+                    } catch (error: Throwable) {
+                        savedUri?.let { runCatching { contentResolver.delete(it, null, null) } }
+                        Handler(Looper.getMainLooper()).post {
+                            result.error("SAVE_FAILED", error.message ?: "Falha ao guardar em Downloads/AnimPro.", null)
+                        }
+                    }
+                }.start()
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, exportChannel)
             .setMethodCallHandler { call, result ->
                 if (call.method != "exportMp4") {
