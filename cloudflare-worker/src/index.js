@@ -264,8 +264,13 @@ async function queryDocByField(env, collection, fieldName, value) {
 
 function paypalApiBase(env) {
   const configured = (env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com").replace(/\/$/, "");
-  // This build is deliberately Sandbox-only to prevent accidental live charges.
-  if (configured !== "https://api-m.sandbox.paypal.com") {
+  // The environment is selected server-side. Accept only PayPal's official
+  // API hosts; never let a Worker variable redirect credentials to an arbitrary host.
+  const allowedBases = new Set([
+    "https://api-m.sandbox.paypal.com",
+    "https://api-m.paypal.com",
+  ]);
+  if (!allowedBases.has(configured)) {
     throw new HttpError(503, "O ambiente de pagamentos está configurado incorretamente.");
   }
   return configured;
@@ -285,7 +290,7 @@ async function paypalAccessToken(env) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.access_token) {
     console.error("PayPal OAuth failed with HTTP " + response.status);
-    throw new HttpError(503, "Não foi possível autenticar no PayPal Sandbox.");
+    throw new HttpError(503, "Não foi possível autenticar no PayPal.");
   }
   return payload.access_token;
 }
