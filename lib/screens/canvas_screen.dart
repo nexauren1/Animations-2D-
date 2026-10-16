@@ -836,11 +836,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
       List<Offset> points, {
       String kind = 'pen',
       double width = 3,
-      int colorOverride = ink,
+      int? colorOverride,
     }) {
       newStrokes.add(StrokeModel(
         points: points,
-        color: colorOverride,
+        color: colorOverride ?? ink,
         width: width,
         kind: kind,
       ));
@@ -850,7 +850,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           final angle = i / count * math.pi * 2;
           return Offset(c.dx + math.cos(angle) * rx, c.dy + math.sin(angle) * ry);
         });
-    void circle(Offset c, double radius, {int colorOverride = ink}) {
+    void circle(Offset c, double radius, {int? colorOverride}) {
       add(
         [Offset(c.dx - radius, c.dy - radius), Offset(c.dx + radius, c.dy + radius)],
         kind: 'ellipse',
