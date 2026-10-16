@@ -270,6 +270,10 @@ class _ExportScreenState extends State<ExportScreen> {
   }
 
   Future<void> _export() async {
+    if (_resolution == 1080 &&
+        !await ProAccessService.requirePro(context, feature: 'Exportação a 1080p')) return;
+    if ((_format == 'GIF' || _format == 'PNG Sequence') &&
+        !await ProAccessService.requirePro(context, feature: 'Formatos de exportação avançados')) return;
     if (_format == 'MP4' && _fps == 60 &&
         !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
     setState(() {
@@ -479,7 +483,10 @@ class _ExportScreenState extends State<ExportScreen> {
               const SizedBox(width: 9),
               _choice('720p', _resolution == 720, () => setState(() => _resolution = 720)),
               const SizedBox(width: 9),
-              _choice('1080p', _resolution == 1080, () => setState(() => _resolution = 1080)),
+              _choice('1080p · Pro', _resolution == 1080, () async {
+                if (!await ProAccessService.requirePro(context, feature: 'Exportação a 1080p')) return;
+                if (mounted) setState(() => _resolution = 1080);
+              }),
             ],
           ),
           const SizedBox(height: 24),
@@ -501,6 +508,8 @@ class _ExportScreenState extends State<ExportScreen> {
                   size: 18,
                 ),
                 onSelected: (_) async {
+                  if ((format == 'GIF' || format == 'PNG Sequence') &&
+                      !await ProAccessService.requirePro(context, feature: 'Formatos de exportação avançados')) return;
                   if (mounted) setState(() => _format = format);
                 },
                 selectedColor: const Color(0xFF5445C6),
