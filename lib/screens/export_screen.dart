@@ -33,6 +33,8 @@ class _ExportScreenState extends State<ExportScreen> {
   String _aspectRatio = '16:9';
   String _shareTarget = 'Geral';
   bool _isExporting = false;
+  double _exportProgress = 0;
+  String _exportStage = '';
 
   @override
   void initState() {
@@ -259,27 +261,44 @@ class _ExportScreenState extends State<ExportScreen> {
     if (data == null) throw StateError('Não foi possível codificar o PNG.');
     return data.buffer.asUint8List();
   }
+  void _updateExportProgress(double value, String stage) {
+    if (!mounted) return;
+    setState(() {
+      _exportProgress = value.clamp(0, 1).toDouble();
+      _exportStage = stage;
+    });
+  }
+
   Future<void> _export() async {
     if (_format == 'MP4' && _fps == 60 &&
         !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
-    setState(() => _isExporting = true);
+    setState(() {
+      _isExporting = true;
+      _exportProgress = 0;
+      _exportStage = 'A preparar exportação…';
+    });
     Directory? framesDirectory;
     try {
-      final directory = await getTemporaryDirectory();
+      final documents = await getApplicationDocumentsDirectory();
+      final directory = Directory('${documents.path}/AnimPro/Exports');
+      await directory.create(recursive: true);
       final time = DateTime.now().millisecondsSinceEpoch;
       late File exported;
       final frames = _frames.isEmpty ? <FrameModel>[FrameModel.blank()] : _frames;
 
       if (_format == 'PNG') {
+        _updateExportProgress(.15, 'A renderizar imagem…');
         final bytes = await _renderPng(_frame, _resolution);
         exported = File('${directory.path}/animpro_${time}.png');
         await exported.writeAsBytes(bytes, flush: true);
+        _updateExportProgress(.85, 'A guardar imagem…');
       } else if (_format == 'PNG Sequence') {
         final archive = Archive();
         for (var index = 0; index < frames.length; index++) {
           final bytes = await _renderPng(frames[index], _resolution);
           final filename = 'frame_${(index + 1).toString().padLeft(5, '0')}.png';
           archive.addFile(ArchiveFile(filename, bytes.length, bytes));
+          _updateExportProgress(.1 + .65 * (index + 1) / frames.length, 'A preparar frame ${index + 1} de ${frames.length}…');
         }
         final zipBytes = ZipEncoder().encode(archive);
         exported = File('${directory.path}/animpro_frames_${time}.zip');
@@ -291,6 +310,7 @@ class _ExportScreenState extends State<ExportScreen> {
           final bytes = await _renderPng(frames[index], _resolution);
           final filename = 'frame_${index.toString().padLeft(5, '0')}.png';
           await File('${framesDirectory.path}/${filename}').writeAsBytes(bytes, flush: true);
+          _updateExportProgress(.1 + .55 * (index + 1) / frames.length, 'A renderizar frame ${index + 1} de ${frames.length}…');
         }
 
         final framePaths = List<String>.generate(
@@ -373,6 +393,7 @@ class _ExportScreenState extends State<ExportScreen> {
         }
       }
 
+      _updateExportProgress(.92, 'Ficheiro guardado. A abrir opções de partilha…');
       if (!mounted) return;
       await SharePlus.instance.share(
         ShareParams(
@@ -409,7 +430,11 @@ class _ExportScreenState extends State<ExportScreen> {
           // A limpeza é best effort; o vídeo/imagem exportado fica preservado.
         }
       }
-      if (mounted) setState(() => _isExporting = false);
+      if (mounted) setState(() {
+        _isExporting = false;
+        _exportProgress = 0;
+        _exportStage = '';
+      });
     }
   }
   @override
@@ -574,6 +599,13 @@ class _ExportScreenState extends State<ExportScreen> {
           const SizedBox(height: 10),
           Text('FPS fica guardado para futuras exportações de vídeo. O PNG não tem taxa de frames.',
               style: TextStyle(color: Colors.white.withOpacity(.48), fontSize: 11)),
+          if (_isExporting) ...[
+            const SizedBox(height: 12),
+            LinearProgressIndicator(value: _exportProgress),
+            const SizedBox(height: 7),
+            Text('${_exportStage} ${(_exportProgress * 100).round()}%', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 10),
+          ],
           const SizedBox(height: 25),
           SizedBox(
             height: 56,
