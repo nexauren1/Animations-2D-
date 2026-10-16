@@ -409,6 +409,14 @@ class AppLocale {
     'Guarda todos os frames como ficheiros PNG dentro de um ZIP.': 'Save all frames as PNG files in a ZIP archive.',
     'O ficheiro será criado a partir dos frames do projeto e guardado automaticamente no dispositivo.': 'The file will be created from the project\'s frames and automatically saved on your device.',
     'A exportação fica guardada no dispositivo. Usa o botão Partilhar depois de concluída para enviar o ficheiro.': 'The export is saved on your device. Use the Share button when it finishes to send the file.',
+    final savedExport = RegExp(
+      r'^Exportação concluída\. Ficheiro guardado em (.+) \(ou na pasta da aplicação em Android antigo\)\.$',
+    ).firstMatch(source);
+    if (savedExport != null) {
+      return 'Export complete. File saved to ${savedExport.group(1)} (or in app-specific storage on older Android).';
+    }
+
+
     'Não foi possível guardar o ficheiro no dispositivo.': 'Could not save the file to your device.',
     'Não foi possível abrir o destino da exportação.': 'Could not open the export destination.',
     'O Android não confirmou a gravação do ficheiro.': 'Android did not confirm that the file was saved.',

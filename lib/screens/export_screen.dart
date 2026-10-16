@@ -440,10 +440,15 @@ class _ExportScreenState extends State<ExportScreen> {
       if (!mounted) return;
       setState(() => _lastExportPath = exported.path);
       _progressStatus.value = 'Concluído! Ficheiro guardado no dispositivo.';
+      final savedFolder = _format == 'MP4'
+          ? 'Movies/AnimPro'
+          : (_format == 'PNG' || _format == 'GIF')
+              ? 'Pictures/AnimPro'
+              : 'Downloads/AnimPro';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Exportação concluída. Ficheiro guardado automaticamente em Downloads/AnimPro ou na pasta de imagens/vídeos AnimPro.',
+            'Exportação concluída. Ficheiro guardado em $savedFolder (ou na pasta da aplicação em Android antigo).',
           ),
           duration: const Duration(seconds: 5),
           action: SnackBarAction(
