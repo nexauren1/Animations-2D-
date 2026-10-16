@@ -299,11 +299,50 @@ class _ExportScreenState extends State<ExportScreen> {
         );
         if (_format == 'MP4') {
           exported = File('${directory.path}/animpro_${time}.mp4');
-          await _nativeVideoChannel.invokeMethod<String>('exportMp4', <String, Object>{
-            'framePaths': framePaths,
-            'outputPath': exported.path,
-            'fps': _fps,
-          });
+          Future<void> encodeMp4() async {
+            await _nativeVideoChannel.invokeMethod<String>(
+              'exportMp4',
+              <String, Object>{
+                'framePaths': framePaths,
+                'outputPath': exported.path,
+                'fps': _fps,
+              },
+            );
+          }
+
+          try {
+            await encodeMp4();
+          } catch (firstError) {
+            // Some phones advertise H.264 but cannot encode the requested size.
+            // Re-render the exact same frames smaller, then retry the native muxer.
+            if (_resolution <= 360) rethrow;
+            final fallbackResolution = _resolution >= 720 ? 540 : 360;
+            for (var index = 0; index < frames.length; index++) {
+              final bytes = await _renderPng(frames[index], fallbackResolution);
+              final filename = 'frame_${index.toString().padLeft(5, '0')}.png';
+              await File('${framesDirectory.path}/${filename}').writeAsBytes(
+                bytes,
+                flush: true,
+              );
+            }
+            try {
+              await encodeMp4();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'O dispositivo precisou de uma resolução reduzida para exportar o MP4 (${fallbackResolution}p).',
+                    ),
+                  ),
+                );
+              }
+            } catch (_) {
+              throw StateError(
+                'O dispositivo não conseguiu codificar o MP4. Tenta 540p/360p e 12 ou 24 FPS, ou exporta GIF.',
+              );
+            }
+          }
+
           if (!await exported.exists() || await exported.length() == 0) {
             throw StateError('O codificador Android não criou um MP4 válido.');
           }
@@ -355,8 +394,11 @@ class _ExportScreenState extends State<ExportScreen> {
       );
     } catch (error) {
       if (mounted) {
+        final message = _format == 'MP4' && error is PlatformException
+            ? 'Falha ao codificar MP4 neste dispositivo. Tenta uma resolução menor e 12/24 FPS, ou exporta GIF.'
+            : 'Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.')),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
