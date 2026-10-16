@@ -92,6 +92,16 @@ class TemplateCatalog {
       tag: 'EFEITOS',
       frames: _cometFlight,
     ),
+    AnimationTemplate(
+      id: 'stickman-fight',
+      title: 'Stickman: Combate Cinematográfico',
+      description: 'Uma sequência de luta estilizada, frame a frame, com socos, esquivas, bloqueios, um pontapé aéreo e um final amigável. Todos os frames são editáveis.',
+      iconCodePoint: 0xe91d,
+      tint: 0xFFFFB15C,
+      fps: 12,
+      tag: 'ANIMAÇÃO DE AÇÃO',
+      frames: _stickmanFight,
+    ),
   ];
 
   static List<FrameModel> _bouncingBall() {
@@ -356,6 +366,319 @@ class TemplateCatalog {
         Offset(head.dx - 7, head.dy - 7),
         Offset(head.dx - 1, head.dy - 1),
       ], color: 0xFFFFF0C7, width: 3));
+      return FrameModel(layers: layers);
+    });
+  }
+
+  /// A friendly, non-graphic sparring sequence built entirely from editable vector strokes.
+  static List<FrameModel> _stickmanFight() {
+    const leftTravel = <double>[0, 4, 8, 16, 20, 12, 4, -7, -15, -12, -4, 0, 0, 0, 0, 0];
+    const rightTravel = <double>[0, -2, -4, -6, -10, -18, -20, -10, 0, 6, 12, 3, 0, 0, 0, 0];
+    const leftHead = <double>[148, 148, 146, 145, 157, 166, 149, 157, 142, 140, 151, 148, 148, 148, 148, 151];
+    const rightHead = <double>[148, 148, 150, 154, 174, 171, 155, 151, 148, 155, 151, 148, 148, 148, 148, 151];
+
+    return List<FrameModel>.generate(16, (index) {
+      final layers = _layers();
+      final line = layers[0];
+      final colour = layers[1];
+      final guide = layers[2];
+      const cyan = 0xFF25B8C7;
+      const orange = 0xFFFFA34F;
+      const ink = 0xFF24283B;
+      const yellow = 0xFFFFD166;
+
+      void addLine(
+        List<Offset> points, {
+        required int color,
+        double width = 3,
+        String brushStyle = 'tinta',
+        String kind = 'pen',
+      }) {
+        line.strokes.add(StrokeModel(
+          points: points,
+          color: color,
+          width: width,
+          kind: kind,
+          brushStyle: brushStyle,
+        ));
+      }
+
+      void addOval(Offset centre, double rx, double ry, int color) {
+        colour.strokes.add(_s(
+          <Offset>[
+            Offset(centre.dx - rx, centre.dy - ry),
+            Offset(centre.dx + rx, centre.dy + ry),
+          ],
+          color: color,
+          width: 3,
+          kind: 'ellipse',
+        ));
+      }
+
+      void fighter({
+        required double x,
+        required double headY,
+        required double direction,
+        required int accent,
+        double lean = 0,
+        bool punch = false,
+        bool block = false,
+        bool kick = false,
+        bool crouch = false,
+        bool recoil = false,
+      }) {
+        final head = Offset(x + lean * .2, headY);
+        final shoulder = Offset(x + lean, headY + (crouch ? 19 : 16));
+        final hip = Offset(x + lean * .65, headY + (crouch ? 73 : 82));
+        addOval(head, 10, 11, accent);
+        addLine(
+          <Offset>[Offset(head.dx, head.dy + 10), shoulder],
+          color: accent,
+          width: 3.2,
+        );
+        addLine(<Offset>[shoulder, hip], color: accent, width: 4);
+
+        final backShoulder = Offset(shoulder.dx - direction * 10, shoulder.dy + 2);
+        final frontShoulder = Offset(shoulder.dx + direction * 10, shoulder.dy + 2);
+        if (punch) {
+          addLine(
+            <Offset>[
+              backShoulder,
+              Offset(x - direction * 23, headY + 37),
+              Offset(x - direction * 28, headY + 48),
+            ],
+            color: accent,
+            width: 3.2,
+          );
+          addLine(
+            <Offset>[
+              frontShoulder,
+              Offset(x + direction * 29, headY + 26),
+              Offset(x + direction * 83, headY + 23),
+            ],
+            color: accent,
+            width: 4,
+            brushStyle: 'brilho neon',
+          );
+          addOval(Offset(x + direction * 83, headY + 23), 4, 4, accent);
+        } else if (block) {
+          addLine(
+            <Offset>[
+              backShoulder,
+              Offset(x - direction * 22, headY + 1),
+              Offset(x - direction * 21, headY - 12),
+            ],
+            color: accent,
+            width: 3.5,
+          );
+          addLine(
+            <Offset>[
+              frontShoulder,
+              Offset(x + direction * 18, headY - 5),
+              Offset(x + direction * 22, headY - 17),
+            ],
+            color: accent,
+            width: 3.5,
+          );
+        } else {
+          addLine(
+            <Offset>[
+              backShoulder,
+              Offset(x - direction * 18, headY + 34),
+              Offset(x - direction * 11, headY + 42),
+            ],
+            color: accent,
+            width: 3.1,
+          );
+          addLine(
+            <Offset>[
+              frontShoulder,
+              Offset(x + direction * 21, headY + 32),
+              Offset(x + direction * 17, headY + 20),
+            ],
+            color: accent,
+            width: 3.3,
+          );
+        }
+
+        if (kick) {
+          addLine(
+            <Offset>[
+              hip,
+              Offset(x - direction * 19, hip.dy + 24),
+              Offset(x - direction * 29, hip.dy + 45),
+            ],
+            color: accent,
+            width: 3.5,
+          );
+          addLine(
+            <Offset>[
+              hip,
+              Offset(x + direction * 28, hip.dy - 5),
+              Offset(x + direction * 92, hip.dy - 17),
+            ],
+            color: accent,
+            width: 4,
+            brushStyle: 'rastro de movimento',
+          );
+        } else if (crouch) {
+          addLine(
+            <Offset>[hip, Offset(x - 17, hip.dy + 15), Offset(x - 30, hip.dy + 37)],
+            color: accent,
+            width: 3.5,
+          );
+          addLine(
+            <Offset>[hip, Offset(x + direction * 19, hip.dy + 22), Offset(x + direction * 34, hip.dy + 34)],
+            color: accent,
+            width: 3.5,
+          );
+        } else if (recoil) {
+          addLine(
+            <Offset>[hip, Offset(x - direction * 24, hip.dy + 14), Offset(x - direction * 31, hip.dy + 34)],
+            color: accent,
+            width: 3.5,
+          );
+          addLine(
+            <Offset>[hip, Offset(x + direction * 19, hip.dy + 19), Offset(x + direction * 29, hip.dy + 39)],
+            color: accent,
+            width: 3.5,
+          );
+        } else {
+          addLine(
+            <Offset>[hip, Offset(x - direction * 16, hip.dy + 28), Offset(x - direction * 22, hip.dy + 48)],
+            color: accent,
+            width: 3.5,
+          );
+          addLine(
+            <Offset>[hip, Offset(x + direction * 17, hip.dy + 27), Offset(x + direction * 25, hip.dy + 48)],
+            color: accent,
+            width: 3.5,
+          );
+        }
+
+        final eyeX = head.dx + direction * 4;
+        addLine(
+          <Offset>[Offset(eyeX, headY - 1), Offset(eyeX + direction * 2, headY + 1)],
+          color: ink,
+          width: 2.2,
+        );
+      }
+
+      guide.strokes.add(_s(
+        const <Offset>[Offset(28, 354), Offset(292, 354)],
+        color: 0xFF8993AA,
+        width: 1.8,
+      ));
+      guide.strokes.add(_s(
+        const <Offset>[Offset(160, 44), Offset(160, 345)],
+        color: 0xFF404760,
+        width: 1.1,
+      ));
+
+      final leftX = 96.0 + leftTravel[index];
+      final rightX = 224.0 + rightTravel[index];
+      final leftPunch = index == 2 || index == 3;
+      final rightDuck = index == 4 || index == 5;
+      final rightPunch = index == 6 || index == 7;
+      final leftKick = index == 9 || index == 10;
+      final rightBlock = index == 9 || index == 10;
+      final leftRecoil = index == 7 || index == 8;
+
+      // Short speed lines and impact flashes give each pose a clear action beat.
+      if (index == 2 || index == 3) {
+        addLine(
+          <Offset>[Offset(leftX - 20, 129), Offset(leftX - 44, 123)],
+          color: cyan,
+          width: 3,
+          brushStyle: 'rastro de movimento',
+        );
+      }
+      if (index == 6 || index == 7) {
+        addLine(
+          <Offset>[Offset(rightX + 18, 130), Offset(rightX + 42, 123)],
+          color: orange,
+          width: 3,
+          brushStyle: 'rastro de movimento',
+        );
+      }
+      if (index == 9 || index == 10) {
+        addLine(
+          <Offset>[Offset(leftX + 30, 234), Offset(leftX + 66, 218)],
+          color: cyan,
+          width: 4,
+          brushStyle: 'luz energética',
+        );
+      }
+
+      fighter(
+        x: leftX,
+        headY: leftHead[index],
+        direction: 1,
+        accent: cyan,
+        lean: leftPunch ? 8 : (leftRecoil ? -7 : 0),
+        punch: leftPunch,
+        kick: leftKick,
+        recoil: leftRecoil,
+      );
+      fighter(
+        x: rightX,
+        headY: rightHead[index],
+        direction: -1,
+        accent: orange,
+        lean: rightPunch ? -8 : 0,
+        punch: rightPunch,
+        block: rightBlock,
+        crouch: rightDuck,
+      );
+
+      if (index == 3 || index == 6 || index == 10) {
+        final impactCentre = index == 3
+            ? Offset(190, 168)
+            : index == 6
+                ? Offset(146, 169)
+                : Offset(190, 230);
+        final burst = List<Offset>.generate(17, (i) {
+          final angle = -math.pi / 2 + i * math.pi / 8;
+          final radius = i.isEven ? 22.0 : 10.0;
+          return Offset(
+            impactCentre.dx + math.cos(angle) * radius,
+            impactCentre.dy + math.sin(angle) * radius,
+          );
+        });
+        colour.strokes.add(StrokeModel(
+          points: <Offset>[...burst, burst.first],
+          color: yellow,
+          width: 3.4,
+          brushStyle: 'luz energética',
+        ));
+        addLine(
+          <Offset>[Offset(impactCentre.dx - 27, impactCentre.dy), Offset(impactCentre.dx - 37, impactCentre.dy - 7)],
+          color: yellow,
+          width: 2.3,
+          brushStyle: 'brilho neon',
+        );
+        addLine(
+          <Offset>[Offset(impactCentre.dx + 27, impactCentre.dy), Offset(impactCentre.dx + 38, impactCentre.dy + 5)],
+          color: yellow,
+          width: 2.3,
+          brushStyle: 'brilho neon',
+        );
+      }
+
+      // The ending beat resets both fighters into a calm, friendly pose.
+      if (index == 14 || index == 15) {
+        addLine(
+          <Offset>[Offset(leftX + 17, 180), Offset(leftX + 30, 178)],
+          color: cyan,
+          width: 3,
+        );
+        addLine(
+          <Offset>[Offset(rightX - 17, 180), Offset(rightX - 30, 178)],
+          color: orange,
+          width: 3,
+        );
+      }
+
       return FrameModel(layers: layers);
     });
   }
