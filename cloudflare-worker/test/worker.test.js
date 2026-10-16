@@ -154,3 +154,98 @@ test("checkout blocks a second monthly subscription while Pro access is paid and
   }
 });
 
+test("checkout detects Live credentials even when the old configured base is Sandbox", async () => {
+  const previousFetch = globalThis.fetch;
+  const calls = [];
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const serviceAccount = {
+    type: "service_account",
+    project_id: "animpro-live-test",
+    client_email: "worker@animpro-live-test.iam.gserviceaccount.com",
+    private_key: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+  };
+
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    calls.push({ url, method: init.method || "GET" });
+
+    if (url.startsWith("https://identitytoolkit.googleapis.com/v1/accounts:lookup")) {
+      return new Response(JSON.stringify({ users: [{ localId: "uid-live-test" }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url === "https://oauth2.googleapis.com/token") {
+      return new Response(JSON.stringify({ access_token: "mock-firestore-token", expires_in: 3600 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url.includes("/documents/proEntitlements/uid-live-test")) {
+      return new Response(JSON.stringify({ error: { status: "NOT_FOUND" } }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url === "https://api-m.sandbox.paypal.com/v1/oauth2/token") {
+      return new Response(JSON.stringify({ error: "invalid_client" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url === "https://api-m.paypal.com/v1/oauth2/token") {
+      return new Response(JSON.stringify({ access_token: "mock-live-paypal-token", expires_in: 3600 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url === "https://api-m.paypal.com/v2/checkout/orders") {
+      return new Response(JSON.stringify({
+        id: "ORDER-LIVE-TEST",
+        links: [{ rel: "approve", href: "https://www.paypal.com/checkoutnow?token=live-test" }],
+      }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url.includes("/documents/paypalOrders/ORDER-LIVE-TEST")) {
+      return new Response(JSON.stringify({ name: "paypalOrders/ORDER-LIVE-TEST" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error("Unexpected network request in test: " + url);
+  };
+
+  try {
+    const response = await call("/api/checkout", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer mock-live-firebase-id-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ plan: "lifetime" }),
+    }, {
+      FIREBASE_API_KEY: "mock-firebase-api-key",
+      FIREBASE_PROJECT_ID: "animpro-live-test",
+      FIREBASE_SERVICE_ACCOUNT_JSON: JSON.stringify(serviceAccount),
+      PAYPAL_CLIENT_ID: "mock-live-client-id",
+      PAYPAL_CLIENT_SECRET: "mock-live-client-secret",
+      // Existing deployments may still have this Sandbox URL. Credentials are
+      // switched on the server; the client APK remains unchanged.
+      PAYPAL_API_BASE: "https://api-m.sandbox.paypal.com",
+    });
+
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.approvalUrl, "https://www.paypal.com/checkoutnow?token=live-test");
+    assert.equal(
+      calls.some((item) => item.url === "https://api-m.paypal.com/v2/checkout/orders" && item.method === "POST"),
+      true,
+      "Live order creation must use the Live endpoint after Live OAuth succeeds",
+    );
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
