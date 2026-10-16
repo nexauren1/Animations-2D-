@@ -34,26 +34,47 @@ class AppLocale {
   static String translate(BuildContext context, String source) {
     if (locale.value.languageCode != 'en') return source;
 
+    final audioPlaced = RegExp(r'^Áudio “(.+)” colocado no frame (\d+)\.$').firstMatch(source);
+    if (audioPlaced != null) {
+      return 'Audio “' + audioPlaced.group(1)! + '” placed at frame ' + audioPlaced.group(2)! + '.';
+    }
+
+    final startFrame = RegExp(r'^Começa no frame (\d+)(?: · Pro)?$').firstMatch(source);
+    if (startFrame != null) {
+      final suffix = source.endsWith(' · Pro') ? ' · Pro' : '';
+      return 'Starts at frame ' + startFrame.group(1)! + suffix;
+    }
+
+    final exportFrameProgress = RegExp(r'^A renderizar frame (\d+) de (\d+)…$').firstMatch(source);
+    if (exportFrameProgress != null) {
+      return 'Rendering frame ' + exportFrameProgress.group(1)! + ' of ' + exportFrameProgress.group(2)! + '…';
+    }
+
+    final zipFrameProgress = RegExp(r'^A preparar frame (\d+) de (\d+)…$').firstMatch(source);
+    if (zipFrameProgress != null) {
+      return 'Preparing frame ' + zipFrameProgress.group(1)! + ' of ' + zipFrameProgress.group(2)! + '…';
+    }
+
     final frameCount = RegExp(r'^(\d+) frames$').firstMatch(source);
-    if (frameCount != null) return '${frameCount.group(1)} frames';
+    if (frameCount != null) return frameCount.group(1)! + ' frames';
 
     final packageCount = RegExp(r'^(\d+) pacote(s)$').firstMatch(source);
-    if (packageCount != null) return '${packageCount.group(1)} pack(s)';
+    if (packageCount != null) return packageCount.group(1)! + ' pack(s)';
 
     final frameRate = RegExp(r'^(\d+) FPS$').firstMatch(source);
-    if (frameRate != null) return '${frameRate.group(1)} FPS';
+    if (frameRate != null) return frameRate.group(1)! + ' FPS';
 
     final templateFrameCount = RegExp(r'^(\d+) frames · (\d+) FPS$').firstMatch(source);
     if (templateFrameCount != null) {
-      return '${templateFrameCount.group(1)} frames · ${templateFrameCount.group(2)} FPS';
+      return templateFrameCount.group(1)! + ' frames · ' + templateFrameCount.group(2)! + ' FPS';
     }
 
-    final savedPack = RegExp(r'^Pacote "(.+)" guardado no dispositivo.$').firstMatch(source);
-    if (savedPack != null) return 'Pack "${savedPack.group(1)}" saved on this device.';
+    final savedPack = RegExp(r'^Pacote "(.+)" guardado no dispositivo\.$').firstMatch(source);
+    if (savedPack != null) return 'Pack "' + savedPack.group(1)! + '" saved on this device.';
 
-    final removedPack = RegExp(r'^"(.+)" será removido do armazenamento deste dispositivo.$').firstMatch(source);
+    final removedPack = RegExp(r'^"(.+)" será removido do armazenamento deste dispositivo\.$').firstMatch(source);
     if (removedPack != null) {
-      return '"${removedPack.group(1)}" will be removed from this device storage.';
+      return '"' + removedPack.group(1)! + '" will be removed from this device storage.';
     }
 
     return _english[source] ?? source;
@@ -337,6 +358,63 @@ class AppLocale {
     'Licença Pro não verificada': 'Pro licence not verified',
     'Inicia sessão para restaurar a tua licença Pro.': 'Sign in to restore your Pro licence.',
     'Não foi possível abrir o link. Tenta novamente.': 'Could not open the link. Try again.',
+    'Reproduzir animação': 'Play animation',
+    'Desativar repetição': 'Disable looping',
+    'Repetir animação': 'Loop animation',
+    'Ocultar controlos': 'Hide controls',
+    'Mostrar controlos': 'Show controls',
+    'Frame anterior': 'Previous frame',
+    'Frame seguinte': 'Next frame',
+    'Posição do áudio': 'Audio position',
+    'Escolhe o frame onde o áudio começa.': 'Choose the frame where the audio starts.',
+    'Frame inicial': 'Start frame',
+    'Faixas de áudio': 'Audio tracks',
+    'Cada faixa começa no frame escolhido. A pré-visualização reproduz os sons; a exportação MP4 ainda não mistura áudio.': 'Each track starts at the selected frame. Preview playback includes audio; MP4 export does not mix audio yet.',
+    'Ainda não adicionaste áudio a este projeto.': 'You have not added audio to this project yet.',
+    'Mudar posição': 'Change position',
+    'Remover faixa': 'Remove track',
+    'Abrir biblioteca de áudio': 'Open audio library',
+    'Biblioteca de áudio': 'Audio library',
+    'Atualizar biblioteca': 'Refresh library',
+    'Pesquisar sons e efeitos': 'Search sounds and effects',
+    'Ainda não há áudios publicados': 'No audio has been published yet',
+    'A biblioteca atualiza-se pelo catálogo online. Os novos sons podem ser publicados no site sem atualizar o APK.': 'The library updates from its online catalogue. New sounds can be published on the website without updating the APK.',
+    'Atualizar catálogo': 'Refresh catalogue',
+    'Pausar pré-escuta': 'Pause preview',
+    'Ouvir pré-escuta': 'Listen to preview',
+    'Transferir áudio Pro': 'Download Pro audio',
+    'Transferir áudio': 'Download audio',
+    'Não foi possível reproduzir a pré-escuta deste áudio.': 'Could not play this audio preview.',
+    'Não foi possível carregar a biblioteca. Verifica a internet e tenta novamente.': 'Could not load the library. Check your internet connection and try again.',
+    'O download falhou. Verifica a internet e tenta novamente.': 'Download failed. Check your internet connection and try again.',
+    'O login Google não está autorizado para esta versão da aplicação. Confirma no Firebase/Google Cloud o SHA-1 e SHA-256 da assinatura Android, o cliente OAuth Web e se o fornecedor Google está ativado.': 'Google sign-in is not authorized for this app build. Check the Android signing SHA-1/SHA-256 fingerprints, Web OAuth client, and enabled Google provider in Firebase/Google Cloud.',
+    'O Google não devolveu um token de autenticação. Confirma o ID de cliente OAuth Web e o google-services.json usado na compilação.': 'Google did not return an authentication token. Check the Web OAuth client ID and the google-services.json used for this build.',
+    'O fornecedor Google não está configurado no Firebase Authentication. Ativa Google em Authentication > Sign-in method.': 'Google is not configured in Firebase Authentication. Enable Google under Authentication > Sign-in method.',
+    'O seletor de conta Google não está disponível neste dispositivo. Atualiza o Google Play Services e tenta novamente.': 'The Google account picker is unavailable on this device. Update Google Play Services and try again.',
+    'Esta versão da aplicação não está autorizada no Firebase. Confirma o package name e as impressões digitais SHA-1/SHA-256.': 'This app build is not authorized in Firebase. Check the package name and SHA-1/SHA-256 fingerprints.',
+    'A configuração do Firebase está incorreta. Confirma a API key usada na compilação.': 'Firebase configuration is incorrect. Check the API key used for this build.',
+    'Áudios': 'Audio',
+    'Lábios': 'Lip sync',
+    'Áudio “': 'Audio “',
+    'A preparar exportação…': 'Preparing export…',
+    'A renderizar imagem…': 'Rendering image…',
+    'A guardar imagem…': 'Saving image…',
+    'Guardado em Downloads/AnimPro…': 'Saved to Downloads/AnimPro…',
+    'Ficheiro guardado na pasta interna do AnimPro…': 'Saved to AnimPro internal storage…',
+    'A abrir opções de partilha…': 'Opening sharing options…',
+    'Exportação guardada em Downloads/AnimPro e pronta para partilhar.': 'Export saved to Downloads/AnimPro and ready to share.',
+    'Exportação guardada no armazenamento do AnimPro e pronta para partilhar.': 'Export saved to AnimPro storage and ready to share.',
+    'Exportação guardada na pasta interna do AnimPro; o acesso a Downloads não está disponível neste dispositivo.': 'Export saved to AnimPro internal storage; Downloads access is unavailable on this device.',
+    'Pincéis avançados': 'Advanced brushes',
+    'Desbloqueia aerógrafo, pincel suave, pastel, pincel seco, pixel e efeitos de traço Pro.': 'Unlock airbrush, soft brush, pastel, dry brush, pixel and Pro stroke effects.',
+    'Biblioteca de áudio Pro': 'Pro audio library',
+    'Acede aos sons marcados como Pro na biblioteca online.': 'Access sounds marked Pro in the online library.',
+    'Exportação a 1080p': '1080p export',
+    'Exporta vídeo em alta resolução para trabalhos finais.': 'Export high-resolution video for finished projects.',
+    'Formatos de exportação avançados': 'Advanced export formats',
+    'GIF e sequência PNG': 'GIF and PNG sequence',
+    'Desbloqueia formatos avançados para partilhar ou continuar a edição noutros programas.': 'Unlock advanced formats for sharing or continuing edits in other apps.',
+    'Pincéis Pro': 'Pro brushes',
   };
 }
 

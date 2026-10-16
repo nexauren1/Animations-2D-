@@ -33,6 +33,8 @@ class _ExportScreenState extends State<ExportScreen> {
   String _aspectRatio = '16:9';
   String _shareTarget = 'Geral';
   bool _isExporting = false;
+  double _exportProgress = 0;
+  String _exportStage = '';
 
   @override
   void initState() {
@@ -259,27 +261,48 @@ class _ExportScreenState extends State<ExportScreen> {
     if (data == null) throw StateError('Não foi possível codificar o PNG.');
     return data.buffer.asUint8List();
   }
+  void _updateExportProgress(double value, String stage) {
+    if (!mounted) return;
+    setState(() {
+      _exportProgress = value.clamp(0, 1).toDouble();
+      _exportStage = stage;
+    });
+  }
+
   Future<void> _export() async {
+    if (_resolution == 1080 &&
+        !await ProAccessService.requirePro(context, feature: 'Exportação a 1080p')) return;
+    if ((_format == 'GIF' || _format == 'PNG Sequence') &&
+        !await ProAccessService.requirePro(context, feature: 'Formatos de exportação avançados')) return;
     if (_format == 'MP4' && _fps == 60 &&
         !await ProAccessService.requirePro(context, feature: 'Exportação a 60 FPS')) return;
-    setState(() => _isExporting = true);
+    setState(() {
+      _isExporting = true;
+      _exportProgress = 0;
+      _exportStage = 'A preparar exportação…';
+    });
     Directory? framesDirectory;
     try {
-      final directory = await getTemporaryDirectory();
+      final documents = await getApplicationDocumentsDirectory();
+      final directory = Directory('${documents.path}/AnimPro/Exports');
+      await directory.create(recursive: true);
       final time = DateTime.now().millisecondsSinceEpoch;
       late File exported;
       final frames = _frames.isEmpty ? <FrameModel>[FrameModel.blank()] : _frames;
 
       if (_format == 'PNG') {
+        _updateExportProgress(.15, 'A renderizar imagem…');
         final bytes = await _renderPng(_frame, _resolution);
         exported = File('${directory.path}/animpro_${time}.png');
         await exported.writeAsBytes(bytes, flush: true);
+        _updateExportProgress(.85, 'A guardar imagem…');
       } else if (_format == 'PNG Sequence') {
         final archive = Archive();
         for (var index = 0; index < frames.length; index++) {
           final bytes = await _renderPng(frames[index], _resolution);
           final filename = 'frame_${(index + 1).toString().padLeft(5, '0')}.png';
           archive.addFile(ArchiveFile(filename, bytes.length, bytes));
+          _updateExportProgress(.1 + .65 * (index + 1) / frames.length, 'A preparar frame ${index + 1} de ${frames.length}…');
         }
         final zipBytes = ZipEncoder().encode(archive);
         exported = File('${directory.path}/animpro_frames_${time}.zip');
@@ -291,6 +314,7 @@ class _ExportScreenState extends State<ExportScreen> {
           final bytes = await _renderPng(frames[index], _resolution);
           final filename = 'frame_${index.toString().padLeft(5, '0')}.png';
           await File('${framesDirectory.path}/${filename}').writeAsBytes(bytes, flush: true);
+          _updateExportProgress(.1 + .55 * (index + 1) / frames.length, 'A renderizar frame ${index + 1} de ${frames.length}…');
         }
 
         final framePaths = List<String>.generate(
@@ -373,6 +397,29 @@ class _ExportScreenState extends State<ExportScreen> {
         }
       }
 
+      String? savedLocation;
+      try {
+        final mimeType = switch (_format) {
+          'PNG' => 'image/png',
+          'GIF' => 'image/gif',
+          'MP4' => 'video/mp4',
+          _ => 'application/zip',
+        };
+        savedLocation = await _nativeVideoChannel.invokeMethod<String>(
+          'saveToDownloads',
+          <String, Object>{
+            'sourcePath': exported.path,
+            'fileName': exported.uri.pathSegments.last,
+            'mimeType': mimeType,
+          },
+        );
+        _updateExportProgress(.88, 'Guardado em Downloads/AnimPro…');
+      } catch (_) {
+        // Keep the persistent app-private export and allow sharing even if
+        // Android cannot expose the public Downloads folder on this device.
+        _updateExportProgress(.88, 'Ficheiro guardado na pasta interna do AnimPro…');
+      }
+      _updateExportProgress(.94, 'A abrir opções de partilha…');
       if (!mounted) return;
       await SharePlus.instance.share(
         ShareParams(
@@ -392,6 +439,14 @@ class _ExportScreenState extends State<ExportScreen> {
           },
         ),
       );
+      if (mounted) {
+        final message = savedLocation?.startsWith('content://') == true
+            ? 'Exportação guardada em Downloads/AnimPro e pronta para partilhar.'
+            : savedLocation != null
+                ? 'Exportação guardada no armazenamento do AnimPro e pronta para partilhar.'
+                : 'Exportação guardada na pasta interna do AnimPro; o acesso a Downloads não está disponível neste dispositivo.';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
     } catch (error) {
       if (mounted) {
         final message = _format == 'MP4' && error is PlatformException
@@ -409,7 +464,11 @@ class _ExportScreenState extends State<ExportScreen> {
           // A limpeza é best effort; o vídeo/imagem exportado fica preservado.
         }
       }
-      if (mounted) setState(() => _isExporting = false);
+      if (mounted) setState(() {
+        _isExporting = false;
+        _exportProgress = 0;
+        _exportStage = '';
+      });
     }
   }
   @override
@@ -454,7 +513,10 @@ class _ExportScreenState extends State<ExportScreen> {
               const SizedBox(width: 9),
               _choice('720p', _resolution == 720, () => setState(() => _resolution = 720)),
               const SizedBox(width: 9),
-              _choice('1080p', _resolution == 1080, () => setState(() => _resolution = 1080)),
+              _choice('1080p · Pro', _resolution == 1080, () async {
+                if (!await ProAccessService.requirePro(context, feature: 'Exportação a 1080p')) return;
+                if (mounted) setState(() => _resolution = 1080);
+              }),
             ],
           ),
           const SizedBox(height: 24),
@@ -476,6 +538,8 @@ class _ExportScreenState extends State<ExportScreen> {
                   size: 18,
                 ),
                 onSelected: (_) async {
+                  if ((format == 'GIF' || format == 'PNG Sequence') &&
+                      !await ProAccessService.requirePro(context, feature: 'Formatos de exportação avançados')) return;
                   if (mounted) setState(() => _format = format);
                 },
                 selectedColor: const Color(0xFF5445C6),
@@ -574,6 +638,13 @@ class _ExportScreenState extends State<ExportScreen> {
           const SizedBox(height: 10),
           Text('FPS fica guardado para futuras exportações de vídeo. O PNG não tem taxa de frames.',
               style: TextStyle(color: Colors.white.withOpacity(.48), fontSize: 11)),
+          if (_isExporting) ...[
+            const SizedBox(height: 12),
+            LinearProgressIndicator(value: _exportProgress),
+            const SizedBox(height: 7),
+            Text('${_exportStage} ${(_exportProgress * 100).round()}%', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 10),
+          ],
           const SizedBox(height: 25),
           SizedBox(
             height: 56,

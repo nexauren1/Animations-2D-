@@ -49,11 +49,41 @@ jobs:
             cp -a /tmp/animpro-platform/android ./android
           fi
 
+      - name: Configure AnimPro launcher icon
+        run: python3 .github/scripts/configure_android_app_icon.py
+
       - name: Configure native H.264 video export
         run: python3 .github/scripts/configure_android_native_video_export.py
 
       - name: Configure optional google-services.json
         run: python3 .github/scripts/configure_firebase_android.py
+
+      - name: Resolve Google Web OAuth client ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GOOGLE_WEB_CLIENT_ID:-}" && -s android/app/google-services.json ]]; then
+            client_id="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("android/app/google-services.json").read_text(encoding="utf-8"))
+          for client in data.get("client", []):
+              info = client.get("client_info", {})
+              if info.get("android_client_info", {}).get("package_name") != "com.nexauren.animpro":
+                  continue
+              for oauth in client.get("oauth_client", []):
+                  if oauth.get("client_type") == 3 and oauth.get("client_id"):
+                      print(oauth["client_id"])
+                      raise SystemExit(0)
+          PY
+          )"
+            if [[ -n "$client_id" ]]; then
+              echo "GOOGLE_WEB_CLIENT_ID=$client_id" >> "$GITHUB_ENV"
+              echo "Resolved Google Web OAuth client ID from google-services.json."
+            else
+              echo "::warning::No Web OAuth client was found in google-services.json."
+            fi
+          fi
 
       - name: Validate Firebase release configuration
         shell: bash
@@ -88,6 +118,9 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: python3 .github/scripts/prepare_android_signing.py
+
+      - name: Verify Google sign-in release fingerprint
+        run: python3 .github/scripts/validate_google_oauth_fingerprint.py
 
       - name: Build exactly one optimized universal APK
         shell: bash

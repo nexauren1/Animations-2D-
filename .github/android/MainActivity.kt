@@ -7,6 +7,10 @@ import android.media.MediaCodecInfo
 import android.media.MediaCodecList
 import android.media.MediaFormat
 import android.media.MediaMuxer
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.os.Handler
 import android.os.Looper
 import io.flutter.embedding.android.FlutterActivity
@@ -22,6 +26,27 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, exportChannel)
             .setMethodCallHandler { call, result ->
+                if (call.method == "saveToDownloads") {
+                    val sourcePath = call.argument<String>("sourcePath").orEmpty()
+                    val requestedName = call.argument<String>("fileName").orEmpty()
+                    val mimeType = call.argument<String>("mimeType").orEmpty()
+                    if (sourcePath.isBlank() || requestedName.isBlank() || mimeType.isBlank()) {
+                        result.error("INVALID_ARGUMENT", "Faltam os dados do ficheiro para guardar.", null)
+                        return@setMethodCallHandler
+                    }
+                    Thread {
+                        try {
+                            val location = saveExportToDownloads(sourcePath, requestedName, mimeType)
+                            Handler(Looper.getMainLooper()).post { result.success(location) }
+                        } catch (error: Throwable) {
+                            Handler(Looper.getMainLooper()).post {
+                                result.error("SAVE_EXPORT_FAILED", error.message ?: "Não foi possível guardar em Downloads.", null)
+                            }
+                        }
+                    }.start()
+                    return@setMethodCallHandler
+                }
+
                 if (call.method != "exportMp4") {
                     result.notImplemented()
                     return@setMethodCallHandler
@@ -50,6 +75,53 @@ class MainActivity : FlutterActivity() {
                     }
                 }.start()
             }
+    }
+
+    private fun saveExportToDownloads(sourcePath: String, requestedName: String, mimeType: String): String {
+        val source = File(sourcePath)
+        require(source.isFile && source.length() > 0L) { "O ficheiro exportado não existe ou está vazio." }
+        val fileName = requestedName.substringAfterLast('/').substringAfterLast('\\')
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            .take(120)
+        require(fileName.isNotBlank()) { "Nome de ficheiro inválido." }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/AnimPro")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw IllegalStateException("O Android não criou o ficheiro em Downloads.")
+            try {
+                val output = contentResolver.openOutputStream(uri)
+                    ?: throw IllegalStateException("O Android não abriu o ficheiro de destino.")
+                output.use { stream -> source.inputStream().use { input -> input.copyTo(stream) } }
+                contentResolver.update(
+                    uri,
+                    ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) },
+                    null,
+                    null,
+                )
+                return uri.toString()
+            } catch (error: Throwable) {
+                contentResolver.delete(uri, null, null)
+                throw error
+            }
+        }
+
+        // Android 7–9: save to the app-specific Downloads folder without asking
+        // for broad storage permission. Android 10+ uses the public Downloads/AnimPro.
+        val directory = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            ?: throw IllegalStateException("O armazenamento externo não está disponível.")
+        val targetDirectory = File(directory, "AnimPro")
+        if (!targetDirectory.exists() && !targetDirectory.mkdirs()) {
+            throw IllegalStateException("Não foi possível criar a pasta de exportações.")
+        }
+        val target = File(targetDirectory, fileName)
+        source.copyTo(target, overwrite = true)
+        return target.absolutePath
     }
 }
 

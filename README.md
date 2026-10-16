@@ -1,6 +1,6 @@
 # AnimPro — editor de animação 2D
 
-**Versão de atualização:** `1.3.0+5` · interface em português e inglês.
+**Versão de atualização:** `1.4.0+6` · interface em português e inglês.
 
 Editor de animação 2D para Android, construído com Flutter. O foco é desenhar, organizar frames, experimentar poses e exportar animações sem obrigar o utilizador a criar uma conta.
 
@@ -9,23 +9,25 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 - **Projetos locais:** criar, abrir, renomear, duplicar e apagar projetos.
 - **Backups portáteis:** exportar um projeto como ficheiro `.animpro` e importá-lo noutro dispositivo.
 - **Desenho:** caneta, borracha, linha, retângulo, elipse e régua graduada.
-- **Pincéis:** lápis, caneta técnica, tinta, tinta chinesa, marcador, aerógrafo, pincel suave, giz de cera, marca-texto, pastel, pincel seco e pixel.
+- **Pincéis com amostra visual:** lápis, caneta técnica, tinta e marcador gratuitos; aerógrafo, pincel suave, pastel, pincel seco, pixel e efeitos avançados desbloqueados no Pro.
 - **Efeitos gratuitos:** brilho neon, luz energética, rasto de movimento e linhas tracejadas; os efeitos também são renderizados na exportação de imagem e de vídeo.
 - **Interface bilingue:** português ou inglês, com a preferência guardada no dispositivo.
 - **Cores:** paleta com 36 cores de acesso rápido, código HEX personalizado e controlos HSV para matiz, saturação e luminosidade. A cor HEX permite definir qualquer cor RGB de 24 bits.
-- **Edição:** desfazer/refazer, grelha de referência, camadas e onion skin.
+- **Edição:** editor horizontal, pré-visualização de pincéis com amostras de traço, desfazer/refazer, grelha de referência, camadas, régua graduada e onion skin.
+- **Pré-visualização:** reprodução em ecrã completo com loop, controlo de FPS, avanço/retrocesso por frame e faixas de áudio sincronizadas por frame.
+- **Biblioteca de áudio online:** pré-escuta antes de transferir, download para o dispositivo, faixas Pro e colocação do som no frame escolhido. O catálogo é atualizado pelo site sem lançar novo APK.
 - **Timeline:** criar frames vazios, duplicar/apagar frames e ajustar a reprodução para 6, 12, 24, 30 ou 60 FPS. O FPS fica guardado no projeto e é usado como valor inicial na exportação.
 - **Rigging simples:** pontos de controlo para modificar poses e guardá-las como frames.
-- **Áudio e lip sync:** importar uma faixa, reproduzi-la e marcar manualmente poses de boca na timeline. A aplicação ainda não tem edição de múltiplas faixas, mistura de áudio ou corte/fades estilo CapCut.
+- **Áudio e lip sync:** as faixas de áudio do projeto ficam guardadas localmente e são reproduzidas na pré-visualização a partir do frame definido. O MP4 exportado continua silencioso: a mistura/muxagem de áudio no vídeo ainda não está implementada.
 - **Projetos prontos:** seis exemplos de base e um combate Stickman estilizado de 16 frames com socos, esquivas, bloqueios, pontapé aéreo e impactos cartunescos. Todos os frames são editáveis.
 - **Biblioteca de assets e downloads:** formas vetoriais-base, modelos de animação e pacotes de conteúdo descarregáveis para guardar no dispositivo e editar offline.
-- **Exportação gratuita:** PNG do frame, sequência PNG em ZIP, GIF e MP4 a partir de todos os frames. O MP4 usa o codificador H.264/MediaCodec disponível no dispositivo; nem todos os aparelhos expõem combinações de resolução/FPS compatíveis. A exportação produz vídeo silencioso: a mistura/muxagem de áudio no MP4 ainda não está implementada. O limite de 60 FPS permanece Pro.
+- **Exportação:** PNG do frame e MP4 até 720p gratuitos; 1080p, GIF, sequência PNG em ZIP e 60 FPS são Pro. Os ficheiros são copiados automaticamente para Downloads/AnimPro no Android 10+; em versões anteriores usa-se o armazenamento específico do AnimPro. O MP4 depende do codificador H.264/MediaCodec do dispositivo e permanece sem áudio.
 - **Conta:** registo/entrada com e-mail e palavra-passe, redefinição de palavra-passe, verificação de e-mail e entrada Google, quando o projeto Firebase está configurado.
 - **Modo sem conta:** os projetos continuam disponíveis localmente no telefone.
 
 ### Limites conhecidos
 
-O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
+O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. O rigging atual é uma deformação simples de uma área e ainda não é um sistema completo de esqueletos independentes para várias personagens/objetos. Os backups Google Drive e Dropbox ainda não estão implementados; por enquanto, usa o ficheiro `.animpro` para transferir projetos. A biblioteca de áudio online fica vazia até serem publicados ficheiros licenciados no catálogo.
 
 ## Instalar e escolher uma versão
 
