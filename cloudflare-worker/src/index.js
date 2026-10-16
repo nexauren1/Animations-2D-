@@ -263,9 +263,18 @@ async function queryDocByField(env, collection, fieldName, value) {
 }
 
 function paypalApiBase(env) {
+  // Prefer an explicit environment switch so the operator can move between
+  // Sandbox and Live in Cloudflare without shipping a new mobile app.
+  // PAYPAL_API_BASE remains supported for existing deployments.
+  const environment = String(env.PAYPAL_ENVIRONMENT || "").trim().toLowerCase();
+  if (environment === "sandbox") return "https://api-m.sandbox.paypal.com";
+  if (environment === "live") return "https://api-m.paypal.com";
+  if (environment !== "") {
+    throw new HttpError(503, "PAYPAL_ENVIRONMENT deve ser sandbox ou live.");
+  }
+
   const configured = (env.PAYPAL_API_BASE || "https://api-m.sandbox.paypal.com").replace(/\/$/, "");
-  // The environment is selected server-side. Accept only PayPal's official
-  // API hosts; never let a Worker variable redirect credentials to an arbitrary host.
+  // Accept only PayPal's official API hosts; never redirect credentials to an arbitrary host.
   const allowedBases = new Set([
     "https://api-m.sandbox.paypal.com",
     "https://api-m.paypal.com",
