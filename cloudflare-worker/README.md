@@ -2,7 +2,7 @@
 
 The app calls the Worker endpoint; it does not contain PayPal credentials or choose Sandbox/Live. After this code is deployed once, switching the Worker environment does **not** require an APK update.
 
-Set the Worker variable `PAYPAL_ENVIRONMENT` to `sandbox` or `live`. This is the preferred switch; the Worker maps it to the official PayPal API host. The legacy `PAYPAL_API_BASE` remains supported when `PAYPAL_ENVIRONMENT` is unset.
+Set the Worker variable `PAYPAL_ENVIRONMENT` to `sandbox` or `live` to switch modes explicitly. Alternatively, leave it unset and switch the legacy `PAYPAL_API_BASE` between the two official hosts. The repository defaults to Sandbox. Because the Worker has `keep_vars = true`, dashboard environment variables are preserved during code deployment.
 
 For a switch, update these values together in Cloudflare Workers settings/secrets, using credentials and IDs from the same PayPal environment:
 
