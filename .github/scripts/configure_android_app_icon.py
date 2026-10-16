@@ -30,7 +30,7 @@ def main() -> None:
     if not MANIFEST.exists():
         raise SystemExit(f"Android manifest not found: {MANIFEST}")
     manifest = MANIFEST.read_text(encoding="utf-8")
-    match = re.search(r"<application\\b[^>]*>", manifest, flags=re.DOTALL)
+    match = re.search(r"<application\b[^>]*>", manifest, flags=re.DOTALL)
     if not match:
         raise SystemExit("Could not find the Android application element.")
     tag = match.group(0)
