@@ -34,13 +34,13 @@ class AppLocale {
   static String translate(BuildContext context, String source) {
     if (locale.value.languageCode != 'en') return source;
 
-    final editorFrame = RegExp(r'^Frame (\\d+) / (\\d+)$').firstMatch(source);
+    final editorFrame = RegExp(r'^Frame (\d+) / (\d+)$').firstMatch(source);
     if (editorFrame != null) return 'Frame ${editorFrame.group(1)} / ${editorFrame.group(2)}';
 
-    final audioClip = RegExp(r'^“(.+?)” adicionado à timeline a partir do frame (\\d+)\\.$').firstMatch(source);
+    final audioClip = RegExp(r'^“(.+?)” adicionado à timeline a partir do frame (\d+)\.$').firstMatch(source);
     if (audioClip != null) return '“${audioClip.group(1)}” added to the timeline at frame ${audioClip.group(2)}.';
 
-    final audioImport = RegExp(r'^Áudio importado e colocado no frame (\\d+)\\.$').firstMatch(source);
+    final audioImport = RegExp(r'^Áudio importado e colocado no frame (\d+)\.$').firstMatch(source);
     if (audioImport != null) return 'Audio imported and placed at frame ${audioImport.group(1)}.';
 
     final frameCount = RegExp(r'^(\d+) frames$').firstMatch(source);
