@@ -884,14 +884,14 @@ class TemplateCatalog {
       ], color: roof, width: 3));
       door.strokes.add(_s([
         Offset(151, 295),
-        Offset(151 + math.max(doorWidth - 8, 3), 295),
-        Offset(151 + math.max(doorWidth - 8, 3) - depth * .65, 324),
+        Offset(151 + math.max(doorWidth - 8, 3.0).toDouble(), 295),
+        Offset(151 + math.max(doorWidth - 8, 3.0).toDouble() - depth * .65, 324),
         Offset(151, 324),
         const Offset(151, 295),
       ], color: wall, width: 2));
       door.strokes.add(_s([
-        Offset(147 + math.max(doorWidth - depth - 5, 3), 311),
-        Offset(147 + math.max(doorWidth - depth - 2, 3), 311),
+        Offset(147 + math.max(doorWidth - depth - 5, 3.0).toDouble(), 311),
+        Offset(147 + math.max(doorWidth - depth - 2, 3.0).toDouble(), 311),
       ], color: ink, width: 2.2));
 
       scenery.strokes.add(_s([
