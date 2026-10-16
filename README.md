@@ -25,7 +25,7 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 
 ### Limites conhecidos
 
-O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. Os clips de áudio guardados na biblioteca local ainda não são incluídos no backup `.animpro`. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
+O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. Os clips de áudio e os ficheiros associados são agora incluídos no backup `.animpro` (limite de 30 MB por ficheiro de backup), que pode ser enviado para Google Drive ou Dropbox pela folha de partilha do Android. O rigging é baseado em deformação simples e não num sistema completo de ossos e malha. A conta Firebase não sincroniza projetos automaticamente entre dispositivos; usa o backup `.animpro` para transferir projetos.
 
 ## Instalar e escolher uma versão
 
