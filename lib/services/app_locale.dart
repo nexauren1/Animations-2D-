@@ -33,8 +33,32 @@ class AppLocale {
 
   static String translate(BuildContext context, String source) {
     if (locale.value.languageCode != 'en') return source;
+
+    final frameCount = RegExp(r'^(\d+) frames$').firstMatch(source);
+    if (frameCount != null) return '${frameCount.group(1)} frames';
+
+    final packageCount = RegExp(r'^(\d+) pacote(s)$').firstMatch(source);
+    if (packageCount != null) return '${packageCount.group(1)} pack(s)';
+
+    final frameRate = RegExp(r'^(\d+) FPS$').firstMatch(source);
+    if (frameRate != null) return '${frameRate.group(1)} FPS';
+
+    final templateFrameCount = RegExp(r'^(\d+) frames · (\d+) FPS$').firstMatch(source);
+    if (templateFrameCount != null) {
+      return '${templateFrameCount.group(1)} frames · ${templateFrameCount.group(2)} FPS';
+    }
+
+    final savedPack = RegExp(r'^Pacote "(.+)" guardado no dispositivo.$').firstMatch(source);
+    if (savedPack != null) return 'Pack "${savedPack.group(1)}" saved on this device.';
+
+    final removedPack = RegExp(r'^"(.+)" será removido do armazenamento deste dispositivo.$').firstMatch(source);
+    if (removedPack != null) {
+      return '"${removedPack.group(1)}" will be removed from this device storage.';
+    }
+
     return _english[source] ?? source;
   }
+
 
   static const Map<String, String> _english = <String, String>{
     'Não foi possível abrir o AnimPro': 'AnimPro could not be opened',
@@ -215,6 +239,60 @@ class AppLocale {
     'Novo pacote': 'New pack',
     'Aplicação': 'App',
     'Português e Inglês': 'Portuguese and English',
+    'As contas online ainda não estão disponíveis': 'Online accounts are not available yet',
+    'Podes continuar a desenhar, animar e guardar os teus projetos neste dispositivo. A entrada com conta estará disponível quando o serviço for ativado.': 'You can keep drawing, animating, and saving projects on this device. Account sign-in will be available when the service is activated.',
+    'Os projetos locais continuam guardados no teu telefone. Não precisas de criar uma conta para usar o editor.': 'Your local projects remain stored on your phone. You do not need an account to use the editor.',
+    'Continuar com Google': 'Continue with Google',
+    'A entrada com Google está temporariamente indisponível. Podes usar o e-mail.': 'Google sign-in is temporarily unavailable. You can use email instead.',
+    'ou com e-mail': 'or with email',
+    'Esqueci-me da palavra-passe': 'Forgot password',
+    'A conta não substitui uma cópia de segurança. Nesta versão, os projetos ficam guardados neste dispositivo.': 'An account does not replace a backup. In this version, projects remain stored on this device.',
+    'O endereço foi confirmado.': 'Your email address has been verified.',
+    'Confirma o endereço para proteger a conta.': 'Verify your email address to protect your account.',
+    'Projetos neste dispositivo': 'Projects on this device',
+    'A conta não move automaticamente os ficheiros para a nuvem.': 'The account does not automatically upload project files to the cloud.',
+    'Biblioteca de assets': 'Asset library',
+    'Assets vetoriais': 'Vector assets',
+    'Escolhe um elemento para adicionar um desenho-base à camada selecionada. Depois podes editar os traços no canvas.': 'Choose an element to add a starter drawing to the selected layer. You can then edit its strokes on the canvas.',
+    'OK': 'OK',
+    'Nenhum asset encontrado': 'No assets found',
+    'Adiciona': 'Add',
+    'Saltar': 'Skip',
+    'Dá vida aos teus desenhos': 'Bring your drawings to life',
+    'Cria animações 2D em três passos simples.': 'Create 2D animations in three simple steps.',
+    'Começar  →': 'Get started  →',
+    'Sem conta · Os projetos ficam no teu dispositivo': 'No account needed · Projects stay on your device',
+    'Não foi possível importar este áudio. Confirma o formato do ficheiro e tenta novamente.': 'Could not import this audio. Check the file format and try again.',
+    'Importa primeiro um ficheiro de áudio.': 'Import an audio file first.',
+    'Importa um áudio para marcar o tempo dos fonemas.': 'Import audio to mark phoneme timing.',
+    'Importa um áudio com duração válida primeiro.': 'Import an audio file with a valid duration first.',
+    'Adiciona fonemas ou cria um mapa aproximado antes de aplicar.': 'Add phonemes or generate an approximate map before applying.',
+    'Personagem atual': 'Current character',
+    'Preparado para poses de boca': 'Ready for mouth poses',
+    'Mapeamento labial': 'Lip sync',
+    'Seleciona a forma da boca e marca o instante da fala. O mapa automático gera poses distribuídas; não é reconhecimento fonético por IA.': 'Select a mouth shape and mark the time of speech. The automatic map creates spaced poses; it is not AI phoneme recognition.',
+    'Marcar tempo atual': 'Mark current time',
+    'Gerar mapa aproximado': 'Generate approximate map',
+    'Mapa aproximado criado. Revisa as marcas e ajusta os fonemas manualmente.': 'Approximate map created. Review the marks and adjust phonemes manually.',
+    'Marcas na timeline': 'Timeline markers',
+    'Ainda não há fonemas marcados.': 'No phonemes have been marked yet.',
+    'Adicionar': 'Add',
+    'Introduz o endereço de e-mail.': 'Enter your email address.',
+    'Palavra-passe demasiado curta.': 'Password is too short.',
+    'E-mail enviado': 'Email sent',
+    'Não foi possível iniciar sessão.': 'Could not sign in.',
+    'Conta criada. Enviámos um e-mail para verificar o endereço.': 'Account created. We sent an email to verify your address.',
+    'Sessão iniciada com Google.': 'Signed in with Google.',
+    'Verificação enviada': 'Verification sent',
+    'Verificar e-mail': 'Verify email',
+    'Enviar novamente': 'Resend',
+    'A conta online não está disponível neste momento. Podes continuar a usar o editor sem iniciar sessão.': 'Online accounts are not available right now. You can keep using the editor without signing in.',
+    'A exportação de vídeo está disponível sem Pro. A exportação a 60 FPS continua a ser uma função avançada.': 'Video export is available without Pro. 60 FPS export remains an advanced feature.',
+    'Áudio e marcação de boca': 'Audio and mouth markers',
+    'Exportação de vídeo MP4': 'MP4 video export',
+    'Exportação até 60 FPS': 'Export up to 60 FPS',
+    'Importar e editar o teu áudio é grátis.': 'Importing and editing your audio is free.',
+    'Os efeitos visuais são gratuitos. O Pro fica reservado para ferramentas avançadas.': 'Visual effects are free. Pro is reserved for advanced tools.',
     'Cria sem limites criativos': 'Create without creative limits',
     'O que está incluído': 'What is included',
     'O plano mensal renova-se automaticamente até ser cancelado no PayPal. O plano permanente é uma compra única, não uma subscrição anual. Confirma o preço final e as condições no checkout antes de pagar.': 'The monthly plan renews automatically until cancelled through PayPal. The lifetime plan is a one-time purchase, not an annual subscription. Confirm the final price and conditions at checkout before paying.',
