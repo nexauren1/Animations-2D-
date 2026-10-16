@@ -359,6 +359,88 @@ class _CanvasScreenState extends State<CanvasScreen> {
     });
   }
 
+  Future<void> _addLayer() async {
+    final index = (_currentFrame.layers.length - 1).clamp(0, _currentFrame.layers.length).toInt();
+    final name = 'Camada ${_currentFrame.layers.length - 2}';
+    for (final frame in _frames) {
+      frame.layers.insert(index, LayerModel(name: name));
+    }
+    setState(() {
+      _selectedLayerIndex = index;
+      _draftPoints = null;
+    });
+    await _persist();
+  }
+
+  Future<void> _renameLayer(int index) async {
+    if (index < 0 || index >= _currentFrame.layers.length) return;
+    final controller = TextEditingController(text: _currentFrame.layers[index].name);
+    String? name;
+    try {
+      name = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Renomear camada'),
+          content: TextField(
+            controller: controller,
+            maxLength: 32,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Nome da camada'),
+            onSubmitted: (_) => Navigator.of(dialogContext).pop(controller.text),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+    if (name == null || name.trim().isEmpty || !mounted) return;
+    for (final frame in _frames) {
+      if (index < frame.layers.length) frame.layers[index].name = name.trim();
+    }
+    setState(() {});
+    await _persist();
+  }
+
+  Future<void> _deleteLayer(int index) async {
+    if (_currentFrame.layers.length <= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('As três camadas base são protegidas. Cria uma camada adicional para a poderes remover.')),
+      );
+      return;
+    }
+    final layerName = _currentFrame.layers[index].name;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar camada?'),
+        content: Text('A camada "$layerName" será removida de todos os frames.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Eliminar')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    for (final frame in _frames) {
+      if (index < frame.layers.length && frame.layers.length > 3) frame.layers.removeAt(index);
+    }
+    setState(() {
+      _selectedLayerIndex = _selectedLayerIndex.clamp(0, _currentFrame.layers.length - 1).toInt();
+      _draftPoints = null;
+    });
+    await _persist();
+  }
+
   Future<void> _openTimeline() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -1296,42 +1378,105 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Widget _buildLayerSelector() {
-    const names = <String>['Linha', 'Cor', 'Fundo'];
-    const icons = <IconData>[Icons.gesture_rounded, Icons.palette_outlined, Icons.wallpaper_rounded];
+    const icons = <IconData>[
+      Icons.gesture_rounded,
+      Icons.palette_outlined,
+      Icons.wallpaper_rounded,
+    ];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.fromLTRB(12, 7, 8, 4),
       child: Row(
-        children: List<Widget>.generate(3, (index) {
-          final layer = _currentFrame.layers[index];
-          final selected = _selectedLayerIndex == index;
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: index == 2 ? 0 : 6),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () => _changeLayer(index),
-                onLongPress: () => _toggleLayerVisibility(index),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFF343052) : const Color(0xFF1A1D2B),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: selected ? const Color(0xFF8C7DFF) : const Color(0xFF2D3143)),
-                  ),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(icons[index], size: 14, color: selected ? const Color(0xFFB9AEFF) : Colors.white60),
-                    const SizedBox(width: 4),
-                    Flexible(child: Text(names[index], maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w800 : FontWeight.w500))),
-                    const SizedBox(width: 3),
-                    Icon(layer.visible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                      size: 12, color: layer.visible ? Colors.white38 : const Color(0xFFE67A8B)),
-                  ]),
-                ),
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List<Widget>.generate(_currentFrame.layers.length, (index) {
+                  final layer = _currentFrame.layers[index];
+                  final selected = _selectedLayerIndex == index;
+                  return Container(
+                    width: 126,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFF343052) : const Color(0xFF1A1D2B),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected ? const Color(0xFF8C7DFF) : const Color(0xFF2D3143),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () => _changeLayer(index),
+                            onLongPress: () => _renameLayer(index),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 7),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    index < icons.length ? icons[index] : Icons.layers_outlined,
+                                    size: 14,
+                                    color: selected ? const Color(0xFFB9AEFF) : Colors.white60,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      layer.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(width: 28, height: 30),
+                          tooltip: layer.visible ? 'Ocultar camada' : 'Mostrar camada',
+                          onPressed: () => _toggleLayerVisibility(index),
+                          icon: Icon(
+                            layer.visible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                            size: 13,
+                            color: layer.visible ? Colors.white54 : const Color(0xFFE67A8B),
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 150),
+                          tooltip: 'Opções da camada',
+                          onSelected: (action) {
+                            if (action == 'rename') _renameLayer(index);
+                            if (action == 'delete') _deleteLayer(index);
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'rename', child: Text('Renomear')),
+                            PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+                          ],
+                          iconSize: 17,
+                          icon: const Icon(Icons.more_vert_rounded, color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ),
             ),
-          );
-        }),
+          ),
+          IconButton(
+            tooltip: 'Adicionar camada / personagem / objeto',
+            onPressed: _addLayer,
+            icon: const Icon(Icons.add_box_rounded, color: Color(0xFFB9AEFF)),
+          ),
+        ],
       ),
     );
   }
