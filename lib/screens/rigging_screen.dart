@@ -244,7 +244,7 @@ class _RiggingScreenState extends State<RiggingScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.sizeOf(context).height * .78,
+      height: MediaQuery.sizeOf(context).height * .94,
       decoration: const BoxDecoration(
         color: Color(0xFF141725),
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
@@ -516,15 +516,20 @@ class _RiggingPainter extends CustomPainter {
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
           ..style = PaintingStyle.stroke;
-        if (stroke.points.length == 1) {
-          canvas.drawCircle(transform.toView(stroke.points.first),
-              paint.strokeWidth / 2, paint..style = PaintingStyle.fill);
+        final mapped = stroke.points
+            .map(transform.toView)
+            .toList(growable: false);
+        if (mapped.length == 1) {
+          canvas.drawCircle(mapped.first, paint.strokeWidth / 2,
+              paint..style = PaintingStyle.fill);
+        } else if (stroke.kind == 'rectangle') {
+          canvas.drawRect(Rect.fromPoints(mapped.first, mapped.last), paint);
+        } else if (stroke.kind == 'ellipse') {
+          canvas.drawOval(Rect.fromPoints(mapped.first, mapped.last), paint);
         } else {
-          final first = transform.toView(stroke.points.first);
-          final path = Path()..moveTo(first.dx, first.dy);
-          for (final point in stroke.points.skip(1)) {
-            final p = transform.toView(point);
-            path.lineTo(p.dx, p.dy);
+          final path = Path()..moveTo(mapped.first.dx, mapped.first.dy);
+          for (final point in mapped.skip(1)) {
+            path.lineTo(point.dx, point.dy);
           }
           canvas.drawPath(path, paint);
         }
