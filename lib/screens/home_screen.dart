@@ -4,6 +4,7 @@ import '../services/app_locale.dart';
 import '../models/project_model.dart';
 import '../services/project_store.dart';
 import '../services/project_backup_service.dart';
+import '../services/audio_timeline_service.dart';
 import 'canvas_screen.dart';
 import 'account_screen.dart';
 import 'upgrade_screen.dart';
@@ -173,9 +174,13 @@ class HomeScreen extends StatelessWidget {
       final project = await store.createProject(imported.name);
       project.fps = imported.fps;
       await store.saveProject(project, frames: imported.frames);
+      await AudioTimelineService.save(project.uid, imported.audioClips);
       if (!context.mounted) return;
+      final audioSuffix = imported.audioClips.isEmpty
+          ? ''
+          : ' e ${imported.audioClips.length} áudio(s)';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Projeto "${project.name}" importado com sucesso.')),
+        SnackBar(content: Text('Projeto "${project.name}" importado com sucesso$audioSuffix.')),
       );
     } on BackupCancelledException {
       // Cancelar o seletor de ficheiros não é um erro.
