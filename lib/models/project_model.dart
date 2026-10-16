@@ -102,7 +102,7 @@ class LayerModel {
     List<StrokeModel>? strokes,
   }) : strokes = strokes ?? <StrokeModel>[];
 
-  final String name;
+  String name;
   bool visible;
   final List<StrokeModel> strokes;
 

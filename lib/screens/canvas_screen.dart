@@ -58,7 +58,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
   double _brushSize = 3;
   String _brushStyle = 'lápis';
   double _opacity = 1;
+  double _stabilization = .35;
+  bool _mirrorDrawing = false;
   bool _showGrid = false;
+  bool _showRulers = false;
+  double _gridSpacing = 24;
   bool _onionSkin = true;
   double _onionOpacity = .30;
   Future<void> _saveQueue = Future<void>.value();
@@ -76,6 +80,65 @@ class _CanvasScreenState extends State<CanvasScreen> {
       _onionSkin && _currentFrameIndex + 1 < _frames.length
           ? _frames[_currentFrameIndex + 1]
           : null;
+
+  Future<void> _openGridSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF202231),
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Grelha e guias', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                const Text('Ajusta a distância das linhas para desenhar com mais precisão.',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 14),
+                Row(children: [
+                  const Expanded(child: Text('Espaçamento')),
+                  Text('${_gridSpacing.round()} px', style: const TextStyle(fontWeight: FontWeight.w800)),
+                ]),
+                Slider(
+                  value: _gridSpacing.clamp(12, 60).toDouble(),
+                  min: 12,
+                  max: 60,
+                  divisions: 12,
+                  label: '${_gridSpacing.round()} px',
+                  onChanged: (value) {
+                    setState(() => _gridSpacing = value);
+                    setSheetState(() {});
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Mostrar grelha'),
+                  value: _showGrid,
+                  onChanged: (value) {
+                    setState(() => _showGrid = value);
+                    setSheetState(() {});
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Mostrar réguas horizontal e vertical'),
+                  value: _showRulers,
+                  onChanged: (value) {
+                    setState(() => _showRulers = value);
+                    setSheetState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _openOnionSettings() async {
     await showModalBottomSheet<void>(
@@ -214,15 +277,49 @@ class _CanvasScreenState extends State<CanvasScreen> {
       return;
     }
     _rememberUndo();
-    _activeLayer.strokes.add(StrokeModel(
-      points: List<Offset>.from(points),
+    final isFreehand = _tool == _DrawingTool.pen || _tool == _DrawingTool.eraser;
+    final drawingPoints = isFreehand
+        ? _stabilizeStroke(points, _stabilization)
+        : List<Offset>.from(points);
+    final stroke = StrokeModel(
+      points: drawingPoints,
       color: _activeColor,
       width: (_tool == _DrawingTool.eraser ? math.max(_brushSize, 8) : _brushSize).toDouble(),
       kind: _strokeKind,
       brushStyle: _tool == _DrawingTool.eraser ? 'borracha' : _brushStyle,
-    ));
+    );
+    _activeLayer.strokes.add(stroke);
+    if (_mirrorDrawing) {
+      _activeLayer.strokes.add(StrokeModel(
+        points: drawingPoints
+            .map((point) => Offset(_canvasSize.width - point.dx, point.dy))
+            .toList(growable: false),
+        color: stroke.color,
+        width: stroke.width,
+        kind: stroke.kind,
+        brushStyle: stroke.brushStyle,
+      ));
+    }
     setState(() => _draftPoints = null);
     await _persist();
+  }
+
+  List<Offset> _stabilizeStroke(List<Offset> points, double amount) {
+    if (points.length < 3 || amount <= 0) return List<Offset>.from(points);
+    final strength = amount.clamp(0.0, .9).toDouble();
+    final result = <Offset>[points.first];
+    for (var i = 1; i < points.length - 1; i++) {
+      final previous = points[i - 1];
+      final current = points[i];
+      final next = points[i + 1];
+      final average = Offset(
+        (previous.dx + next.dx) / 2,
+        (previous.dy + next.dy) / 2,
+      );
+      result.add(Offset.lerp(current, average, strength * .65)!);
+    }
+    result.add(points.last);
+    return result;
   }
 
   Future<void> _undo() async {
@@ -260,6 +357,111 @@ class _CanvasScreenState extends State<CanvasScreen> {
       _selectedLayerIndex = index;
       _draftPoints = null;
     });
+  }
+
+  Future<void> _addLayer() async {
+    final referenceFrame = _frames.reduce(
+      (currentLongest, candidate) =>
+          candidate.layers.length > currentLongest.layers.length
+              ? candidate
+              : currentLongest,
+    );
+    final referenceNames = referenceFrame.layers.map((layer) => layer.name).toList();
+    final targetLayerCount = referenceNames.length;
+    final insertIndex = targetLayerCount - 1;
+    final newName = 'Camada ${math.max(1, targetLayerCount - 2)}';
+
+    // Keep layer indices aligned across every frame. Some older projects may
+    // have frames with different layer counts, so fill missing layers before
+    // adding the new shared layer.
+    for (final frame in _frames) {
+      while (frame.layers.length < targetLayerCount) {
+        final missingIndex = frame.layers.length - 1;
+        final name = missingIndex >= 0 && missingIndex < referenceNames.length
+            ? referenceNames[missingIndex]
+            : 'Camada ${missingIndex}';
+        frame.layers.insert(missingIndex, LayerModel(name: name));
+      }
+      frame.layers.insert(insertIndex, LayerModel(name: newName));
+    }
+    setState(() {
+      _selectedLayerIndex = insertIndex;
+      _draftPoints = null;
+    });
+    await _persist();
+  }
+
+  Future<void> _renameLayer(int index) async {
+    if (index < 0 || index >= _currentFrame.layers.length) return;
+    final controller = TextEditingController(text: _currentFrame.layers[index].name);
+    String? name;
+    try {
+      name = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Renomear camada'),
+          content: TextField(
+            controller: controller,
+            maxLength: 32,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Nome da camada'),
+            onSubmitted: (_) => Navigator.of(dialogContext).pop(controller.text),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+    if (name == null || name.trim().isEmpty || !mounted) return;
+    for (final frame in _frames) {
+      if (index < frame.layers.length) frame.layers[index].name = name.trim();
+    }
+    setState(() {});
+    await _persist();
+  }
+
+  Future<void> _deleteLayer(int index) async {
+    if (index < 2 ||
+        index >= _currentFrame.layers.length - 1 ||
+        _currentFrame.layers.length <= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('As camadas base Linha/Fundo são protegidas. Seleciona uma camada adicional para a remover.')),
+      );
+      return;
+    }
+    final layerName = _currentFrame.layers[index].name;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar camada?'),
+        content: Text('A camada "$layerName" será removida de todos os frames.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Eliminar')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    for (final frame in _frames) {
+      if (index >= 2 && index < frame.layers.length - 1 && frame.layers.length > 3) {
+        frame.layers.removeAt(index);
+      }
+    }
+    setState(() {
+      _selectedLayerIndex = _selectedLayerIndex.clamp(0, _currentFrame.layers.length - 1).toInt();
+      _draftPoints = null;
+    });
+    await _persist();
   }
 
   Future<void> _openTimeline() async {
@@ -809,7 +1011,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   const SizedBox(height: 21),
                   Row(children: [
                     const Expanded(child: Text('Espessura', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${_brushSize.round()} px',
+                    Text('${_brushSize.round()} px',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -823,7 +1025,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   ),
                   Row(children: [
                     const Expanded(child: Text('Opacidade', style: TextStyle(fontWeight: FontWeight.w800))),
-                    Text('\${(_opacity * 100).round()}%',
+                    Text('${(_opacity * 100).round()}%',
                       style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
                   ]),
                   Slider(
@@ -834,6 +1036,22 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       setSheetState(() {});
                     },
                   ),
+                  Row(children: [
+                    const Expanded(child: Text('Estabilização do traço', style: TextStyle(fontWeight: FontWeight.w800))),
+                    Text('${(_stabilization * 100).round()}%',
+                      style: const TextStyle(color: Color(0xFFB7A9FF), fontWeight: FontWeight.w800)),
+                  ]),
+                  Slider(
+                    value: _stabilization.clamp(0, .9).toDouble(),
+                    min: 0, max: .9, divisions: 9,
+                    activeColor: const Color(0xFF8B70FF),
+                    onChanged: (value) {
+                      setState(() => _stabilization = value);
+                      setSheetState(() {});
+                    },
+                  ),
+                  const Text('Valores mais altos suavizam pequenos tremores. As extremidades do traço são preservadas.',
+                    style: TextStyle(color: Colors.white54, fontSize: 11)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -1053,7 +1271,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           children: [
             Text(widget.project.name, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            Text('Frame \${_currentFrameIndex + 1} / \${_frames.length}',
+            Text('Frame ${_currentFrameIndex + 1} / ${_frames.length}',
               style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(.55))),
           ],
         ),
@@ -1081,7 +1299,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       Container(height: 20, width: 20,
                         decoration: BoxDecoration(color: Color(_selectedColor), shape: BoxShape.circle, border: Border.all(color: Colors.white24))),
                       const SizedBox(width: 7),
-                      Text('\${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text('${_brushSize.round()} px', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                       const SizedBox(width: 5),
                       const Icon(Icons.tune_rounded, size: 15),
                     ]),
@@ -1089,8 +1307,16 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
                 const Spacer(),
                 _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid,
-                  onTap: () => setState(() => _showGrid = !_showGrid)),
-                const SizedBox(width: 7),
+                  onTap: () => setState(() => _showGrid = !_showGrid),
+                  onLongPress: _openGridSettings),
+                const SizedBox(width: 5),
+                _tinyToggle(icon: Icons.straighten_rounded, label: 'Réguas', selected: _showRulers,
+                  onTap: () => setState(() => _showRulers = !_showRulers),
+                  onLongPress: _openGridSettings),
+                const SizedBox(width: 5),
+                _tinyToggle(icon: Icons.flip_rounded, label: 'Simetria', selected: _mirrorDrawing,
+                  onTap: () => setState(() => _mirrorDrawing = !_mirrorDrawing)),
+                const SizedBox(width: 5),
                 _tinyToggle(
                   icon: Icons.layers_outlined,
                   label: 'Onion',
@@ -1128,6 +1354,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
                           onionOpacity: _onionOpacity,
                           draft: draft,
                           showGrid: _showGrid,
+                          gridSpacing: _gridSpacing,
+                          showRulers: _showRulers,
+                          mirrorDraft: _mirrorDrawing,
                         ),
                         child: const SizedBox.expand(),
                       ),
@@ -1172,42 +1401,105 @@ class _CanvasScreenState extends State<CanvasScreen> {
   }
 
   Widget _buildLayerSelector() {
-    const names = <String>['Linha', 'Cor', 'Fundo'];
-    const icons = <IconData>[Icons.gesture_rounded, Icons.palette_outlined, Icons.wallpaper_rounded];
+    const icons = <IconData>[
+      Icons.gesture_rounded,
+      Icons.palette_outlined,
+      Icons.wallpaper_rounded,
+    ];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.fromLTRB(12, 7, 8, 4),
       child: Row(
-        children: List<Widget>.generate(3, (index) {
-          final layer = _currentFrame.layers[index];
-          final selected = _selectedLayerIndex == index;
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: index == 2 ? 0 : 6),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () => _changeLayer(index),
-                onLongPress: () => _toggleLayerVisibility(index),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFF343052) : const Color(0xFF1A1D2B),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: selected ? const Color(0xFF8C7DFF) : const Color(0xFF2D3143)),
-                  ),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(icons[index], size: 14, color: selected ? const Color(0xFFB9AEFF) : Colors.white60),
-                    const SizedBox(width: 4),
-                    Flexible(child: Text(names[index], maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w800 : FontWeight.w500))),
-                    const SizedBox(width: 3),
-                    Icon(layer.visible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                      size: 12, color: layer.visible ? Colors.white38 : const Color(0xFFE67A8B)),
-                  ]),
-                ),
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List<Widget>.generate(_currentFrame.layers.length, (index) {
+                  final layer = _currentFrame.layers[index];
+                  final selected = _selectedLayerIndex == index;
+                  return Container(
+                    width: 126,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFF343052) : const Color(0xFF1A1D2B),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected ? const Color(0xFF8C7DFF) : const Color(0xFF2D3143),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () => _changeLayer(index),
+                            onLongPress: () => _renameLayer(index),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 7),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    index < icons.length ? icons[index] : Icons.layers_outlined,
+                                    size: 14,
+                                    color: selected ? const Color(0xFFB9AEFF) : Colors.white60,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      layer.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(width: 28, height: 30),
+                          tooltip: layer.visible ? 'Ocultar camada' : 'Mostrar camada',
+                          onPressed: () => _toggleLayerVisibility(index),
+                          icon: Icon(
+                            layer.visible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                            size: 13,
+                            color: layer.visible ? Colors.white54 : const Color(0xFFE67A8B),
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 150),
+                          tooltip: 'Opções da camada',
+                          onSelected: (action) {
+                            if (action == 'rename') _renameLayer(index);
+                            if (action == 'delete') _deleteLayer(index);
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'rename', child: Text('Renomear')),
+                            PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+                          ],
+                          iconSize: 17,
+                          icon: const Icon(Icons.more_vert_rounded, color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ),
             ),
-          );
-        }),
+          ),
+          IconButton(
+            tooltip: 'Adicionar camada / personagem / objeto',
+            onPressed: _addLayer,
+            icon: const Icon(Icons.add_box_rounded, color: Color(0xFFB9AEFF)),
+          ),
+        ],
       ),
     );
   }
@@ -1317,6 +1609,9 @@ class _AnimationCanvasPainter extends CustomPainter {
     required this.onionOpacity,
     required this.draft,
     required this.showGrid,
+    this.gridSpacing = 24,
+    this.showRulers = false,
+    this.mirrorDraft = false,
   });
   final FrameModel frame;
   final FrameModel? previousFrame;
@@ -1324,23 +1619,60 @@ class _AnimationCanvasPainter extends CustomPainter {
   final double onionOpacity;
   final StrokeModel? draft;
   final bool showGrid;
+  final double gridSpacing;
+  final bool showRulers;
+  final bool mirrorDraft;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
     if (showGrid) {
+      final step = gridSpacing.clamp(12, 60).toDouble();
       final gridPaint = Paint()..color = const Color(0xFFEDEFF4)..strokeWidth = .7;
-      for (double x = 0; x < size.width; x += 24) {
+      for (double x = 0; x < size.width; x += step) {
         canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
       }
-      for (double y = 0; y < size.height; y += 24) {
+      for (double y = 0; y < size.height; y += step) {
         canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
       }
     }
+    if (showRulers) _paintRulers(canvas, size, gridSpacing);
     if (previousFrame != null) _paintFrame(canvas, previousFrame!, onionOpacity);
     if (nextFrame != null) _paintFrame(canvas, nextFrame!, onionOpacity * .55);
     _paintFrame(canvas, frame, 1);
-    if (draft != null) _paintStroke(canvas, draft!, 1);
+    if (draft != null) {
+      _paintStroke(canvas, draft!, 1);
+      if (mirrorDraft) {
+        final mirrored = StrokeModel(
+          points: draft!.points
+              .map((point) => Offset(size.width - point.dx, point.dy))
+              .toList(growable: false),
+          color: draft!.color,
+          width: draft!.width,
+          kind: draft!.kind,
+          brushStyle: draft!.brushStyle,
+        );
+        _paintStroke(canvas, mirrored, 1);
+      }
+    }
+  }
+
+  void _paintRulers(Canvas canvas, Size size, double spacing) {
+    const rulerThickness = 18.0;
+    final background = Paint()..color = const Color(0xFFE1E5EF);
+    canvas.drawRect(const Rect.fromLTWH(0, 0, rulerThickness, rulerThickness), background);
+    canvas.drawRect(Rect.fromLTWH(rulerThickness, 0, size.width - rulerThickness, rulerThickness), background);
+    canvas.drawRect(Rect.fromLTWH(0, rulerThickness, rulerThickness, size.height - rulerThickness), background);
+    final marks = Paint()..color = const Color(0xFF596174)..strokeWidth = .8;
+    final step = spacing.clamp(12, 60).toDouble();
+    for (double x = rulerThickness; x < size.width; x += step) {
+      final major = (((x - rulerThickness) / step).round() % 5) == 0;
+      canvas.drawLine(Offset(x, rulerThickness), Offset(x, major ? 5 : 11), marks);
+    }
+    for (double y = rulerThickness; y < size.height; y += step) {
+      final major = (((y - rulerThickness) / step).round() % 5) == 0;
+      canvas.drawLine(Offset(rulerThickness, y), Offset(major ? 5 : 11, y), marks);
+    }
   }
 
   void _paintFrame(Canvas canvas, FrameModel target, double opacity) {
