@@ -30,6 +30,11 @@ class CanvasScreen extends StatefulWidget {
 }
 
 class _CanvasScreenState extends State<CanvasScreen> {
+  static const Set<String> _proBrushStyles = <String>{
+    'aerógrafo', 'pincel suave', 'giz de cera', 'pastel', 'pincel seco',
+    'pixel', 'brilho neon', 'rastro de movimento', 'luz energética',
+  };
+
   static const _palette = <Color>[
     Color(0xFF000000), Color(0xFF333333), Color(0xFF707070),
     Color(0xFFAAAAAA), Colors.white, Color(0xFF7A202A),
@@ -564,10 +569,34 @@ class _CanvasScreenState extends State<CanvasScreen> {
                     ].map((style) {
                       final value = style.toLowerCase();
                       final selected = value == _brushStyle;
+                      final isProBrush = _proBrushStyles.contains(value);
                       return ChoiceChip(
-                        label: Text(style),
+                        label: Row(mainAxisSize: MainAxisSize.min, children: [
+                          SizedBox(
+                            width: 52,
+                            height: 20,
+                            child: CustomPaint(
+                              painter: _BrushStyleSamplePainter(
+                                style: value,
+                                color: Color(_selectedColor),
+                                opacity: _opacity,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Text(style),
+                          if (isProBrush) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.lock_rounded, size: 12, color: Color(0xFFFFD166)),
+                          ],
+                        ]),
                         selected: selected,
-                        onSelected: (_) {
+                        onSelected: (_) async {
+                          if (isProBrush &&
+                              !await ProAccessService.requirePro(context, feature: 'Pincéis avançados')) {
+                            return;
+                          }
+                          if (!mounted) return;
                           setState(() => _brushStyle = value);
                           setSheetState(() {});
                         },
@@ -814,7 +843,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
             children: [
               const Text('Efeitos de traço', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              const Text('Escolhe um efeito para os próximos traços. As opções ficam disponíveis gratuitamente.',
+              const Text('Linha tracejada é grátis. Neon, rastro e luz energética são efeitos Pro; podes ver as opções antes de desbloquear.',
                   style: TextStyle(color: Colors.white70, height: 1.35)),
               const SizedBox(height: 10),
               for (final effect in effects)
@@ -826,9 +855,15 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   trailing: _brushStyle == effect.$2
                       ? const Icon(Icons.check_circle_rounded, color: Color(0xFF7CE0CC))
                       : const Icon(Icons.circle_outlined, color: Colors.white38),
-                  onTap: () {
+                  onTap: () async {
+                    final isProEffect = effect.$2 != 'linha tracejada';
+                    if (isProEffect &&
+                        !await ProAccessService.requirePro(context, feature: effect.$1)) {
+                      return;
+                    }
+                    if (!mounted) return;
                     setState(() => _brushStyle = effect.$2);
-                    Navigator.of(sheetContext).pop();
+                    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Efeito aplicado aos próximos traços: ${effect.$1}')),
                     );
@@ -1488,4 +1523,74 @@ class _AnimationCanvasPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AnimationCanvasPainter oldDelegate) => true;
+}
+
+
+class _BrushStyleSamplePainter extends CustomPainter {
+  const _BrushStyleSamplePainter({
+    required this.style,
+    required this.color,
+    required this.opacity,
+  });
+
+  final String style;
+  final Color color;
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final background = Paint()..color = const Color(0xFFFAFAFF).withOpacity(.12);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(5)),
+      background,
+    );
+    final path = Path()
+      ..moveTo(3, size.height * .70)
+      ..quadraticBezierTo(size.width * .25, size.height * .12, size.width * .48, size.height * .55)
+      ..quadraticBezierTo(size.width * .72, size.height * .92, size.width - 3, size.height * .28);
+    final width = style == 'marcador' || style == 'marca-texto'
+        ? 6.0
+        : style == 'aerógrafo' || style == 'pincel suave' || style == 'pastel'
+            ? 4.7
+            : 2.2;
+    final isGlow = style == 'brilho neon' || style == 'luz energética';
+    final paint = Paint()
+      ..color = color.withOpacity(opacity * (style == 'marca-texto' ? .5 : 1))
+      ..strokeWidth = width
+      ..strokeCap = style == 'pixel' ? StrokeCap.square : StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    if (style == 'linha tracejada') {
+      for (final metric in path.computeMetrics()) {
+        for (var d = 0.0; d < metric.length; d += 8) {
+          canvas.drawPath(metric.extractPath(d, math.min(d + 5, metric.length).toDouble()), paint);
+        }
+      }
+    } else if (isGlow) {
+      final glow = Paint()
+        ..color = color.withOpacity(.7)
+        ..strokeWidth = width * 2.7
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+      canvas.drawPath(path, glow);
+      canvas.drawPath(path, paint..strokeWidth = 1.8);
+    } else {
+      if (style == 'aerógrafo' || style == 'pincel suave' || style == 'pastel') {
+        paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+      }
+      canvas.drawPath(path, paint);
+      if (style == 'pincel seco') {
+        final dots = Paint()..color = color.withOpacity(.45)..strokeWidth = 1;
+        for (var i = 0; i < 7; i++) {
+          final x = 6.0 + i * (size.width - 12) / 6;
+          canvas.drawPoints(PointMode.points, <Offset>[Offset(x, size.height * (.28 + (i % 3) * .2))], dots);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BrushStyleSamplePainter oldDelegate) =>
+      style != oldDelegate.style || color != oldDelegate.color || opacity != oldDelegate.opacity;
 }
