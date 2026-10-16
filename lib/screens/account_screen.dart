@@ -48,6 +48,29 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   String _friendlyError(Object error) {
+    final diagnostic = error.toString().toLowerCase();
+
+    // Distinguish OAuth/Firebase setup failures from ordinary network failures.
+    // This is especially important for Android release builds, where OAuth
+    // SHA fingerprints and the Web client ID must match the Firebase project.
+    if (diagnostic.contains('developer_error') ||
+        diagnostic.contains('api exception: 10') ||
+        diagnostic.contains('12500') ||
+        diagnostic.contains('clientconfigurationerror')) {
+      return 'O login Google não está autorizado para esta versão da aplicação. Confirma no Firebase/Google Cloud o SHA-1 e SHA-256 da assinatura Android, o cliente OAuth Web e se o fornecedor Google está ativado.';
+    }
+    if (diagnostic.contains('id token') ||
+        diagnostic.contains('serverclientid') ||
+        diagnostic.contains('server client id')) {
+      return 'O Google não devolveu um token de autenticação. Confirma o ID de cliente OAuth Web e o google-services.json usado na compilação.';
+    }
+    if (diagnostic.contains('providerconfigurationerror')) {
+      return 'O fornecedor Google não está configurado no Firebase Authentication. Ativa Google em Authentication > Sign-in method.';
+    }
+    if (diagnostic.contains('uiunavailable')) {
+      return 'O seletor de conta Google não está disponível neste dispositivo. Atualiza o Google Play Services e tenta novamente.';
+    }
+
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'invalid-email':
@@ -65,7 +88,11 @@ class _AccountScreenState extends State<AccountScreen> {
         case 'too-many-requests':
           return 'Houve demasiadas tentativas. Espera um pouco e tenta novamente.';
         case 'operation-not-allowed':
-          return 'Este método de entrada está temporariamente indisponível. Tenta outra opção.';
+          return 'Este método de entrada está temporariamente indisponível. Ativa o fornecedor Google ou e-mail no Firebase Authentication.';
+        case 'app-not-authorized':
+          return 'Esta versão da aplicação não está autorizada no Firebase. Confirma o package name e as impressões digitais SHA-1/SHA-256.';
+        case 'invalid-api-key':
+          return 'A configuração do Firebase está incorreta. Confirma a API key usada na compilação.';
         case 'network-request-failed':
           return 'Não foi possível ligar à internet. Verifica a ligação.';
         case 'account-exists-with-different-credential':
@@ -76,7 +103,7 @@ class _AccountScreenState extends State<AccountScreen> {
           return 'Não foi possível concluir a operação. Tenta novamente.';
       }
     }
-    final text = error.toString().toLowerCase();
+    final text = diagnostic;
     if (text.contains('cancel')) return 'Operação cancelada.';
     if (text.contains('network') || text.contains('socket')) {
       return 'Falha de ligação. Verifica a internet e tenta novamente.';
