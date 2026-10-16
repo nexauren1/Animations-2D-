@@ -49,6 +49,9 @@ jobs:
             cp -a /tmp/animpro-platform/android ./android
           fi
 
+      - name: Configure AnimPro launcher icon
+        run: python3 .github/scripts/configure_android_app_icon.py
+
       - name: Configure native H.264 video export
         run: python3 .github/scripts/configure_android_native_video_export.py
 
