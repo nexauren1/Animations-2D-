@@ -209,6 +209,14 @@ class AudioLibraryService {
     return destination.path;
   }
 
+  static Future<String?> existingDownloadPath(AudioCatalogItem item) async {
+    final root = await _root();
+    final safeId = item.id.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final ext = item.file.split('.').last.toLowerCase();
+    final file = File('${root.path}/${safeId}.$ext');
+    return await file.exists() && await file.length() > 0 ? file.path : null;
+  }
+
   static Future<String> downloadItem(AudioCatalogItem item) async {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 12);
     try {
