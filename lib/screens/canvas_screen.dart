@@ -823,14 +823,14 @@ class _CanvasScreenState extends State<CanvasScreen> {
     final double unit = math.min(_canvasSize.width, _canvasSize.height).toDouble() * .14;
     final newStrokes = <StrokeModel>[];
 
-    const ink = Color(0xFF1C2940).value;
-    const orange = Color(0xFFF39A4A).value;
-    const coral = Color(0xFFEC7193).value;
-    const blue = Color(0xFF4CADD2).value;
-    const green = Color(0xFF4FB878).value;
-    const brown = Color(0xFF9A623C).value;
-    const yellow = Color(0xFFF3BC42).value;
-    const sky = Color(0xFF83C8F1).value;
+    const ink = 0xFF1C2940;
+    const orange = 0xFFF39A4A;
+    const coral = 0xFFEC7193;
+    const blue = 0xFF4CADD2;
+    const green = 0xFF4FB878;
+    const brown = 0xFF9A623C;
+    const yellow = 0xFFF3BC42;
+    const sky = 0xFF83C8F1;
 
     void add(
       List<Offset> points, {
