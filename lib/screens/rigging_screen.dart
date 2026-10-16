@@ -113,6 +113,8 @@ class _RiggingScreenState extends State<RiggingScreen> {
           points: movedPoints,
           color: stroke.color,
           width: stroke.width,
+          kind: stroke.kind,
+          brushStyle: stroke.brushStyle,
         );
       }
     }
@@ -185,6 +187,11 @@ class _RiggingScreenState extends State<RiggingScreen> {
               Text(
                 'Arrasta os seis pontos. Os traços próximos acompanham o movimento.',
                 style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                'Desenha com um único personagem por vez. O rigging atual é uma deformação experimental de traços; ainda não cria esqueletos independentes para duas pessoas nem para casas ou objetos rígidos.',
+                style: TextStyle(color: Color(0xFFFFD166), fontSize: 11, height: 1.35),
               ),
               const SizedBox(height: 12),
               Expanded(
