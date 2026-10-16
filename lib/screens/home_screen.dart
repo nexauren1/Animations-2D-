@@ -284,7 +284,7 @@ class HomeScreen extends StatelessWidget {
                 showAboutDialog(
                   context: context,
                   applicationName: 'AnimPro',
-                  applicationVersion: '1.3.0',
+                  applicationVersion: '1.4.0',
                   children: const [
                     Text('Desenha, cria frames e experimenta poses 2D.'),
                   ],
