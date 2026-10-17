@@ -275,6 +275,11 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 detail: 'Desbloqueia aerógrafo, pincel suave, pastel, pincel seco, pixel e efeitos de traço Pro.',
               ),
               const _ProFeature(
+                icon: Icons.library_music_rounded,
+                title: 'Biblioteca de áudio Pro',
+                detail: 'Acede aos sons marcados como Pro na biblioteca online.',
+              ),
+              const _ProFeature(
                 icon: Icons.hub_outlined,
                 title: 'Rigging e poses',
                 detail: 'Ajusta poses com controlos de rigging e guarda-as como frames.',
