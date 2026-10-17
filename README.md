@@ -27,7 +27,7 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 
 ### Limites conhecidos
 
-O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A pré-visualização reproduz as faixas de áudio do projeto. A exportação MP4 ainda não mistura áudio no vídeo nem oferece corte/fades por clip. O rigging atual é uma deformação simples de uma área e ainda não é um sistema completo de esqueletos independentes para várias personagens/objetos. O envio para Google Drive/Dropbox é manual através do menu de partilha do Android (se o fornecedor estiver instalado/disponível); a importação pode escolher ficheiros nesses serviços através do seletor do Android. Ainda não existe sincronização automática em segundo plano nem integração OAuth direta com essas plataformas. A biblioteca de áudio online fica vazia até serem publicados ficheiros licenciados no catálogo.
+O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. O rigging atual é uma deformação simples de uma área e ainda não é um sistema completo de esqueletos independentes para várias personagens/objetos. O envio para Google Drive/Dropbox é manual através do menu de partilha do Android (se o fornecedor estiver instalado/disponível); a importação pode escolher ficheiros nesses serviços através do seletor do Android. Ainda não existe sincronização automática em segundo plano nem integração OAuth direta com essas plataformas. A biblioteca de áudio online fica vazia até serem publicados ficheiros licenciados no catálogo.
 
 ## Instalar e escolher uma versão
 
