@@ -106,6 +106,13 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
       }
 
       if (response.statusCode != HttpStatus.ok) {
+        // Prefer the safe, user-facing message returned by our Worker. This
+        // distinguishes missing PayPal plan configuration from expired login
+        // or temporary network failures instead of hiding every cause.
+        final serverMessage = data['error'];
+        if (serverMessage is String && serverMessage.trim().isNotEmpty) {
+          throw _CheckoutException(serverMessage.trim());
+        }
         final message = switch (response.statusCode) {
           HttpStatus.unauthorized || HttpStatus.forbidden =>
             'A tua sessão expirou. Entra novamente na tua conta.',
