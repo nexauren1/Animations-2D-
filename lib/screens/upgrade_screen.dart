@@ -339,7 +339,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                       ? 'A verificar licença…'
                       : active
                           ? 'Licença Pro ativa'
-                          : 'Comprar por US$ 5',
+                          : 'Comprar por US\$ 5',
                   recommended: true,
                   busy: _launching,
                   disabled: purchasesBlocked || active,
@@ -347,7 +347,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Pagamento único de US$ 5. Sem mensalidade e sem renovação automática. A licença é ativada depois de o PayPal confirmar o pagamento.',
+                  'Pagamento único de US\$ 5. Sem mensalidade e sem renovação automática. A licença é ativada depois de o PayPal confirmar o pagamento.',
                   style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.45),
                 ),
               ],
