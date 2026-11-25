@@ -331,38 +331,23 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   ),
                 ],
                 _PlanCard(
-                  title: 'Pro Mensal',
+                  title: 'AnimPro Pro',
                   price: r'$5',
-                  cadence: '/ mês',
-                  description: 'Acesso Pro enquanto a subscrição estiver ativa.',
+                  cadence: 'pagamento único',
+                  description: 'Desbloqueia permanentemente as ferramentas Pro incluídas nesta versão.',
                   buttonLabel: entitlementPending
                       ? 'A verificar licença…'
-                      : active && data?['type'] == 'monthly'
-                          ? 'Subscrição ativa'
-                          : 'Assinar mensalmente',
+                      : active
+                          ? 'Licença Pro ativa'
+                          : 'Comprar por US$ 5',
                   recommended: true,
                   busy: _launching,
-                  disabled: purchasesBlocked || (active && data?['type'] == 'monthly'),
-                  onPressed: () => _buy('monthly'),
-                ),
-                const SizedBox(height: 12),
-                _PlanCard(
-                  title: 'Pro Permanente',
-                  price: r'$50',
-                  cadence: 'pagamento único',
-                  description: 'Uma compra, acesso vitalício à versão Pro atual e às funcionalidades Pro incluídas.',
-                  buttonLabel: entitlementPending
-                      ? 'A verificar licença…'
-                      : active && data?['type'] == 'lifetime'
-                          ? 'Licença permanente ativa'
-                          : 'Comprar permanentemente',
-                  busy: _launching,
-                  disabled: purchasesBlocked || (active && data?['type'] == 'lifetime'),
+                  disabled: purchasesBlocked || active,
                   onPressed: () => _buy('lifetime'),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'O plano mensal renova-se automaticamente até ser cancelado no PayPal. O plano permanente é uma compra única, não uma subscrição anual. Confirma o preço final e as condições no checkout antes de pagar.',
+                  'Pagamento único de US$ 5. Sem mensalidade e sem renovação automática. A licença é ativada depois de o PayPal confirmar o pagamento.',
                   style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.45),
                 ),
               ],
