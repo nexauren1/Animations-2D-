@@ -561,6 +561,13 @@ class _ExportScreenState extends State<ExportScreen> {
                     : 'Será codificado a partir de todos os frames do projeto e partilhado para guardar no telefone.',
             style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12, height: 1.4),
           ),
+          if (_format == 'MP4') ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Nota: o MP4 inclui a animação, mas ainda não mistura as faixas de áudio do projeto. A compatibilidade de codificação depende do dispositivo Android.',
+              style: TextStyle(color: Colors.amberAccent, fontSize: 12, height: 1.4),
+            ),
+          ],
           const SizedBox(height: 24),
           const Text('Formato do vídeo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 7),
