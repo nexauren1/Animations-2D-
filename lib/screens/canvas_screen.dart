@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/app_locale.dart';
 
 import '../models/project_model.dart';
@@ -620,13 +621,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
   Future<void> _importAudioFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.audio,
-        allowMultiple: false,
-        withData: false,
-      );
-      if (result == null || result.files.isEmpty || !mounted) return;
-      final picked = result.files.single;
+      final picked = await FilePicker.pickFile(type: FileType.audio);
+      if (picked == null || !mounted) return;
       final sourcePath = picked.path;
       if (sourcePath == null || sourcePath.isEmpty) {
         throw StateError('O Android não disponibilizou o caminho deste áudio.');
