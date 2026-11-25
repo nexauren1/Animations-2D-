@@ -14,8 +14,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/project_model.dart';
 import '../services/pro_access_service.dart';
 
-/// Exporta PNG, sequência PNG em ZIP, vídeo MP4 com H.264 via MediaCodec
-/// (com fallback para MPEG-4) e GIF animado.
+/// Exporta PNG, sequência PNG em ZIP, vídeo MP4 com H.264 via MediaCodec e GIF animado.
 class ExportScreen extends StatefulWidget {
   const ExportScreen({required this.project, required this.frameIndex, super.key});
   final ProjectModel project;
@@ -561,6 +560,13 @@ class _ExportScreenState extends State<ExportScreen> {
                     : 'Será codificado a partir de todos os frames do projeto e partilhado para guardar no telefone.',
             style: TextStyle(color: Colors.white.withOpacity(.58), fontSize: 12, height: 1.4),
           ),
+          if (_format == 'MP4') ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Nota: o MP4 inclui a animação, mas ainda não mistura as faixas de áudio do projeto. A compatibilidade de codificação depende do dispositivo Android.',
+              style: TextStyle(color: Colors.amberAccent, fontSize: 12, height: 1.4),
+            ),
+          ],
           const SizedBox(height: 24),
           const Text('Formato do vídeo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 7),

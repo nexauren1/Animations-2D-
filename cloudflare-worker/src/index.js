@@ -351,69 +351,23 @@ function entitlementIsActive(entitlement) {
 async function startCheckout(request, env) {
   const uid = await firebaseUserId(request, env);
   const body = await request.json().catch(() => null);
-  const plan = body && body.plan;
-  if (plan !== "monthly" && plan !== "lifetime") {
-    throw new HttpError(400, "Plano inválido.");
+  // New sales use one simple, non-recurring lifetime purchase only.
+  // Legacy monthly entitlements/webhooks remain readable so existing users
+  // are not unexpectedly stripped of access.
+  if (!body || body.plan !== "lifetime") {
+    throw new HttpError(400, "O AnimPro Pro está disponível apenas como compra única.");
   }
 
-  // Prevent accidental duplicate monthly charges when the user's existing
-  // entitlement is still valid. A monthly subscriber may still upgrade to
-  // the one-time lifetime plan.
   const existingEntitlement = await getDoc(env, "proEntitlements", uid);
-  if (
-    entitlementIsActive(existingEntitlement) &&
-    (
-      existingEntitlement.type === "lifetime" ||
-      (existingEntitlement.type === "monthly" && plan === "monthly")
-    )
-  ) {
+  if (entitlementIsActive(existingEntitlement)) {
     throw new HttpError(409, "A tua licença Pro já está ativa. Não precisas de comprar novamente.");
   }
+
   const token = await paypalAccessToken(env);
   const returnUrl = env.PAYPAL_RETURN_URL ||
     "https://nexauren1.github.io/Animations-2D-/payment-return.html";
   const cancelUrl = env.PAYPAL_CANCEL_URL ||
     "https://nexauren1.github.io/Animations-2D-/payment-return.html?cancelled=1";
-
-  if (plan === "monthly") {
-    const monthlyPlanId = env.PAYPAL_MONTHLY_PLAN_ID;
-    if (!monthlyPlanId) {
-      throw new HttpError(503, "O plano mensal ainda não está disponível.");
-    }
-    const subscription = await paypalRequest(
-      env,
-      token,
-      "POST",
-      "/v1/billing/subscriptions",
-      {
-        plan_id: monthlyPlanId,
-        custom_id: uid,
-        application_context: {
-          brand_name: "AnimPro",
-          locale: "pt-PT",
-          user_action: "SUBSCRIBE_NOW",
-          shipping_preference: "NO_SHIPPING",
-          return_url: returnUrl + "?plan=monthly",
-          cancel_url: cancelUrl,
-        },
-      },
-      "animpro-sub-" + uid + "-" + Date.now(),
-    );
-    if (!subscription.id) throw new HttpError(502, "O PayPal não devolveu o ID da subscrição.");
-    await setDoc(env, "paypalSubscriptions", subscription.id, {
-      uid: uid,
-      plan: "monthly",
-      planId: monthlyPlanId,
-      status: "pending",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    return json({
-      plan: "monthly",
-      subscriptionId: subscription.id,
-      approvalUrl: approvalUrl(subscription),
-    });
-  }
 
   const order = await paypalRequest(
     env,
@@ -425,8 +379,8 @@ async function startCheckout(request, env) {
       purchase_units: [{
         reference_id: "animpro-pro-lifetime",
         custom_id: uid,
-        description: "AnimPro Pro Permanente",
-        amount: { currency_code: "USD", value: "50.00" },
+        description: "AnimPro Pro — licença permanente",
+        amount: { currency_code: "USD", value: "5.00" },
       }],
       application_context: {
         brand_name: "AnimPro",
@@ -443,7 +397,7 @@ async function startCheckout(request, env) {
     uid: uid,
     plan: "lifetime",
     status: "pending",
-    amount: "50.00",
+    amount: "5.00",
     currency: "USD",
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -482,9 +436,9 @@ async function handleOrderApproved(env, event, token) {
     purchaseUnit.custom_id !== order.uid ||
     !purchaseUnit.amount ||
     purchaseUnit.amount.currency_code !== "USD" ||
-    purchaseUnit.amount.value !== "50.00"
+    purchaseUnit.amount.value !== "5.00"
   ) {
-    throw new Error("PayPal order does not match the expected AnimPro amount or user.");
+    throw new Error("PayPal order does not match the expected USD 5.00 AnimPro amount or user.");
   }
 
   let capture = null;
@@ -510,9 +464,9 @@ async function handleOrderApproved(env, event, token) {
     capture.status !== "COMPLETED" ||
     !capture.amount ||
     capture.amount.currency_code !== "USD" ||
-    capture.amount.value !== "50.00"
+    capture.amount.value !== "5.00"
   ) {
-    throw new Error("PayPal did not confirm a completed USD 50.00 capture.");
+    throw new Error("PayPal did not confirm a completed USD 5.00 capture.");
   }
 
   await grantLifetime(env, order.uid, orderId, capture.id);

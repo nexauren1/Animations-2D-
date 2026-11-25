@@ -90,7 +90,7 @@ Acrescenta estas **Variables** (texto simples):
 - `FIREBASE_PROJECT_ID` — ID exato do projeto Firebase utilizado pela aplicação.
 - `FIREBASE_API_KEY` — chave de configuração Web/API do mesmo projeto Firebase. Não é a chave privada da conta de serviço.
 
-O `wrangler.toml` define o ambiente PayPal Sandbox, o plano mensal `P-5LD012631E418920JNLIRDEA` e os endereços de retorno. A opção `keep_vars = true` preserva variáveis definidas no painel durante um deploy pelo Git. Os segredos cifrados também são preservados pelos deploys.
+O `wrangler.toml` define o ambiente PayPal Sandbox e os endereços de retorno. As novas compras usam apenas o checkout único Pro; a configuração de plano mensal é legada e não é oferecida a novos compradores. A opção `keep_vars = true` preserva variáveis definidas no painel durante um deploy pelo Git. Os segredos cifrados também são preservados pelos deploys.
 
 ### Configurar o webhook PayPal
 
@@ -106,7 +106,7 @@ A conta de serviço tem de pertencer ao mesmo projeto indicado em `FIREBASE_PROJ
 
 Depois de ligar **Settings → Builds → Git repository** ao repositório `nexauren1/Animations-2D-` com a branch `main`, cada push validado na `main` deve disparar o deploy do Worker. Confirma primeiro `https://animations2d.nexaurenstore.workers.dev/health` (esperado: JSON com `ok: true`). Depois testa pagamentos apenas com contas Sandbox e confirma os documentos no Firestore.
 
-O checkout usa exclusivamente o Worker Cloudflare. O workflow antigo de deploy PayPal por Firebase Functions foi retirado para evitar tentativas de deploy incompatíveis com esta arquitetura. A compra permanente custa USD 50 e a subscrição mensal USD 5 no código atual. Só migres para Live depois de testar aprovação, cancelamento, falhas, reembolso e revogação da licença.
+O checkout usa exclusivamente o Worker Cloudflare. O workflow antigo de deploy PayPal por Firebase Functions foi retirado para evitar tentativas de deploy incompatíveis com esta arquitetura. As novas compras usam uma única licença Pro permanente por USD 5, sem subscrição nem renovação automática. O Worker continua configurado para PayPal Sandbox; não aceites pagamentos reais até o proprietário da conta configurar credenciais Live, webhook Live e validar uma compra de ponta a ponta. Os webhooks mensais antigos permanecem no código apenas para preservar o tratamento de licenças legadas.
 
 ## Desenvolvimento
 

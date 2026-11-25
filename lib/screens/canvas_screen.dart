@@ -5,6 +5,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/app_locale.dart';
 
 import '../models/project_model.dart';
@@ -616,6 +618,56 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
+
+  Future<void> _importAudioFile() async {
+    try {
+      final picked = await FilePicker.pickFile(type: FileType.audio);
+      if (picked == null || !mounted) return;
+      final sourcePath = picked.path;
+      if (sourcePath == null || sourcePath.isEmpty) {
+        throw StateError('O Android não disponibilizou o caminho deste áudio.');
+      }
+      final source = File(sourcePath);
+      if (!await source.exists() || await source.length() == 0) {
+        throw StateError('O ficheiro de áudio está vazio ou indisponível.');
+      }
+      final extension = picked.extension?.toLowerCase() ?? '';
+      if (!const <String>{'mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'}.contains(extension)) {
+        throw FormatException('Formato de áudio não suportado: .$extension');
+      }
+      final startFrame = await _chooseAudioStartFrame(_currentFrameIndex);
+      if (startFrame == null || !mounted) return;
+      final root = await getApplicationDocumentsDirectory();
+      final directory = Directory('${root.path}/AnimPro/ProjectAudio/${widget.project.uid}');
+      await directory.create(recursive: true);
+      final safeName = picked.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final destination = File('${directory.path}/${DateTime.now().microsecondsSinceEpoch}_$safeName');
+      await source.copy(destination.path);
+      final clip = AudioTimelineClip(
+        id: 'import-${DateTime.now().microsecondsSinceEpoch}',
+        name: picked.name,
+        path: destination.path,
+        startFrame: startFrame,
+        isPro: false,
+      );
+      final updated = <AudioTimelineClip>[..._audioClips, clip]
+        ..sort((a, b) => a.startFrame.compareTo(b.startFrame));
+      await AudioTimelineService.save(widget.project.uid, updated);
+      if (!mounted) return;
+      setState(() => _audioClips = updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Áudio importado e colocado no frame ${startFrame + 1}.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error is FormatException
+            ? error.message.toString()
+            : 'Não foi possível importar este áudio. Verifica o ficheiro e tenta novamente.')),
+      );
+    }
+  }
+
   Future<void> _openAudioTimeline() async {
     var addAudio = false;
     await showModalBottomSheet<void>(
@@ -688,16 +740,30 @@ class _CanvasScreenState extends State<CanvasScreen> {
                       ),
                     ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        addAudio = true;
-                        Navigator.of(sheetContext).pop();
-                      },
-                      icon: const Icon(Icons.library_music_rounded),
-                      label: const Text('Abrir biblioteca de áudio'),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(sheetContext).pop();
+                            unawaited(_importAudioFile());
+                          },
+                          icon: const Icon(Icons.file_upload_outlined),
+                          label: const Text('Importar do dispositivo'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            addAudio = true;
+                            Navigator.of(sheetContext).pop();
+                          },
+                          icon: const Icon(Icons.library_music_rounded),
+                          label: const Text('Biblioteca online'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
