@@ -436,9 +436,9 @@ async function handleOrderApproved(env, event, token) {
     purchaseUnit.custom_id !== order.uid ||
     !purchaseUnit.amount ||
     purchaseUnit.amount.currency_code !== "USD" ||
-    purchaseUnit.amount.value !== "50.00"
+    purchaseUnit.amount.value !== "5.00"
   ) {
-    throw new Error("PayPal order does not match the expected AnimPro amount or user.");
+    throw new Error("PayPal order does not match the expected USD 5.00 AnimPro amount or user.");
   }
 
   let capture = null;
@@ -464,9 +464,9 @@ async function handleOrderApproved(env, event, token) {
     capture.status !== "COMPLETED" ||
     !capture.amount ||
     capture.amount.currency_code !== "USD" ||
-    capture.amount.value !== "50.00"
+    capture.amount.value !== "5.00"
   ) {
-    throw new Error("PayPal did not confirm a completed USD 50.00 capture.");
+    throw new Error("PayPal did not confirm a completed USD 5.00 capture.");
   }
 
   await grantLifetime(env, order.uid, orderId, capture.id);
