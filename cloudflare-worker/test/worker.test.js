@@ -154,3 +154,76 @@ test("checkout rejects the retired monthly plan and only allows the one-time pur
   }
 });
 
+
+test("lifetime checkout creates exactly one USD 5 order", async () => {
+  const previousFetch = globalThis.fetch;
+  const calls = [];
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const serviceAccount = {
+    type: "service_account",
+    project_id: "animpro-audit-test",
+    client_email: "worker@animpro-audit-test.iam.gserviceaccount.com",
+    private_key: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+  };
+
+  globalThis.fetch = async (input, options = {}) => {
+    const url = String(input);
+    calls.push({ url, options });
+    if (url.startsWith("https://identitytoolkit.googleapis.com/v1/accounts:lookup")) {
+      return new Response(JSON.stringify({ users: [{ localId: "uid-lifetime-test" }] }), { status: 200 });
+    }
+    if (url === "https://oauth2.googleapis.com/token") {
+      return new Response(JSON.stringify({ access_token: "mock-google-token", expires_in: 3600 }), { status: 200 });
+    }
+    if (url.includes("/documents/proEntitlements/uid-lifetime-test")) {
+      return new Response(JSON.stringify({ error: { status: "NOT_FOUND" } }), { status: 404 });
+    }
+    if (url === "https://api-m.sandbox.paypal.com/v1/oauth2/token") {
+      return new Response(JSON.stringify({ access_token: "mock-paypal-token" }), { status: 200 });
+    }
+    if (url === "https://api-m.sandbox.paypal.com/v2/checkout/orders") {
+      const body = JSON.parse(options.body);
+      assert.equal(body.purchase_units[0].amount.currency_code, "USD");
+      assert.equal(body.purchase_units[0].amount.value, "5.00");
+      assert.equal(body.purchase_units[0].custom_id, "uid-lifetime-test");
+      return new Response(JSON.stringify({
+        id: "ORDER-USD5",
+        links: [{ rel: "approve", href: "https://www.sandbox.paypal.com/checkoutnow?token=ORDER-USD5" }],
+      }), { status: 201 });
+    }
+    if (url.includes("/documents/paypalOrders/ORDER-USD5")) {
+      return new Response(JSON.stringify({ name: "saved" }), { status: 200 });
+    }
+    throw new Error("Unexpected network request in test: " + url);
+  };
+
+  try {
+    const response = await call("/api/checkout", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer mock-firebase-id-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ plan: "lifetime" }),
+    }, {
+      FIREBASE_API_KEY: "mock-firebase-api-key",
+      FIREBASE_PROJECT_ID: "animpro-audit-test",
+      FIREBASE_SERVICE_ACCOUNT_JSON: JSON.stringify(serviceAccount),
+      PAYPAL_CLIENT_ID: "mock-sandbox-client-id",
+      PAYPAL_CLIENT_SECRET: "mock-sandbox-client-secret",
+      PAYPAL_API_BASE: "https://api-m.sandbox.paypal.com",
+    });
+
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.plan, "lifetime");
+    assert.equal(payload.orderId, "ORDER-USD5");
+    assert.match(payload.approvalUrl, /^https:\/\/www\.sandbox\.paypal\.com\//);
+    assert.equal(
+      calls.filter((entry) => entry.url === "https://api-m.sandbox.paypal.com/v2/checkout/orders").length,
+      1,
+    );
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
