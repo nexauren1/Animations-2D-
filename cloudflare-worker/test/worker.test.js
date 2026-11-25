@@ -80,7 +80,7 @@ test("checkout recognizes a valid Bearer header before reporting missing server 
   });
 });
 
-test("checkout blocks a second monthly subscription while Pro access is paid and active", async () => {
+test("checkout rejects the retired monthly plan and only allows the one-time purchase", async () => {
   const previousFetch = globalThis.fetch;
   const calls = [];
   const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
@@ -140,9 +140,9 @@ test("checkout blocks a second monthly subscription while Pro access is paid and
       PAYPAL_MONTHLY_PLAN_ID: "P-mock-monthly-plan",
     });
 
-    assert.equal(response.status, 409);
+    assert.equal(response.status, 400);
     assert.deepEqual(await response.json(), {
-      error: "A tua licença Pro já está ativa. Não precisas de comprar novamente.",
+      error: "O AnimPro Pro está disponível apenas como compra única.",
     });
     assert.equal(
       calls.some((url) => url.startsWith("https://api-m.sandbox.paypal.com/")),
