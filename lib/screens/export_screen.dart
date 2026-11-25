@@ -14,8 +14,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/project_model.dart';
 import '../services/pro_access_service.dart';
 
-/// Exporta PNG, sequência PNG em ZIP, vídeo MP4 com H.264 via MediaCodec
-/// (com fallback para MPEG-4) e GIF animado.
+/// Exporta PNG, sequência PNG em ZIP, vídeo MP4 com H.264 via MediaCodec e GIF animado.
 class ExportScreen extends StatefulWidget {
   const ExportScreen({required this.project, required this.frameIndex, super.key});
   final ProjectModel project;
