@@ -4,14 +4,15 @@ This folder is the source of the public audio catalogue served by GitHub Pages. 
 
 ## Where to find sound effects
 
-Use these sources to discover sounds. Check the licence of each individual asset before copying it into this repository:
+Use these sources to discover sounds. They are not all suitable for a downloadable in-app library; the rules below distinguish project-use sources from redistributable sources:
 
 - **Freesound** — https://freesound.org/ — prefer CC0 or CC BY assets. Do not use CC BY-NC in AnimPro's distributable library because AnimPro is a commercial product. Freesound's FAQ explains the per-sound licences and attribution requirements: https://freesound.org/help/faq/
-- **Pixabay Sound Effects** — https://pixabay.com/sound-effects/ — review the current Pixabay Content License and restrictions for each asset. A free download does not automatically mean that re-hosting the raw file as a separate downloadable library is allowed.
-- **Mixkit Sound Effects** — https://mixkit.co/free-sound-effects/ — check the item and current Mixkit licence. Do not redistribute an asset as a standalone download unless the licence explicitly permits it.
+- **Pixabay Sound Effects** — https://pixabay.com/sound-effects/ — useful for sounds that users incorporate into finished animations. The current Pixabay terms prohibit distributing the unmodified asset on a standalone basis, so do **not** copy its raw audio file into this downloadable catalogue: https://pixabay.com/service/terms/.
+- **Mixkit Sound Effects** — https://mixkit.co/free-sound-effects/ — the Free SFX licence permits use in finished projects, including video games, but explicitly prohibits redistributing the sound by itself or inside a tool/template. Do **not** put raw Mixkit files in this downloadable catalogue: https://mixkit.co/license/modal/sfxFree/.
+- **OpenGameArt** — https://opengameart.org/ — licences vary by asset; check whether the exact licence permits re-hosting and redistribution of the source file, not merely using it inside a game.
 - **OpenGameArt** — https://opengameart.org/ — licences vary by asset; record the exact licence and attribution details.
 
-**Important:** use sources to find assets, not to bypass their licences. Only put an audio file in this repository if its licence or written permission allows Nexauren to host and redistribute the original file for users to download. If the terms only permit use inside a finished project, do not put the raw file in this downloadable library. Keep a screenshot or copy of the licence/permission in the asset records.
+**Important:** Pixabay and Mixkit can be used as sources for a user's finished animation, but their current terms do not permit Nexauren to re-host the unchanged audio as a separate downloadable asset in AnimPro's library. For the shared downloadable library, prioritize Freesound CC0/CC BY and OpenGameArt assets only when the exact asset licence permits redistribution. Freesound CC BY requires creator attribution; CC BY-NC is unsuitable for a commercial app/library. Keep a screenshot or copy of the licence/permission in the asset records.
 
 ## Folder structure
 
