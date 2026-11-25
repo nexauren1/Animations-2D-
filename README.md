@@ -90,7 +90,7 @@ Acrescenta estas **Variables** (texto simples):
 - `FIREBASE_PROJECT_ID` — ID exato do projeto Firebase utilizado pela aplicação.
 - `FIREBASE_API_KEY` — chave de configuração Web/API do mesmo projeto Firebase. Não é a chave privada da conta de serviço.
 
-O `wrangler.toml` define o ambiente PayPal Sandbox, o plano mensal `P-5LD012631E418920JNLIRDEA` e os endereços de retorno. A opção `keep_vars = true` preserva variáveis definidas no painel durante um deploy pelo Git. Os segredos cifrados também são preservados pelos deploys.
+O `wrangler.toml` define o ambiente PayPal Sandbox e os endereços de retorno. As novas compras usam apenas o checkout único Pro; a configuração de plano mensal é legada e não é oferecida a novos compradores. A opção `keep_vars = true` preserva variáveis definidas no painel durante um deploy pelo Git. Os segredos cifrados também são preservados pelos deploys.
 
 ### Configurar o webhook PayPal
 
