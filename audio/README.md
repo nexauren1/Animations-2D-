@@ -2,7 +2,7 @@
 
 The starter collection is generated from original procedural sound designs by `.github/scripts/generate_resource_library.py`. The generated WAV assets and public manifest are written to `docs/audio/` during the GitHub Pages build, so audio is not bundled into the Android APK.
 
-This folder is the source of the public audio catalogue served by GitHub Pages. The Android app reads `audio/catalog.json` online, so publishing a new sound and updating the catalogue does not require a new APK.
+This folder contains maintainer notes and a mirrored catalogue source. The public catalogue and sounds are generated under `docs/audio/`; the Android app reads `https://nexauren1.github.io/Animations-2D-/audio/catalog.json`. Publishing a new sound and updating the catalogue does not require a new APK.
 
 ## Where to find sound effects
 
@@ -47,6 +47,9 @@ Supported catalogue extensions: `.mp3`, `.wav`, `.ogg`, `.m4a`. The app currentl
     "pro": false,
     "license": "CC0-1.0",
     "sourceUrl": "https://freesound.org/s/123456/",
+    "sizeBytes": 12000,
+    "durationSeconds": 1.25,
+    "sha256": "64-character-lowercase-sha256-digest",
     "author": "Creator username",
     "attribution": "Sound name by Creator username, CC BY 4.0"
   }
@@ -61,6 +64,7 @@ Fields:
 - `pro`: set true only when the sound is intentionally Pro-only.
 - `license`: exact licence identifier or written-permission reference.
 - `sourceUrl`: original asset page, not merely the platform homepage.
+- `sizeBytes`, `durationSeconds`, `sha256`: exact file size, duration and SHA-256 digest. The app validates all three before accepting a download.
 - `author` and `attribution`: keep the creator credit where required.
 
 Never invent a licence or attribution. Keep a simple asset register with the source page, creator, download date, exact licence, proof of permission to redistribute, and any required credit.
