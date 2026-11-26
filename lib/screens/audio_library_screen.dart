@@ -227,7 +227,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Remover áudio descarregado?'),
         content: Text(
-          '"${item.name}" será removido do armazenamento deste telefone. Os projetos que já utilizam este som não serão apagados.',
+          '"${item.name}" será removido do telefone. Os projetos permanecem, mas deixam de conseguir reproduzir este áudio até o voltares a descarregar.',
         ),
         actions: [
           TextButton(
