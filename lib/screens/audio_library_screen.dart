@@ -223,7 +223,23 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       }
       await _player.stop();
       setState(() => _previewingId = item.id);
-      await _player.setSourceUrl(_urlFor(item.preview).toString());
+
+      // Reuse an already downloaded, checksum-verified sound for preview.
+      // This keeps the audio library useful offline and avoids extra mobile data.
+      final root = await getApplicationDocumentsDirectory();
+      final extension = item.file.split('.').last.toLowerCase();
+      final local = File('${root.path}/audio_library/${item.id}.$extension');
+      var useLocal = false;
+      if (await local.exists()) {
+        final bytes = await local.readAsBytes();
+        useLocal = bytes.length == item.sizeBytes &&
+            sha256.convert(bytes).toString() == item.sha256;
+      }
+      if (useLocal) {
+        await _player.setSource(DeviceFileSource(local.path));
+      } else {
+        await _player.setSourceUrl(_urlFor(item.preview).toString());
+      }
       await _player.resume();
     } catch (_) {
       if (mounted) {
