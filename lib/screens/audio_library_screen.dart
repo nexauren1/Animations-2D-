@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
 import 'package:http/http.dart' as http;
@@ -278,7 +279,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(error is FormatException
-              ? error.message
+              ? error.message.toString()
               : 'O download falhou. Verifica a internet e tenta novamente.')),
         );
       }
