@@ -229,9 +229,16 @@ class _ExportScreenState extends State<ExportScreen> {
             path.addRect(ui.Rect.fromPoints(mapped.first, mapped.last));
           } else if (stroke.kind == 'ellipse') {
             path.addOval(ui.Rect.fromPoints(mapped.first, mapped.last));
+          } else if (stroke.kind == 'triangle') {
+            final bounds = ui.Rect.fromPoints(mapped.first, mapped.last);
+            path
+              ..moveTo(bounds.center.dx, bounds.top)
+              ..lineTo(bounds.right, bounds.bottom)
+              ..lineTo(bounds.left, bounds.bottom)
+              ..close();
           } else {
             path.moveTo(mapped.first.dx, mapped.first.dy);
-            if (stroke.kind == 'line' || stroke.kind == 'ruler') {
+            if (stroke.kind == 'line' || stroke.kind == 'ruler' || stroke.kind == 'arrow') {
               path.lineTo(mapped.last.dx, mapped.last.dy);
             } else {
               for (final point in mapped.skip(1)) {
@@ -240,6 +247,27 @@ class _ExportScreenState extends State<ExportScreen> {
             }
           }
           drawStyledPath(path);
+          if (stroke.kind == 'arrow' && mapped.length > 1) {
+            final delta = mapped.last - mapped.first;
+            if (delta.distance > 0) {
+              final direction = delta / delta.distance;
+              final perpendicular = ui.Offset(-direction.dy, direction.dx);
+              final headLength = math.max(10.0, width * 3).toDouble();
+              final headWidth = headLength * .58;
+              final head = ui.Path()
+                ..moveTo(mapped.last.dx, mapped.last.dy)
+                ..lineTo(
+                  mapped.last.dx - direction.dx * headLength + perpendicular.dx * headWidth,
+                  mapped.last.dy - direction.dy * headLength + perpendicular.dy * headWidth,
+                )
+                ..lineTo(
+                  mapped.last.dx - direction.dx * headLength - perpendicular.dx * headWidth,
+                  mapped.last.dy - direction.dy * headLength - perpendicular.dy * headWidth,
+                )
+                ..close();
+              canvas.drawPath(head, ui.Paint()..color = baseColor.withOpacity(opacity));
+            }
+          }
           if (stroke.kind == 'ruler') {
             final delta = mapped.last - mapped.first;
             final length = delta.distance;
