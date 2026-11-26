@@ -60,7 +60,16 @@ class _AudioLibraryItem {
     final digest = (json['sha256'] ?? '').toString().toLowerCase();
     final sizeBytes = (json['sizeBytes'] as num?)?.toInt() ?? 0;
     final durationSeconds = (json['durationSeconds'] as num?)?.toDouble() ?? 0;
-    if (!RegExp(r'^[a-zA-Z0-9_-]{1,80}
+    if (!RegExp(r'^[a-zA-Z0-9_-]{1,80}$').hasMatch(id) ||
+        !_safeRelativeAudioPath(file) ||
+        !_safeRelativeAudioPath(preview) ||
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(digest) ||
+        sizeBytes < 1 ||
+        sizeBytes > 35 * 1024 * 1024 ||
+        durationSeconds <= 0 ||
+        durationSeconds > 600) {
+      throw const FormatException('Entrada de áudio inválida ou insegura no catálogo.');
+    }
     return _AudioLibraryItem(
       id: id,
       name: (json['name'] ?? id).toString(),
