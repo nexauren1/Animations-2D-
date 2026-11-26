@@ -494,6 +494,21 @@ class _CanvasScreenState extends State<CanvasScreen> {
           setState(() => _frames = frames);
           await _persist();
         },
+        audioClips: List<AudioTimelineClip>.from(_audioClips),
+        onAudioClipSelected: (clip) async {
+          final edited = await _editAudioClip(clip);
+          if (edited == null || !mounted) return;
+          final updated = _audioClips.map((entry) =>
+              entry.id == clip.id ? edited : entry).toList()
+            ..sort((a, b) {
+              final trackOrder = a.trackIndex.compareTo(b.trackIndex);
+              return trackOrder != 0
+                  ? trackOrder
+                  : a.startFrame.compareTo(b.startFrame);
+            });
+          await AudioTimelineService.save(widget.project.uid, updated);
+          if (mounted) setState(() => _audioClips = updated);
+        },
       ),
     );
   }
@@ -639,7 +654,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                     value: startFrame.toDouble(),
                     min: 0,
                     max: math.max(1, _frames.length - 1).toDouble(),
-                    divisions: math.max(1, _frames.length - 1),
+                    divisions: math.max(1, _frames.length - 1).toInt(),
                     label: 'Frame ${startFrame + 1}',
                     onChanged: (value) => setDialogState(() =>
                         startFrame = value.round().clamp(0, _frames.length - 1).toInt()),
