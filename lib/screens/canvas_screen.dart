@@ -264,8 +264,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
     if (points == null) return;
     setState(() {
       if (_tool == _DrawingTool.line ||
+          _tool == _DrawingTool.arrow ||
           _tool == _DrawingTool.rectangle ||
           _tool == _DrawingTool.ellipse ||
+          _tool == _DrawingTool.triangle ||
           _tool == _DrawingTool.ruler) {
         _draftPoints = <Offset>[points.first, details.localPosition];
       } else {
