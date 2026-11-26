@@ -1807,8 +1807,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
       (icon: Icons.edit_rounded, label: 'Caneta', tool: _DrawingTool.pen),
       (icon: Icons.auto_fix_normal_rounded, label: 'Borracha', tool: _DrawingTool.eraser),
       (icon: Icons.show_chart_rounded, label: 'Linha', tool: _DrawingTool.line),
+      (icon: Icons.arrow_right_alt_rounded, label: 'Seta', tool: _DrawingTool.arrow),
       (icon: Icons.crop_square_rounded, label: 'Retângulo', tool: _DrawingTool.rectangle),
       (icon: Icons.circle_outlined, label: 'Elipse', tool: _DrawingTool.ellipse),
+      (icon: Icons.change_history_rounded, label: 'Triângulo', tool: _DrawingTool.triangle),
       (icon: Icons.straighten_rounded, label: 'Régua', tool: _DrawingTool.ruler),
     ];
     return Container(
