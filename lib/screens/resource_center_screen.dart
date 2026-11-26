@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 
 import '../services/resource_pack_service.dart';
 import 'audio_library_screen.dart';
@@ -581,7 +582,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                       color: Color(template.tint).withOpacity(.12),
                       borderRadius: BorderRadius.circular(11),
                     ),
-                    child: Icon(IconData(template.iconCodePoint, fontFamily: 'MaterialIcons'), color: Color(template.tint)),
+                    child: Icon(Icons.animation_rounded, color: Color(template.tint)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
