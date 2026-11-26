@@ -306,6 +306,53 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 13),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B1E2D),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF6D62B5).withOpacity(.35)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B7CFF).withOpacity(.16),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: const Icon(Icons.library_music_rounded, color: Color(0xFFC1B7FF), size: 25),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Biblioteca de áudio',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+                        SizedBox(height: 3),
+                        Text('Ouvir, pesquisar e guardar efeitos para as tuas animações.',
+                            style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.3)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.of(context).push<AudioLibrarySelection>(
+                        MaterialPageRoute<AudioLibrarySelection>(
+                          builder: (_) => const AudioLibraryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text('Abrir'),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 18),
             TextField(
               onChanged: (value) => setState(() => _search = value),
