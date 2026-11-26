@@ -20,7 +20,7 @@ import 'export_screen.dart';
 import 'rigging_screen.dart';
 import 'timeline_screen.dart';
 
-enum _DrawingTool { pen, eraser, line, arrow, rectangle, ellipse, triangle, ruler }
+enum _DrawingTool { pen, eraser, line, arrow, rectangle, ellipse, triangle, pentagon, hexagon, star, ruler }
 
 class CanvasScreen extends StatefulWidget {
   const CanvasScreen({required this.store, required this.project, super.key});
@@ -192,6 +192,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
         _DrawingTool.rectangle => 'rectangle',
         _DrawingTool.ellipse => 'ellipse',
         _DrawingTool.triangle => 'triangle',
+        _DrawingTool.pentagon => 'pentagon',
+        _DrawingTool.hexagon => 'hexagon',
+        _DrawingTool.star => 'star',
         _DrawingTool.ruler => 'ruler',
       };
 
@@ -268,6 +271,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
           _tool == _DrawingTool.rectangle ||
           _tool == _DrawingTool.ellipse ||
           _tool == _DrawingTool.triangle ||
+          _tool == _DrawingTool.pentagon ||
+          _tool == _DrawingTool.hexagon ||
+          _tool == _DrawingTool.star ||
           _tool == _DrawingTool.ruler) {
         _draftPoints = <Offset>[points.first, details.localPosition];
       } else {
@@ -1813,6 +1819,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
       (icon: Icons.crop_square_rounded, label: 'Retângulo', tool: _DrawingTool.rectangle),
       (icon: Icons.circle_outlined, label: 'Elipse', tool: _DrawingTool.ellipse),
       (icon: Icons.change_history_rounded, label: 'Triângulo', tool: _DrawingTool.triangle),
+      (icon: Icons.pentagon_outlined, label: 'Pentágono', tool: _DrawingTool.pentagon),
+      (icon: Icons.hexagon_outlined, label: 'Hexágono', tool: _DrawingTool.hexagon),
+      (icon: Icons.star_outline_rounded, label: 'Estrela', tool: _DrawingTool.star),
       (icon: Icons.straighten_rounded, label: 'Régua', tool: _DrawingTool.ruler),
     ];
     return Container(
@@ -2103,6 +2112,26 @@ class _AnimationCanvasPainter extends CustomPainter {
         ..lineTo(bounds.right, bounds.bottom)
         ..lineTo(bounds.left, bounds.bottom)
         ..close();
+    } else if (stroke.kind == 'pentagon' || stroke.kind == 'hexagon' || stroke.kind == 'star') {
+      final bounds = Rect.fromPoints(first, last);
+      final sides = stroke.kind == 'pentagon' ? 5 : stroke.kind == 'hexagon' ? 6 : 10;
+      final center = bounds.center;
+      final radiusX = bounds.width / 2;
+      final radiusY = bounds.height / 2;
+      for (var index = 0; index < sides; index++) {
+        final angle = -math.pi / 2 + index * math.pi * 2 / sides;
+        final radius = stroke.kind == 'star' && index.isOdd ? .43 : 1.0;
+        final point = Offset(
+          center.dx + math.cos(angle) * radiusX * radius,
+          center.dy + math.sin(angle) * radiusY * radius,
+        );
+        if (index == 0) {
+          path.moveTo(point.dx, point.dy);
+        } else {
+          path.lineTo(point.dx, point.dy);
+        }
+      }
+      path.close();
     } else {
       path.moveTo(first.dx, first.dy);
       for (final point in stroke.points.skip(1)) {
