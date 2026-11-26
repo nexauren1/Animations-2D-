@@ -1,37 +1,43 @@
-# AnimPro audio library
+# AnimPro online audio library
 
-The app reads `catalog.json` from the published GitHub Pages site. Add Pixabay audio files here and add one catalog entry for each file. Once the Pages deployment completes, the new sounds appear in the app without releasing a new APK.
+The Android app reads `catalog.json` from GitHub Pages at runtime. The catalogue is small; full audio files stay in `docs/audio/files/` and are transferred only when a user chooses a sound. Nothing in this folder is bundled into the APK.
 
-## Folder layout
+## First sound collection
 
-- `docs/audio/catalog.json` — online library catalogue.
-- `docs/audio/files/` — full audio files used by the download button.
-- `docs/audio/previews/` — optional short preview files; if omitted, the full file is previewed.
+The generator publishes original procedural effects made for AnimPro:
 
-Use short, descriptive filenames with letters, numbers, hyphens or underscores. Supported formats are MP3, WAV, OGG and M4A. Keep individual downloads below 35 MB.
+- **Movement:** air whoosh and light footsteps.
+- **Cartoon:** playful pop.
+- **Environment:** forest birds and rain on a window.
+- **Combat:** stylized impact for animation timing (non-graphic).
+- **Fantasy:** magical sparkle.
+- **Home:** wooden door creak.
 
-## Catalogue entry
+The generated WAV files are mono, 16 kHz and intentionally short to keep downloads small. The effects are generated from synthesis/noise formulas in `.github/scripts/generate_resource_library.py`; they are not copied from stock libraries.
 
-```json
-[
-  {
-    "id": "cartoon-pop-01",
-    "name": "Cartoon Pop 01",
-    "category": "Cartoon",
-    "description": "Short, playful impact sound",
-    "file": "files/cartoon-pop-01.mp3",
-    "preview": "previews/cartoon-pop-01-preview.mp3",
-    "pro": false,
-    "license": "Pixabay Content License",
-    "sourceUrl": "https://pixabay.com/sound-effects/..."
-  }
-]
-```
+## Online files and catalogue
 
-If no separate preview exists, set `preview` to the same value as `file`. For Pro-only entries, set `pro` to `true`.
+- `docs/audio/catalog.json` — public catalogue.
+- `docs/audio/files/` — full sounds used for preview and on-demand download.
+- `audio/catalog.json` — mirrored source catalogue for maintainers.
 
-## Copyright and quality checks
+Each catalogue entry includes:
+- `id`, `name`, `category`, `description`
+- `file` and optional `preview`, both relative to `/audio/`
+- `sizeBytes`, `durationSeconds` and `sha256`
+- `pro`, `license` and `sourceUrl`
 
-Only publish audio that you downloaded under a licence that allows redistribution inside an app. Keep the original Pixabay source URL and check the current licence/terms before publishing. Do not commit private, personal or unlicensed audio. Listen to every file, trim silence, use consistent loudness and keep preview clips short.
+The mobile app validates the file extension, declared size and SHA-256 before saving a download. A sound can be previewed from Pages without downloading it; tapping Download saves it into the app's private audio folder for offline use. The same sound is reused if its local hash still matches the current catalogue.
 
-The catalogue is intentionally empty until the owner adds verified files. The app never invents sample sounds.
+## Adding a sound
+
+1. Use an original sound or a file whose exact licence explicitly permits redistribution as a separate downloadable file inside a commercial app.
+2. Add the file under `docs/audio/files/`.
+3. Add catalogue metadata with the exact size, duration and SHA-256.
+4. Run `python3 .github/scripts/generate_resource_library.py` when changing the generated starter collection; otherwise add the new metadata and asset together.
+5. Open a Pull Request. The Pages workflow validates JSON, file sizes and hashes before it publishes.
+6. After Pages deploys, open AnimPro → Audio Library → Refresh.
+
+Do not re-host Pixabay or Mixkit files unless the exact licence and terms permit redistribution of the raw file. For third-party sounds, keep the original asset page, creator, licence version, date acquired, evidence of redistribution permission and required attribution. Never invent a licence or credit.
+
+New audio catalogue entries do not require a new APK.
