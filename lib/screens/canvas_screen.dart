@@ -20,7 +20,7 @@ import 'export_screen.dart';
 import 'rigging_screen.dart';
 import 'timeline_screen.dart';
 
-enum _DrawingTool { pen, eraser, line, rectangle, ellipse, ruler }
+enum _DrawingTool { pen, eraser, line, arrow, rectangle, ellipse, triangle, pentagon, hexagon, star, ruler }
 
 class CanvasScreen extends StatefulWidget {
   const CanvasScreen({required this.store, required this.project, super.key});
@@ -188,8 +188,13 @@ class _CanvasScreenState extends State<CanvasScreen> {
         _DrawingTool.pen => 'pen',
         _DrawingTool.eraser => 'eraser',
         _DrawingTool.line => 'line',
+        _DrawingTool.arrow => 'arrow',
         _DrawingTool.rectangle => 'rectangle',
         _DrawingTool.ellipse => 'ellipse',
+        _DrawingTool.triangle => 'triangle',
+        _DrawingTool.pentagon => 'pentagon',
+        _DrawingTool.hexagon => 'hexagon',
+        _DrawingTool.star => 'star',
         _DrawingTool.ruler => 'ruler',
       };
 
@@ -262,8 +267,13 @@ class _CanvasScreenState extends State<CanvasScreen> {
     if (points == null) return;
     setState(() {
       if (_tool == _DrawingTool.line ||
+          _tool == _DrawingTool.arrow ||
           _tool == _DrawingTool.rectangle ||
           _tool == _DrawingTool.ellipse ||
+          _tool == _DrawingTool.triangle ||
+          _tool == _DrawingTool.pentagon ||
+          _tool == _DrawingTool.hexagon ||
+          _tool == _DrawingTool.star ||
           _tool == _DrawingTool.ruler) {
         _draftPoints = <Offset>[points.first, details.localPosition];
       } else {
@@ -492,6 +502,21 @@ class _CanvasScreenState extends State<CanvasScreen> {
           setState(() => _frames = frames);
           await _persist();
         },
+        audioClips: List<AudioTimelineClip>.from(_audioClips),
+        onAudioClipSelected: (clip) async {
+          final edited = await _editAudioClip(clip);
+          if (edited == null || !mounted) return;
+          final updated = _audioClips.map((entry) =>
+              entry.id == clip.id ? edited : entry).toList()
+            ..sort((a, b) {
+              final trackOrder = a.trackIndex.compareTo(b.trackIndex);
+              return trackOrder != 0
+                  ? trackOrder
+                  : a.startFrame.compareTo(b.startFrame);
+            });
+          await AudioTimelineService.save(widget.project.uid, updated);
+          if (mounted) setState(() => _audioClips = updated);
+        },
       ),
     );
   }
@@ -560,6 +585,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
   Future<int?> _chooseAudioStartFrame(int initialFrame) async {
     var selectedFrame = initialFrame.clamp(0, _frames.length - 1).toInt();
+    final maxFrame = math.max(1, _frames.length - 1).toInt();
     return showDialog<int>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -569,12 +595,23 @@ class _CanvasScreenState extends State<CanvasScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Escolhe o frame onde o áudio começa.'),
+              const Text('Coloca o início do áudio no frame exato da animação.'),
               const SizedBox(height: 12),
+              Text('Frame ${selectedFrame + 1} de ${_frames.length}',
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+              Slider(
+                value: selectedFrame.toDouble(),
+                min: 0,
+                max: maxFrame.toDouble(),
+                divisions: maxFrame,
+                label: 'Frame ${selectedFrame + 1}',
+                onChanged: (value) => setDialogState(() =>
+                    selectedFrame = value.round().clamp(0, _frames.length - 1).toInt()),
+              ),
               DropdownButtonFormField<int>(
                 value: selectedFrame,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Frame inicial'),
+                decoration: const InputDecoration(labelText: 'Ir diretamente para o frame'),
                 items: List<DropdownMenuItem<int>>.generate(
                   _frames.length,
                   (index) => DropdownMenuItem<int>(value: index, child: Text('Frame ${index + 1}')),
@@ -592,6 +629,154 @@ class _CanvasScreenState extends State<CanvasScreen> {
         ),
       ),
     );
+  }
+
+  Future<AudioTimelineClip?> _editAudioClip(AudioTimelineClip clip) async {
+    var startFrame = clip.startFrame.clamp(0, _frames.length - 1).toInt();
+    var trackIndex = clip.trackIndex.clamp(0, 5).toInt();
+    var volume = clip.volume;
+    var muted = clip.muted;
+    var loop = clip.loop;
+    final trimStartController = TextEditingController(
+      text: (clip.trimStartMs / 1000).toStringAsFixed(2),
+    );
+    final trimEndController = TextEditingController(
+      text: clip.trimEndMs == 0 ? '' : (clip.trimEndMs / 1000).toStringAsFixed(2),
+    );
+
+    try {
+      return await showDialog<AudioTimelineClip>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text('Editar áudio · ${clip.name}',
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Início: frame ${startFrame + 1} / ${_frames.length}',
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Slider(
+                    value: startFrame.toDouble(),
+                    min: 0,
+                    max: math.max(1, _frames.length - 1).toDouble(),
+                    divisions: math.max(1, _frames.length - 1).toInt(),
+                    label: 'Frame ${startFrame + 1}',
+                    onChanged: (value) => setDialogState(() =>
+                        startFrame = value.round().clamp(0, _frames.length - 1).toInt()),
+                  ),
+                  DropdownButtonFormField<int>(
+                    value: trackIndex,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Faixa de áudio'),
+                    items: List<DropdownMenuItem<int>>.generate(
+                      6,
+                      (index) => DropdownMenuItem<int>(
+                        value: index,
+                        child: Text('Faixa ${index + 1}'),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      if (value != null) setDialogState(() => trackIndex = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: trimStartController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(
+                            labelText: 'Cortar início (s)',
+                            hintText: '0',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: trimEndController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(
+                            labelText: 'Cortar fim (s)',
+                            hintText: 'Até ao fim',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Expanded(child: Text('Volume')),
+                      Text('${(volume * 100).round()}%',
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                  Slider(
+                    value: volume.clamp(0.0, 1.0).toDouble(),
+                    min: 0,
+                    max: 1,
+                    divisions: 20,
+                    onChanged: (value) => setDialogState(() => volume = value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Silenciar este áudio'),
+                    value: muted,
+                    onChanged: (value) => setDialogState(() => muted = value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Repetir até ao fim do vídeo'),
+                    value: loop,
+                    onChanged: (value) => setDialogState(() => loop = value),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final trimStart = double.tryParse(trimStartController.text.trim()) ?? 0;
+                  final trimEndText = trimEndController.text.trim();
+                  final trimEnd = trimEndText.isEmpty
+                      ? 0
+                      : (double.tryParse(trimEndText) ?? -1);
+                  if (trimStart < 0 || trimEnd < 0 ||
+                      (trimEnd > 0 && trimEnd <= trimStart)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('O corte final deve ser maior que o corte inicial.')),
+                    );
+                    return;
+                  }
+                  Navigator.of(dialogContext).pop(clip.copyWith(
+                    startFrame: startFrame,
+                    trackIndex: trackIndex,
+                    trimStartMs: (trimStart * 1000).round(),
+                    trimEndMs: trimEnd == 0 ? 0 : (trimEnd * 1000).round(),
+                    volume: volume,
+                    muted: muted,
+                    loop: loop,
+                  ));
+                },
+                child: const Text('Guardar áudio'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      trimStartController.dispose();
+      trimEndController.dispose();
+    }
   }
 
   Future<void> _openAudioLibrary() async {
@@ -680,14 +865,17 @@ class _CanvasScreenState extends State<CanvasScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 22),
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .72),
+              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .78),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Faixas de áudio', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                  const Text('Estúdio de áudio', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
-                  const Text('Cada faixa começa no frame escolhido. A pré-visualização reproduz os sons; a exportação MP4 ainda não mistura áudio.', style: TextStyle(color: Colors.white70, height: 1.35)),
+                  const Text(
+                    'Organiza até seis faixas. Edita o frame de entrada, os cortes, o volume, o silêncio e a repetição. O áudio é incluído no MP4.',
+                    style: TextStyle(color: Colors.white70, height: 1.35),
+                  ),
                   const SizedBox(height: 12),
                   if (_audioClips.isEmpty)
                     const Padding(
@@ -702,29 +890,81 @@ class _CanvasScreenState extends State<CanvasScreen> {
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final clip = _audioClips[index];
+                          final trimLabel = clip.trimEndMs > clip.trimStartMs
+                              ? '${(clip.trimStartMs / 1000).toStringAsFixed(1)}–${(clip.trimEndMs / 1000).toStringAsFixed(1)} s'
+                              : 'desde ${(clip.trimStartMs / 1000).toStringAsFixed(1)} s';
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.graphic_eq_rounded, color: Color(0xFF8FE6EE)),
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFF27434D),
+                              child: Text('${clip.trackIndex + 1}',
+                                  style: const TextStyle(fontWeight: FontWeight.w900)),
+                            ),
                             title: Text(clip.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                            subtitle: Text('Começa no frame ${clip.startFrame + 1}${clip.isPro ? ' · Pro' : ''}'),
+                            subtitle: Text(
+                              'Faixa ${clip.trackIndex + 1} · Frame ${clip.startFrame + 1} · Corte $trimLabel · ${(clip.volume * 100).round()}%${clip.muted ? ' · Silenciado' : ''}${clip.loop ? ' · Loop' : ''}',
+                              maxLines: 2,
+                            ),
+                            onTap: () async {
+                              final edited = await _editAudioClip(clip);
+                              if (edited == null || !mounted) return;
+                              final updated = _audioClips.map((entry) =>
+                                  entry.id == clip.id ? edited : entry).toList()
+                                ..sort((a, b) {
+                                  final trackOrder = a.trackIndex.compareTo(b.trackIndex);
+                                  return trackOrder != 0
+                                      ? trackOrder
+                                      : a.startFrame.compareTo(b.startFrame);
+                                });
+                              await AudioTimelineService.save(widget.project.uid, updated);
+                              if (mounted) setState(() => _audioClips = updated);
+                              setSheetState(() {});
+                            },
                             trailing: Wrap(
                               spacing: 0,
                               children: [
                                 IconButton(
-                                  tooltip: 'Mudar posição',
+                                  tooltip: 'Editar áudio',
                                   onPressed: () async {
-                                    final nextFrame = await _chooseAudioStartFrame(clip.startFrame);
-                                    if (nextFrame == null || !mounted) return;
-                                    final updated = _audioClips.map((entry) => entry.id == clip.id ? entry.copyWith(startFrame: nextFrame) : entry).toList()
-                                      ..sort((a, b) => a.startFrame.compareTo(b.startFrame));
+                                    final edited = await _editAudioClip(clip);
+                                    if (edited == null || !mounted) return;
+                                    final updated = _audioClips.map((entry) =>
+                                        entry.id == clip.id ? edited : entry).toList()
+                                      ..sort((a, b) {
+                                        final trackOrder = a.trackIndex.compareTo(b.trackIndex);
+                                        return trackOrder != 0
+                                            ? trackOrder
+                                            : a.startFrame.compareTo(b.startFrame);
+                                      });
                                     await AudioTimelineService.save(widget.project.uid, updated);
                                     if (mounted) setState(() => _audioClips = updated);
                                     setSheetState(() {});
                                   },
-                                  icon: const Icon(Icons.edit_rounded),
+                                  icon: const Icon(Icons.tune_rounded),
                                 ),
                                 IconButton(
-                                  tooltip: 'Remover faixa',
+                                  tooltip: 'Duplicar áudio',
+                                  onPressed: () async {
+                                    final duplicate = clip.copyWith(
+                                      id: '${clip.id}-${DateTime.now().microsecondsSinceEpoch}',
+                                      startFrame: (clip.startFrame + 1).clamp(0, _frames.length - 1).toInt(),
+                                      trackIndex: (clip.trackIndex + 1) % 6,
+                                    );
+                                    final updated = <AudioTimelineClip>[..._audioClips, duplicate]
+                                      ..sort((a, b) {
+                                        final trackOrder = a.trackIndex.compareTo(b.trackIndex);
+                                        return trackOrder != 0
+                                            ? trackOrder
+                                            : a.startFrame.compareTo(b.startFrame);
+                                      });
+                                    await AudioTimelineService.save(widget.project.uid, updated);
+                                    if (mounted) setState(() => _audioClips = updated);
+                                    setSheetState(() {});
+                                  },
+                                  icon: const Icon(Icons.content_copy_rounded),
+                                ),
+                                IconButton(
+                                  tooltip: 'Remover áudio',
                                   onPressed: () async {
                                     final updated = _audioClips.where((entry) => entry.id != clip.id).toList();
                                     await AudioTimelineService.save(widget.project.uid, updated);
@@ -749,7 +989,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                             unawaited(_importAudioFile());
                           },
                           icon: const Icon(Icons.file_upload_outlined),
-                          label: const Text('Importar do dispositivo'),
+                          label: const Text('Importar do telefone'),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -796,7 +1036,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => ExportScreen(project: widget.project, frameIndex: _currentFrameIndex),
+        builder: (_) => ExportScreen(project: widget.project, frameIndex: _currentFrameIndex, audioClips: List<AudioTimelineClip>.from(_audioClips)),
       ),
     );
     await _persist();
@@ -1312,6 +1552,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Short landscape phones have very little vertical space. Compress the chrome
+    // so the drawing surface, not the toolbars, gets the available height.
+    final compactLayout = MediaQuery.sizeOf(context).height < 420;
     final draft = _draftPoints == null
         ? null
         : StrokeModel(
@@ -1324,6 +1567,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: compactLayout ? 46 : kToolbarHeight,
         leading: IconButton(
           tooltip: 'Voltar aos projetos',
           onPressed: () async {
@@ -1350,9 +1594,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
       ),
       body: Column(
         children: [
-          _buildLayerSelector(),
+          _buildLayerSelector(compact: compactLayout),
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+            padding: EdgeInsets.fromLTRB(compactLayout ? 8 : 14, compactLayout ? 0 : 4, compactLayout ? 8 : 14, compactLayout ? 1 : 8),
             child: Row(
               children: [
                 InkWell(
@@ -1372,21 +1616,22 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   ),
                 ),
                 const Spacer(),
-                _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid,
+                _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid, compact: compactLayout,
                   onTap: () => setState(() => _showGrid = !_showGrid),
                   onLongPress: _openGridSettings),
                 const SizedBox(width: 5),
-                _tinyToggle(icon: Icons.straighten_rounded, label: 'Réguas', selected: _showRulers,
+                _tinyToggle(icon: Icons.straighten_rounded, label: 'Réguas', selected: _showRulers, compact: compactLayout,
                   onTap: () => setState(() => _showRulers = !_showRulers),
                   onLongPress: _openGridSettings),
                 const SizedBox(width: 5),
-                _tinyToggle(icon: Icons.flip_rounded, label: 'Simetria', selected: _mirrorDrawing,
+                _tinyToggle(icon: Icons.flip_rounded, label: 'Simetria', selected: _mirrorDrawing, compact: compactLayout,
                   onTap: () => setState(() => _mirrorDrawing = !_mirrorDrawing)),
                 const SizedBox(width: 5),
                 _tinyToggle(
                   icon: Icons.layers_outlined,
                   label: 'Onion',
                   selected: _onionSkin,
+                  compact: compactLayout,
                   onTap: () => setState(() => _onionSkin = !_onionSkin),
                   onLongPress: _openOnionSettings,
                 ),
@@ -1395,7 +1640,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 9),
+              padding: EdgeInsets.fromLTRB(compactLayout ? 7 : 12, 0, compactLayout ? 7 : 12, compactLayout ? 3 : 9),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -1432,10 +1677,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
               ),
             ),
           ),
-          _buildToolBar(),
+          _buildToolBar(compact: compactLayout),
         ],
       ),
-      bottomNavigationBar: _buildBottomBar(),
+      bottomNavigationBar: _buildBottomBar(compact: compactLayout),
     );
   }
 
@@ -1445,13 +1690,14 @@ class _CanvasScreenState extends State<CanvasScreen> {
     required bool selected,
     required VoidCallback onTap,
     VoidCallback? onLongPress,
+    bool compact = false,
   }) {
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(9),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 8, vertical: compact ? 4 : 7),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF373052) : const Color(0xFF202332),
           borderRadius: BorderRadius.circular(9),
@@ -1460,20 +1706,20 @@ class _CanvasScreenState extends State<CanvasScreen> {
         child: Row(children: [
           Icon(icon, size: 14, color: selected ? const Color(0xFFC4BAFF) : Colors.white60),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: selected ? const Color(0xFFC4BAFF) : Colors.white60)),
+          Text(label, style: TextStyle(fontSize: compact ? 8 : 10, color: selected ? const Color(0xFFC4BAFF) : Colors.white60)),
         ]),
       ),
     );
   }
 
-  Widget _buildLayerSelector() {
+  Widget _buildLayerSelector({bool compact = false}) {
     const icons = <IconData>[
       Icons.gesture_rounded,
       Icons.palette_outlined,
       Icons.wallpaper_rounded,
     ];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 7, 8, 4),
+      padding: EdgeInsets.fromLTRB(compact ? 8 : 12, compact ? 2 : 7, compact ? 5 : 8, compact ? 1 : 4),
       child: Row(
         children: [
           Expanded(
@@ -1501,7 +1747,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                             onTap: () => _changeLayer(index),
                             onLongPress: () => _renameLayer(index),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 7),
+                              padding: EdgeInsets.symmetric(vertical: compact ? 5 : 8, horizontal: 7),
                               child: Row(
                                 children: [
                                   Icon(
@@ -1570,18 +1816,23 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildToolBar() {
+  Widget _buildToolBar({bool compact = false}) {
     final tools = <({IconData icon, String label, _DrawingTool tool})>[
       (icon: Icons.edit_rounded, label: 'Caneta', tool: _DrawingTool.pen),
       (icon: Icons.auto_fix_normal_rounded, label: 'Borracha', tool: _DrawingTool.eraser),
       (icon: Icons.show_chart_rounded, label: 'Linha', tool: _DrawingTool.line),
+      (icon: Icons.arrow_right_alt_rounded, label: 'Seta', tool: _DrawingTool.arrow),
       (icon: Icons.crop_square_rounded, label: 'Retângulo', tool: _DrawingTool.rectangle),
       (icon: Icons.circle_outlined, label: 'Elipse', tool: _DrawingTool.ellipse),
+      (icon: Icons.change_history_rounded, label: 'Triângulo', tool: _DrawingTool.triangle),
+      (icon: Icons.pentagon_outlined, label: 'Pentágono', tool: _DrawingTool.pentagon),
+      (icon: Icons.hexagon_outlined, label: 'Hexágono', tool: _DrawingTool.hexagon),
+      (icon: Icons.star_outline_rounded, label: 'Estrela', tool: _DrawingTool.star),
       (icon: Icons.straighten_rounded, label: 'Régua', tool: _DrawingTool.ruler),
     ];
     return Container(
-      height: 74,
-      margin: const EdgeInsets.fromLTRB(10, 0, 10, 7),
+      height: compact ? 56 : 74,
+      margin: EdgeInsets.fromLTRB(compact ? 6 : 10, 0, compact ? 6 : 10, compact ? 3 : 7),
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(color: const Color(0xFF1B1E2C), borderRadius: BorderRadius.circular(15),
         border: Border.all(color: const Color(0xFF303447))),
@@ -1631,36 +1882,36 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar({bool compact = false}) {
     return SafeArea(
       top: false,
       child: Container(
-        height: 63,
+        height: compact ? 46 : 63,
         padding: const EdgeInsets.symmetric(horizontal: 7),
         decoration: const BoxDecoration(color: Color(0xFF11131F), border: Border(top: BorderSide(color: Color(0xFF292D40)))),
         child: Row(children: [
-          _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings),
-          _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects),
-          _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
-          _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
-          _bottomItem(icon: Icons.library_music_rounded, label: 'Áudios', color: const Color(0xFF50D3E4), onPressed: _openAudioTimeline),
-          _bottomItem(icon: Icons.record_voice_over_rounded, label: 'Lábios', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
-          _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
-          _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
+          _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings, compact: compact),
+          _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects, compact: compact),
+          _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline, compact: compact),
+          _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging, compact: compact),
+          _bottomItem(icon: Icons.library_music_rounded, label: 'Áudios', color: const Color(0xFF50D3E4), onPressed: _openAudioTimeline, compact: compact),
+          _bottomItem(icon: Icons.record_voice_over_rounded, label: 'Lábios', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync, compact: compact),
+          _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets, compact: compact),
+          _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport, compact: compact),
         ]),
       ),
     );
   }
 
-  Widget _bottomItem({required IconData icon, required String label, required VoidCallback onPressed, Color color = Colors.white70}) {
+  Widget _bottomItem({required IconData icon, required String label, required VoidCallback onPressed, Color color = Colors.white70, bool compact = false}) {
     return Expanded(
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color, size: 21),
-          const SizedBox(height: 3),
-          Text(label, style: TextStyle(color: color, fontSize: 9.5)),
+          Icon(icon, color: color, size: compact ? 17 : 21),
+          SizedBox(height: compact ? 1 : 3),
+          Text(label, style: TextStyle(color: color, fontSize: compact ? 7.5 : 9.5)),
         ]),
       ),
     );
@@ -1853,13 +2104,40 @@ class _AnimationCanvasPainter extends CustomPainter {
     final first = stroke.points.first;
     final last = stroke.points.last;
     final path = Path();
-    if (stroke.kind == 'line' || stroke.kind == 'ruler') {
+    if (stroke.kind == 'line' || stroke.kind == 'ruler' || stroke.kind == 'arrow') {
       path.moveTo(first.dx, first.dy);
       path.lineTo(last.dx, last.dy);
     } else if (stroke.kind == 'rectangle') {
       path.addRect(Rect.fromPoints(first, last));
     } else if (stroke.kind == 'ellipse') {
       path.addOval(Rect.fromPoints(first, last));
+    } else if (stroke.kind == 'triangle') {
+      final bounds = Rect.fromPoints(first, last);
+      path
+        ..moveTo(bounds.center.dx, bounds.top)
+        ..lineTo(bounds.right, bounds.bottom)
+        ..lineTo(bounds.left, bounds.bottom)
+        ..close();
+    } else if (stroke.kind == 'pentagon' || stroke.kind == 'hexagon' || stroke.kind == 'star') {
+      final bounds = Rect.fromPoints(first, last);
+      final sides = stroke.kind == 'pentagon' ? 5 : stroke.kind == 'hexagon' ? 6 : 10;
+      final center = bounds.center;
+      final radiusX = bounds.width / 2;
+      final radiusY = bounds.height / 2;
+      for (var index = 0; index < sides; index++) {
+        final angle = -math.pi / 2 + index * math.pi * 2 / sides;
+        final radius = stroke.kind == 'star' && index.isOdd ? .43 : 1.0;
+        final point = Offset(
+          center.dx + math.cos(angle) * radiusX * radius,
+          center.dy + math.sin(angle) * radiusY * radius,
+        );
+        if (index == 0) {
+          path.moveTo(point.dx, point.dy);
+        } else {
+          path.lineTo(point.dx, point.dy);
+        }
+      }
+      path.close();
     } else {
       path.moveTo(first.dx, first.dy);
       for (final point in stroke.points.skip(1)) {
@@ -1912,6 +2190,28 @@ class _AnimationCanvasPainter extends CustomPainter {
       canvas.drawPath(path, paint);
     }
 
+    if (stroke.kind == 'arrow') {
+      final delta = last - first;
+      if (delta.distance > 0) {
+        final direction = delta / delta.distance;
+        final perpendicular = Offset(-direction.dy, direction.dx);
+        final headLength = math.max(10.0, width * 3).toDouble();
+        final headWidth = headLength * .58;
+        final head = Path()
+          ..moveTo(last.dx, last.dy)
+          ..lineTo(
+            last.dx - direction.dx * headLength + perpendicular.dx * headWidth,
+            last.dy - direction.dy * headLength + perpendicular.dy * headWidth,
+          )
+          ..lineTo(
+            last.dx - direction.dx * headLength - perpendicular.dx * headWidth,
+            last.dy - direction.dy * headLength - perpendicular.dy * headWidth,
+          )
+          ..close();
+        canvas.drawPath(head, Paint()..color = baseColor.withOpacity(alpha));
+      }
+    }
+
     if (stroke.kind == 'ruler') {
       final delta = last - first;
       final length = delta.distance;
@@ -1960,6 +2260,8 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
   bool _showControls = true;
   Timer? _timer;
   final Map<String, AudioPlayer> _audioPlayers = <String, AudioPlayer>{};
+  final Map<String, StreamSubscription<Duration>> _audioPositionSubscriptions =
+      <String, StreamSubscription<Duration>>{};
 
   @override
   void dispose() {
@@ -1967,19 +2269,37 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
     for (final player in _audioPlayers.values) {
       player.dispose();
     }
+    for (final subscription in _audioPositionSubscriptions.values) {
+      subscription.cancel();
+    }
     super.dispose();
   }
 
   Future<void> _playAudioAtFrame(int frameIndex) async {
-    for (final clip in widget.audioClips.where((entry) => entry.startFrame == frameIndex)) {
+    for (final clip in widget.audioClips.where((entry) =>
+        entry.startFrame == frameIndex && !entry.muted && entry.volume > 0)) {
       try {
         final file = File(clip.path);
         if (!await file.exists()) continue;
         final player = _audioPlayers.putIfAbsent(clip.id, AudioPlayer.new);
         await player.stop();
-        await player.play(DeviceFileSource(clip.path));
+        await player.setReleaseMode(clip.loop ? ReleaseMode.loop : ReleaseMode.stop);
+        final previousSubscription = _audioPositionSubscriptions.remove(clip.id);
+        await previousSubscription?.cancel();
+        _audioPositionSubscriptions[clip.id] =
+            player.onPositionChanged.listen((position) {
+          if (clip.trimEndMs > clip.trimStartMs &&
+              position.inMilliseconds >= clip.trimEndMs) {
+            unawaited(player.stop());
+          }
+        });
+        await player.play(
+          DeviceFileSource(clip.path),
+          volume: clip.volume.clamp(0.0, 1.0).toDouble(),
+          position: Duration(milliseconds: clip.trimStartMs),
+        );
       } catch (_) {
-        // A missing audio file should not interrupt animation playback.
+        // A missing or unsupported audio file should not interrupt the preview.
       }
     }
   }

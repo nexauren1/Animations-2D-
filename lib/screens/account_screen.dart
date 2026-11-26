@@ -336,9 +336,17 @@ class _AccountScreenState extends State<AccountScreen> {
                 ? null
                 : _signInGoogle,
             icon: const Icon(Icons.g_mobiledata_rounded, size: 30),
-            label: const Text('Continuar com Google'),
+            label: Text(_createAccount ? 'Criar conta com Google' : 'Continuar com Google'),
           ),
         ),
+        if (FirebaseBootstrap.canUseGoogleSignIn && _createAccount) ...[
+          const SizedBox(height: 6),
+          const Text(
+            'Na primeira utilização, o Google cria automaticamente a tua conta AnimPro. Nas próximas vezes, inicia a sessão.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.white54, height: 1.35),
+          ),
+        ],
         if (!FirebaseBootstrap.canUseGoogleSignIn) ...[
           const SizedBox(height: 7),
           const Text(

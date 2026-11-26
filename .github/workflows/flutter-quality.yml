@@ -10,7 +10,7 @@ on:
       - "analysis_options.yaml"
       - ".github/workflows/flutter-quality.yml"
   pull_request:
-    branches: [main]
+    branches: [main, fix/audio-monthly-pro-and-editor-tools]
     paths:
       - "lib/**"
       - "test/**"

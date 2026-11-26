@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
 import '../models/project_model.dart';
+import '../services/audio_timeline_service.dart';
 
 /// Bottom sheet da timeline, com duplicação e playback em loop.
 class TimelineScreen extends StatefulWidget {
@@ -12,6 +13,8 @@ class TimelineScreen extends StatefulWidget {
     required this.onFramesChanged,
     required this.fps,
     required this.onFpsChanged,
+    required this.audioClips,
+    required this.onAudioClipSelected,
     super.key,
   });
 
@@ -21,6 +24,8 @@ class TimelineScreen extends StatefulWidget {
   final ValueChanged<List<FrameModel>> onFramesChanged;
   final int fps;
   final ValueChanged<int> onFpsChanged;
+  final List<AudioTimelineClip> audioClips;
+  final ValueChanged<AudioTimelineClip> onAudioClipSelected;
 
   @override
   State<TimelineScreen> createState() => _TimelineScreenState();
@@ -143,7 +148,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   Widget build(BuildContext context) {
     final frames = _frames;
     return Container(
-      height: 390,
+      height: widget.audioClips.isEmpty ? 390 : 450,
       decoration: const BoxDecoration(
         color: Color(0xFF151725),
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
@@ -247,7 +252,71 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              if (widget.audioClips.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.graphic_eq_rounded, size: 16, color: Color(0xFF73D6E3)),
+                    const SizedBox(width: 7),
+                    const Text('ÁUDIO', style: TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w900,
+                      color: Color(0xFF73D6E3), letterSpacing: 1,
+                    )),
+                    const SizedBox(width: 8),
+                    Text('${widget.audioClips.length} clips · 6 faixas',
+                        style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(.5))),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 34,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: widget.audioClips.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 7),
+                    itemBuilder: (context, index) {
+                      final clip = widget.audioClips[index];
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(9),
+                        onTap: () => widget.onAudioClipSelected(clip),
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 190),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: clip.muted
+                                ? const Color(0xFF282A35)
+                                : const Color(0xFF1D3B46),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                              color: clip.muted
+                                  ? const Color(0xFF4C4D58)
+                                  : const Color(0xFF34798A),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                clip.muted ? Icons.volume_off_rounded : Icons.graphic_eq_rounded,
+                                size: 14,
+                                color: clip.muted ? Colors.white54 : const Color(0xFF8BE8F2),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'A${clip.trackIndex + 1} · F${clip.startFrame + 1} · ${clip.name}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 10, color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
               Row(
                 children: <Widget>[
                   IconButton.filledTonal(

@@ -1,32 +1,74 @@
-name: Deploy AnimPro website
+name: Deploy AnimPro website and online libraries
+
 on:
   push:
     branches: [main]
     paths:
       - "docs/**"
+      - "content/packs/**"
+      - ".github/scripts/generate_resource_library.py"
+      - ".github/workflows/deploy-site.yml"
+  pull_request:
+    branches: [main, fix/audio-monthly-pro-and-editor-tools]
+    paths:
+      - "docs/**"
+      - "content/packs/**"
+      - ".github/scripts/generate_resource_library.py"
       - ".github/workflows/deploy-site.yml"
   workflow_dispatch:
+
 permissions:
   contents: read
-  pages: write
-  id-token: write
+
 concurrency:
   group: "pages"
   cancel-in-progress: true
+
 jobs:
+  validate-library:
+    name: Generate and validate online scene/audio catalogues
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate online-only library files
+        run: python3 .github/scripts/generate_resource_library.py
+      - name: Validate catalogue JSON and assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool docs/packs/catalog.json >/dev/null
+          python3 -m json.tool docs/audio/catalog.json >/dev/null
+          test -s docs/packs/catalog.json
+          test -s docs/audio/catalog.json
+          pack_count="$(python3 -c 'import json; print(len(json.load(open("docs/packs/catalog.json"))["packs"]))')"
+          audio_count="$(python3 -c 'import json; print(len(json.load(open("docs/audio/catalog.json"))))')"
+          test "$pack_count" -ge 6
+          test "$audio_count" -ge 8
+          echo "Validated $pack_count scene packs and $audio_count original audio files."
+
   deploy:
+    needs: validate-library
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Generate online scene packs and original audio
+        run: python3 .github/scripts/generate_resource_library.py
       - name: Enable and configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Upload website
+      - name: Upload website and downloadable libraries
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs

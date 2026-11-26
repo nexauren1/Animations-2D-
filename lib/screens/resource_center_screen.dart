@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
 
 import '../services/resource_pack_service.dart';
+import 'audio_library_screen.dart';
+import 'template_gallery_screen.dart';
 import '../services/template_catalog.dart';
 
-/// Optional template packs are fetched only when the user requests them.
+/// Online-first library for downloadable, editable scene and character packs.
 class ResourceCenterScreen extends StatefulWidget {
   const ResourceCenterScreen({super.key});
 
@@ -13,10 +17,16 @@ class ResourceCenterScreen extends StatefulWidget {
 }
 
 class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
+  List<DownloadableResourcePack> _available = <DownloadableResourcePack>[];
   List<DownloadedResourcePack> _downloaded = <DownloadedResourcePack>[];
   bool _loading = true;
+  bool _catalogLoading = true;
   String? _downloading;
+  String? _previewing;
+  int _usedBytes = 0;
   String? _error;
+  String _category = 'Todos';
+  String _search = '';
 
   @override
   void initState() {
@@ -25,21 +35,47 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
   }
 
   Future<void> _refresh() async {
-    try {
-      final packs = await ResourcePackService.loadDownloaded();
-      if (!mounted) return;
+    if (mounted) {
       setState(() {
-        _downloaded = packs;
-        _loading = false;
+        _loading = true;
+        _catalogLoading = true;
         _error = null;
       });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'Não foi possível carregar os pacotes guardados. Tenta novamente.';
-      });
     }
+    List<DownloadableResourcePack> available = <DownloadableResourcePack>[];
+    List<DownloadedResourcePack> downloaded = <DownloadedResourcePack>[];
+    String? error;
+    try {
+      available = await ResourcePackService.loadAvailable();
+    } catch (_) {
+      error = 'Não foi possível carregar o catálogo online. Verifica a internet e tenta novamente.';
+    }
+    try {
+      downloaded = await ResourcePackService.loadDownloaded();
+    } catch (_) {
+      error ??= 'Não foi possível ler os pacotes guardados neste telefone.';
+    }
+    var usedBytes = 0;
+    for (final pack in downloaded) {
+      try {
+        final file = File(pack.filePath);
+        if (await file.exists()) usedBytes += await file.length();
+      } catch (_) {
+        // Storage information should never prevent a library from opening.
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _available = available;
+      _downloaded = downloaded;
+      _usedBytes = usedBytes;
+      _loading = false;
+      _catalogLoading = false;
+      _error = error;
+      if (!_available.any((pack) => pack.category == _category)) {
+        _category = 'Todos';
+      }
+    });
   }
 
   Future<void> _download(DownloadableResourcePack pack) async {
@@ -57,13 +93,112 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
         ]..sort((a, b) => a.title.compareTo(b.title));
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pacote "${downloaded.title}" guardado no dispositivo.')),
+        SnackBar(content: Text('"${downloaded.title}" foi descarregado e está disponível offline.')),
       );
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = 'Não foi possível concluir a transferência. Verifica a ligação à internet e tenta novamente.');
+      setState(() => _error = error is FormatException
+          ? error.message
+          : 'Não foi possível concluir o download. Verifica a ligação e tenta novamente.');
     } finally {
       if (mounted) setState(() => _downloading = null);
+    }
+  }
+
+  Future<void> _preview(DownloadableResourcePack pack) async {
+    setState(() {
+      _previewing = pack.id;
+      _error = null;
+    });
+    try {
+      final templates = await ResourcePackService.preview(pack);
+      if (!mounted) return;
+      final selected = await showModalBottomSheet<AnimationTemplate>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: const Color(0xFF171A28),
+        showDragHandle: true,
+        builder: (sheetContext) => SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * .86,
+            ),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
+              children: [
+                Text(pack.title,
+                    style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                Text(
+                  'Pré-visualização online · ${pack.sizeLabel} · ${templates.length} modelos',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                for (final template in templates)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF202337),
+                      borderRadius: BorderRadius.circular(17),
+                      border: Border.all(color: Colors.white.withOpacity(.08)),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: 180,
+                          child: TemplateAnimationPreview(template: template),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(template.title,
+                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                              const SizedBox(height: 4),
+                              Text(template.description,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              const SizedBox(height: 9),
+                              Row(
+                                children: [
+                                  Text(
+                                    '${template.createFrames().length} frames · ${template.fps} FPS',
+                                    style: const TextStyle(color: Color(0xFF8DE1DE), fontSize: 11),
+                                  ),
+                                  const Spacer(),
+                                  FilledButton.tonalIcon(
+                                    onPressed: () => Navigator.of(sheetContext).pop(template),
+                                    icon: const Icon(Icons.edit_rounded, size: 16),
+                                    label: const Text('Usar modelo'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Fechar pré-visualização'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (selected != null && mounted) _useTemplate(selected);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error is FormatException
+          ? error.message
+          : 'Não foi possível obter a pré-visualização. Verifica a ligação e tenta novamente.');
+    } finally {
+      if (mounted) setState(() => _previewing = null);
     }
   }
 
@@ -72,7 +207,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Remover pacote?'),
-        content: Text('"${pack.title}" será removido do armazenamento deste dispositivo.'),
+        content: Text('"${pack.title}" será removido do armazenamento deste dispositivo. Os projetos que já criaste não serão alterados.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -94,96 +229,257 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
     Navigator.of(context).pop(template);
   }
 
+  IconData _categoryIcon(String category) {
+    final value = category.toLowerCase();
+    if (value.contains('céu') || value.contains('espaço')) return Icons.cloud_rounded;
+    if (value.contains('floresta') || value.contains('natureza')) return Icons.forest_rounded;
+    if (value.contains('casa') || value.contains('interior')) return Icons.weekend_rounded;
+    if (value.contains('cidade') || value.contains('urbano')) return Icons.location_city_rounded;
+    if (value.contains('ação') || value.contains('personagem')) return Icons.sports_martial_arts_rounded;
+    if (value.contains('fantasia')) return Icons.auto_awesome_rounded;
+    return Icons.layers_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final categories = <String>[
+      'Todos',
+      ..._available.map((pack) => pack.category).toSet().toList()..sort(),
+    ];
+    final query = _search.trim().toLowerCase();
+    final visible = _available.where((pack) {
+      final matchesCategory = _category == 'Todos' || pack.category == _category;
+      final searchable = '${pack.title} ${pack.description} ${pack.tags.join(' ')}'.toLowerCase();
+      return matchesCategory && (query.isEmpty || searchable.contains(query));
+    }).toList(growable: false);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Centro de recursos', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Biblioteca AnimPro', style: TextStyle(fontWeight: FontWeight.w900)),
+        actions: [
+          IconButton(
+            tooltip: 'Abrir biblioteca de áudio',
+            onPressed: () {
+              Navigator.of(context).push<AudioLibrarySelection>(
+                MaterialPageRoute<AudioLibrarySelection>(
+                  builder: (_) => const AudioLibraryScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.library_music_rounded),
+          ),
+          IconButton(
+            tooltip: 'Atualizar catálogo',
+            onPressed: _catalogLoading ? null : _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF203F4C), Color(0xFF242344), Color(0xFF30265A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(23),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.cloud_download_rounded, color: Color(0xFF8DE1DE), size: 31),
-                SizedBox(height: 12),
-                Text('Instala só o conteúdo que precisas.',
-                    style: TextStyle(fontSize: 22, height: 1.12, fontWeight: FontWeight.w900)),
-                SizedBox(height: 8),
-                Text('Os pacotes contêm projetos vetoriais pequenos. São descarregados quando pedes, guardados no telefone e podem ser removidos depois.',
-                    style: TextStyle(color: Colors.white70, height: 1.35)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const Text('PACOTES DISPONÍVEIS',
-              style: TextStyle(fontSize: 11, letterSpacing: 1.3, fontWeight: FontWeight.w900, color: Color(0xFFB5A8FF))),
-          const SizedBox(height: 10),
-          for (final pack in ResourcePackService.available) _availableCard(pack),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              const Expanded(
-                child: Text('Conteúdo instalado',
-                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
-              ),
-              Text('${_downloaded.length} pacote(s)',
-                  style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(22),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_downloaded.isEmpty)
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+          children: [
             Container(
-              padding: const EdgeInsets.all(17),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF171A28),
-                borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: Colors.white.withOpacity(.06)),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF203F4C), Color(0xFF242344), Color(0xFF30265A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(23),
               ),
-              child: const Row(
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.inventory_2_outlined, color: Colors.white54, size: 27),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text('Ainda não instalaste pacotes extra. Escolhe um dos pacotes acima quando tiveres internet disponível.',
-                        style: TextStyle(color: Colors.white70, height: 1.35)),
+                  Icon(Icons.cloud_download_rounded, color: Color(0xFF8DE1DE), size: 31),
+                  SizedBox(height: 12),
+                  Text('Cenários e sons, dentro do AnimPro.',
+                      style: TextStyle(fontSize: 22, height: 1.12, fontWeight: FontWeight.w900)),
+                  SizedBox(height: 8),
+                  Text(
+                    'Céus, florestas, interiores, cidades, personagens e cenas de ação. Entra nas bibliotecas de cenários e de áudio sem sair da aplicação. Os ficheiros completos só são descarregados quando escolhes usá-los.',
+                    style: TextStyle(color: Colors.white70, height: 1.35),
                   ),
                 ],
               ),
-            )
-          else
-            for (final pack in _downloaded) _downloadedCard(pack),
-          if (_error != null) ...[
-            const SizedBox(height: 14),
+            ),
+            const SizedBox(height: 13),
             Container(
-              padding: const EdgeInsets.all(13),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFF48282C),
-                borderRadius: BorderRadius.circular(13),
+                color: const Color(0xFF1B1E2D),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF6D62B5).withOpacity(.35)),
               ),
-              child: Text(_error!, style: const TextStyle(color: Color(0xFFFFC6C6))),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B7CFF).withOpacity(.16),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: const Icon(Icons.library_music_rounded, color: Color(0xFFC1B7FF), size: 25),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Biblioteca de áudio',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+                        SizedBox(height: 3),
+                        Text('Ouvir, pesquisar e guardar efeitos para as tuas animações.',
+                            style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.3)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.of(context).push<AudioLibrarySelection>(
+                        MaterialPageRoute<AudioLibrarySelection>(
+                          builder: (_) => const AudioLibraryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text('Abrir'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            TextField(
+              onChanged: (value) => setState(() => _search = value),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search_rounded),
+                hintText: 'Pesquisar cenários, personagens e objetos…',
+                filled: true,
+                fillColor: const Color(0xFF191C2B),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (categories.length > 1)
+              SizedBox(
+                height: 42,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    for (final category in categories)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 7),
+                        child: ChoiceChip(
+                          label: Text(category),
+                          selected: category == _category,
+                          onSelected: (_) => setState(() => _category = category),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('CATÁLOGO ONLINE',
+                      style: TextStyle(fontSize: 11, letterSpacing: 1.3, fontWeight: FontWeight.w900, color: Color(0xFFB5A8FF))),
+                ),
+                if (_catalogLoading)
+                  const SizedBox(height: 15, width: 15, child: CircularProgressIndicator(strokeWidth: 2))
+                else
+                  Text('${visible.length} pacotes',
+                      style: TextStyle(color: Colors.white.withOpacity(.52), fontSize: 11)),
+              ],
+            ),
+            const SizedBox(height: 9),
+            if (_catalogLoading && _available.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (visible.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF191C2B),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  _available.isEmpty
+                      ? 'O catálogo ainda não está disponível. Liga-te à internet e atualiza a página.'
+                      : 'Não há pacotes nesta pesquisa. Experimenta outra palavra ou categoria.',
+                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                ),
+              )
+            else
+              for (final pack in visible) _availableCard(pack),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF48282C),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Text(_error!, style: const TextStyle(color: Color(0xFFFFC6C6))),
+              ),
+            ],
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Conteúdo instalado',
+                      style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+                ),
+                Text(
+                  '${_downloaded.length} pacotes · ${(_usedBytes / (1024 * 1024)).toStringAsFixed(2)} MB',
+                  style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 11),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(22),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_downloaded.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(17),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF171A28),
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(color: Colors.white.withOpacity(.06)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.inventory_2_outlined, color: Colors.white54, size: 27),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text('Ainda não instalaste pacotes extra. Os modelos não ocupam espaço no APK; só são guardados no telefone quando os descarregas.',
+                          style: TextStyle(color: Colors.white70, height: 1.35)),
+                    ),
+                  ],
+                ),
+              )
+            else
+              for (final pack in _downloaded) _downloadedCard(pack),
+            const SizedBox(height: 12),
+            Text(
+              'Os pacotes são transferidos do site quando pedes, verificados por SHA-256 e guardados para utilização offline. Podes removê-los daqui sem apagar os projetos que já criaste.',
+              style: TextStyle(color: Colors.white.withOpacity(.48), fontSize: 12, height: 1.4),
             ),
           ],
-          const SizedBox(height: 16),
-          Text('Usa Wi-Fi quando possível. Os pacotes disponíveis indicam o tamanho aproximado antes do download.',
-              style: TextStyle(color: Colors.white.withOpacity(.48), fontSize: 12, height: 1.4)),
-        ],
+        ),
       ),
     );
   }
@@ -192,8 +488,9 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
     final matching = _downloaded.where((item) => item.id == pack.id);
     final downloaded = matching.isEmpty ? null : matching.first;
     final downloading = _downloading == pack.id;
+    const tint = Color(0xFF8DE1DE);
     return Container(
-      margin: const EdgeInsets.only(bottom: 11),
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF191C2B),
@@ -204,30 +501,34 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 46,
-            width: 46,
+            height: 48,
+            width: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF8A7DFF).withOpacity(.14),
+              color: tint.withOpacity(.13),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              pack.id == 'space-pack' ? Icons.public_rounded : Icons.face_retouching_natural_rounded,
-              color: const Color(0xFFB5A8FF),
-              size: 25,
-            ),
+            child: Icon(_categoryIcon(pack.category), color: tint, size: 26),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(pack.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                Row(
+                  children: [
+                    Expanded(child: Text(pack.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15))),
+                    Text(pack.sizeLabel,
+                        style: const TextStyle(color: Color(0xFF8DE1DE), fontWeight: FontWeight.w800, fontSize: 10)),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(pack.description,
-                    style: TextStyle(color: Colors.white.withOpacity(.61), fontSize: 12, height: 1.3)),
-                const SizedBox(height: 7),
-                Text(pack.sizeLabel,
-                    style: const TextStyle(color: Color(0xFF8DE1DE), fontWeight: FontWeight.w800, fontSize: 11)),
+                    style: TextStyle(color: Colors.white.withOpacity(.63), fontSize: 12, height: 1.3)),
+                const SizedBox(height: 6),
+                Text(
+                  '${pack.category} · ${pack.templateCount} modelos${pack.tags.isEmpty ? '' : ' · ${pack.tags.take(2).join(', ')}'}',
+                  style: TextStyle(color: Colors.white.withOpacity(.47), fontSize: 10),
+                ),
                 const SizedBox(height: 8),
                 if (downloading)
                   const Row(
@@ -235,7 +536,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                     children: [
                       SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                       SizedBox(width: 8),
-                      Text('A descarregar…', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text('A verificar e a descarregar…', style: TextStyle(color: Colors.white70, fontSize: 12)),
                     ],
                   )
                 else if (downloaded != null)
@@ -252,14 +553,31 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                     ],
                   )
                 else
-                  OutlinedButton.icon(
-                    onPressed: _downloading == null ? () => _download(pack) : null,
-                    icon: const Icon(Icons.download_rounded, size: 17),
-                    label: const Text('Baixar pacote'),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      foregroundColor: const Color(0xFFB5A8FF),
-                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _previewing == null ? () => _preview(pack) : null,
+                        icon: _previewing == pack.id
+                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.visibility_rounded, size: 16),
+                        label: const Text('Pré-visualizar'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: const Color(0xFF8DE1DE),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _downloading == null ? () => _download(pack) : null,
+                        icon: const Icon(Icons.download_rounded, size: 17),
+                        label: const Text('Descarregar'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: const Color(0xFFB5A8FF),
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -288,6 +606,10 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
               Expanded(
                 child: Text(pack.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
               ),
+              TextButton(
+                onPressed: () => _remove(pack),
+                child: const Text('Remover'),
+              ),
             ],
           ),
           if (pack.description.isNotEmpty) ...[
@@ -315,15 +637,15 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(template.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w800)),
                         Text('${template.createFrames().length} frames · ${template.fps} FPS',
-                            style: TextStyle(color: Colors.white.withOpacity(.52), fontSize: 11)),
+                            style: TextStyle(color: Colors.white.withOpacity(.48), fontSize: 10)),
                       ],
                     ),
                   ),
-                  TextButton(
+                  const SizedBox(width: 6),
+                  FilledButton.tonal(
                     onPressed: () => _useTemplate(template),
                     child: const Text('Usar'),
                   ),

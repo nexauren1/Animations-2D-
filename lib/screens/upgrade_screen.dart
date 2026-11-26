@@ -110,15 +110,15 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
           HttpStatus.unauthorized || HttpStatus.forbidden =>
             'A tua sessão expirou. Entra novamente na tua conta.',
           HttpStatus.conflict =>
-            'A tua licença Pro já está ativa. Não precisas de comprar novamente.',
+            data['error'] is String ? data['error'] as String : 'A tua assinatura Pro já está ativa. Não precisas de comprar novamente.',
           HttpStatus.badRequest =>
-            'Não foi possível iniciar esta compra. Seleciona um plano e tenta novamente.',
+            data['error'] is String ? data['error'] as String : 'Não foi possível iniciar esta compra. Tenta novamente.',
           HttpStatus.tooManyRequests =>
             'Houve demasiadas tentativas. Espera um pouco antes de voltar a tentar.',
           HttpStatus.badGateway ||
           HttpStatus.serviceUnavailable ||
           HttpStatus.internalServerError =>
-            'As compras estão temporariamente indisponíveis. Tenta novamente mais tarde.',
+            data['error'] is String ? data['error'] as String : 'As compras estão temporariamente indisponíveis. Tenta novamente mais tarde.',
           _ => 'Não foi possível iniciar o pagamento. Tenta novamente.',
         };
         throw _CheckoutException(message);
@@ -333,21 +333,21 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                 _PlanCard(
                   title: 'AnimPro Pro',
                   price: r'$5',
-                  cadence: 'pagamento único',
-                  description: 'Desbloqueia permanentemente as ferramentas Pro incluídas nesta versão.',
+                  cadence: '/ mês',
+                  description: 'Acesso Pro enquanto a assinatura mensal de US\$ 5 estiver ativa. Renovação automática pelo PayPal.',
                   buttonLabel: entitlementPending
-                      ? 'A verificar licença…'
+                      ? 'A verificar assinatura…'
                       : active
-                          ? 'Licença Pro ativa'
-                          : 'Comprar por US\$ 5',
+                          ? 'Assinatura Pro ativa'
+                          : 'Assinar por US\$ 5/mês',
                   recommended: true,
                   busy: _launching,
                   disabled: purchasesBlocked || active,
-                  onPressed: () => _buy('lifetime'),
+                  onPressed: () => _buy('monthly'),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Pagamento único de US\$ 5. Sem mensalidade e sem renovação automática. A licença é ativada depois de o PayPal confirmar o pagamento.',
+                  'US\$ 5 por mês, com renovação automática até cancelares no PayPal. A assinatura só é ativada depois de o servidor confirmar o primeiro pagamento.',
                   style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.45),
                 ),
               ],

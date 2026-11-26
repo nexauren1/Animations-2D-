@@ -265,7 +265,7 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.workspace_premium_outlined, color: Color(0xFFFFD36A)),
           ),
           IconButton(
-            tooltip: 'Centro de recursos e downloads',
+            tooltip: 'Biblioteca de cenários e áudio',
             onPressed: () => _openResourceCenter(context),
             icon: const Icon(Icons.cloud_download_outlined),
           ),

@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-26",
+  "packs": [
+    {
+      "id": "sky-pack",
+      "title": "Ceus e clima",
+      "description": "Cenarios de dia, por do sol e noite estrelada.",
+      "category": "Ceus",
+      "tags": [
+        "ceu",
+        "nuvens",
+        "por do sol",
+        "noite"
+      ],
+      "path": "files/sky-pack.json",
+      "sizeBytes": 42945,
+      "sha256": "671917d67879d87d0d2a44091b15e3681d82f9ece28b09163b5824d1242912ce",
+      "templateCount": 3
+    },
+    {
+      "id": "forest-pack",
+      "title": "Florestas e natureza",
+      "description": "Pinheiros, rios, quedas de agua e bosques encantados.",
+      "category": "Natureza",
+      "tags": [
+        "floresta",
+        "rio",
+        "cascata",
+        "arvores"
+      ],
+      "path": "files/forest-pack.json",
+      "sizeBytes": 44087,
+      "sha256": "a0a706492da5f7856a89638983a1227902aa1321dee399a884d3de5b84bc94b5",
+      "templateCount": 3
+    },
+    {
+      "id": "home-pack",
+      "title": "Casas e interiores",
+      "description": "Casa exterior, sala de estar e cozinha com objetos editaveis.",
+      "category": "Interiores",
+      "tags": [
+        "casa",
+        "sala",
+        "cozinha",
+        "moveis"
+      ],
+      "path": "files/home-pack.json",
+      "sizeBytes": 38432,
+      "sha256": "5bfa3cdcb5061eb82801b9c0361659c89b50ce6197cfb53a1cb0c2ddb906e6b4",
+      "templateCount": 3
+    },
+    {
+      "id": "city-pack",
+      "title": "Cidades e ruas",
+      "description": "Horizontes urbanos, lojas, passeios e telhados noturnos.",
+      "category": "Cidade",
+      "tags": [
+        "cidade",
+        "rua",
+        "edificios",
+        "noite"
+      ],
+      "path": "files/city-pack.json",
+      "sizeBytes": 40150,
+      "sha256": "976333ecc1be23d6789d5aad31d6045b08b48dbd7b2fff83ee605a8b704e23ea",
+      "templateCount": 3
+    },
+    {
+      "id": "action-pack",
+      "title": "Personagens e acao",
+      "description": "Lutadores em camadas independentes, poses e sequencias de combate sem violencia grafica.",
+      "category": "Acao",
+      "tags": [
+        "personagens",
+        "luta",
+        "poses",
+        "stickman"
+      ],
+      "path": "files/action-pack.json",
+      "sizeBytes": 109670,
+      "sha256": "2ef76717218a62001ba6557875488e2643fd03f454bc4a5f1d3fbe99cb7d12d7",
+      "templateCount": 3
+    },
+    {
+      "id": "fantasy-pack",
+      "title": "Fantasia e aventura",
+      "description": "Castelos, cavernas, cristais e portais para mundos imaginarios.",
+      "category": "Fantasia",
+      "tags": [
+        "castelo",
+        "caverna",
+        "magia",
+        "aventura"
+      ],
+      "path": "files/fantasy-pack.json",
+      "sizeBytes": 31305,
+      "sha256": "d59a6bb465ed39f7fb9f97378195093c8a5aa1455553a654cbdb83da54bc4b5e",
+      "templateCount": 3
+    },
+    {
+      "id": "space-pack",
+      "title": "Espaço e movimento",
+      "description": "Dois ciclos vetoriais: planeta com anéis e estrela cadente.",
+      "category": "Ceus",
+      "tags": [
+        "espaco",
+        "planeta",
+        "movimento"
+      ],
+      "path": "files/space-pack.json",
+      "sizeBytes": 12242,
+      "sha256": "82c1ac3992aa374822be8b2010914d4cae01f469324ebe9128c758e5394c3c04",
+      "templateCount": 2
+    },
+    {
+      "id": "character-pack",
+      "title": "Personagens expressivos",
+      "description": "Um modelo editável de cara a piscar, com 4 poses.",
+      "category": "Personagens",
+      "tags": [
+        "personagens",
+        "expressoes",
+        "poses"
+      ],
+      "path": "files/character-pack.json",
+      "sizeBytes": 3801,
+      "sha256": "2064637ae3316ebcd5e3bea3a064ed55a2204bdb490835a114f0d4d9ebb811d1",
+      "templateCount": 1
+    }
+  ]
+}

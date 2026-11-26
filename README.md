@@ -15,19 +15,20 @@ Editor de animação 2D para Android, construído com Flutter. O foco é desenha
 - **Cores:** paleta com 36 cores de acesso rápido, código HEX personalizado e controlos HSV para matiz, saturação e luminosidade. A cor HEX permite definir qualquer cor RGB de 24 bits.
 - **Edição:** editor horizontal, pré-visualização de pincéis, estabilização configurável do traço, desenho simétrico, réguas horizontal/vertical com grelha ajustável, camadas adicionais e onion skin.
 - **Pré-visualização:** reprodução em ecrã completo com loop, controlo de FPS, avanço/retrocesso por frame e faixas de áudio sincronizadas por frame.
-- **Biblioteca de áudio online:** pré-escuta antes de transferir, download para o dispositivo, faixas Pro e colocação do som no frame escolhido. O catálogo é atualizado pelo site sem lançar novo APK.
+- **Biblioteca de áudio online:** efeitos originais de movimento, cartoon, ambiente, combate, fantasia e casa; pré-escuta, verificação SHA-256 e download apenas quando o utilizador escolhe o som. O catálogo é atualizado pelo site sem lançar novo APK.
 - **Timeline:** criar frames vazios, duplicar/apagar frames e ajustar a reprodução para 6, 12, 24, 30 ou 60 FPS. O FPS fica guardado no projeto e é usado como valor inicial na exportação.
 - **Rigging orientado a camadas:** rig de pose para a camada selecionada; modo objeto para mover, escalar e rodar uma camada sem transformar as restantes. Para duas personagens/objetos independentes, coloca cada um numa camada própria.
-- **Áudio e lip sync:** as faixas de áudio do projeto ficam guardadas localmente e são reproduzidas na pré-visualização a partir do frame definido. O MP4 exportado continua silencioso: a mistura/muxagem de áudio no vídeo ainda não está implementada.
+- **Áudio e lip sync:** as faixas de áudio do projeto ficam guardadas localmente e são reproduzidas na pré-visualização a partir do frame definido. A exportação MP4 mistura as faixas de áudio do projeto, respeitando o início por frame, o corte, o volume e o estado de silêncio de cada clip.
 - **Projetos prontos:** bola a saltar, flor a florescer, foguetão, pêndulo, personagem a piscar, cometa, combate Stickman de 16 frames, duas personagens em camadas independentes e casa com porta animada separada. Todos os frames são vetoriais/editáveis.
-- **Biblioteca de assets e downloads:** formas vetoriais-base, modelos de animação e pacotes de conteúdo descarregáveis para guardar no dispositivo e editar offline.
-- **Exportação:** PNG do frame e MP4 até 720p gratuitos; 1080p, GIF, sequência PNG em ZIP e 60 FPS são Pro. Os ficheiros são copiados automaticamente para Downloads/AnimPro no Android 10+; em versões anteriores usa-se o armazenamento específico do AnimPro. O MP4 depende do codificador H.264/MediaCodec do dispositivo e permanece sem áudio.
+- **Biblioteca online de cenários:** pacotes vetoriais editáveis de céu, floresta, casa, sala, cozinha, cidade, ruas, personagens em combate e fantasia. O catálogo é pesquisável por categoria; cada pacote é descarregado por pedido, verificado por SHA-256, guardado offline e pode ser removido sem apagar projetos já criados. Os ficheiros ficam no GitHub Pages, nunca dentro do APK.
+- **Biblioteca de cenários dentro da aplicação:** 8 pacotes iniciais com 21 modelos vetoriais editáveis de céu, florestas, casas, interiores, cidades, personagens/luta, fantasia e espaço. Pré-visualização animada antes do download, verificação SHA-256, cache do catálogo, gestão do espaço e remoção de pacotes sem apagar projetos. Os ficheiros não são incluídos no APK.
+- **Exportação:** PNG do frame e MP4 até 720p gratuitos; 1080p, GIF, sequência PNG em ZIP e 60 FPS são Pro. Os ficheiros são copiados automaticamente para Downloads/AnimPro no Android 10+; em versões anteriores usa-se o armazenamento específico do AnimPro. O vídeo H.264 é codificado pelo MediaCodec do dispositivo; o áudio é depois misturado no MP4 por FFmpeg.
 - **Conta:** registo/entrada com e-mail e palavra-passe, redefinição de palavra-passe, verificação de e-mail e entrada Google, quando o projeto Firebase está configurado.
 - **Modo sem conta:** os projetos continuam disponíveis localmente no telefone.
 
 ### Limites conhecidos
 
-O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A versão atual não mistura áudio no MP4 nem oferece uma timeline de várias faixas, gravação de voz ou corte/fades de áudio como um editor de vídeo. O rigging atual é uma deformação simples de uma área e ainda não é um sistema completo de esqueletos independentes para várias personagens/objetos. O envio para Google Drive/Dropbox é manual através do menu de partilha do Android (se o fornecedor estiver instalado/disponível); a importação pode escolher ficheiros nesses serviços através do seletor do Android. Ainda não existe sincronização automática em segundo plano nem integração OAuth direta com essas plataformas. A biblioteca de áudio online fica vazia até serem publicados ficheiros licenciados no catálogo.
+O mapa aproximado de Audio Lip Sync é uma base de edição manual, não reconhecimento fonético por IA. A timeline de áudio permite organizar até seis faixas, posicionar clips por frame, cortar o início/fim, ajustar o volume, silenciar e repetir clips. A gravação direta de voz e os fades ainda não estão disponíveis. O rigging atual é uma deformação simples de uma área e ainda não é um sistema completo de esqueletos independentes para várias personagens/objetos. O envio para Google Drive/Dropbox é manual através do menu de partilha do Android (se o fornecedor estiver instalado/disponível); a importação pode escolher ficheiros nesses serviços através do seletor do Android. Ainda não existe sincronização automática em segundo plano nem integração OAuth direta com essas plataformas. A biblioteca online começa com efeitos originais gerados para o AnimPro; novos sons podem ser adicionados desde que a licença permita redistribuição do ficheiro.
 
 ## Instalar e escolher uma versão
 
@@ -90,7 +91,7 @@ Acrescenta estas **Variables** (texto simples):
 - `FIREBASE_PROJECT_ID` — ID exato do projeto Firebase utilizado pela aplicação.
 - `FIREBASE_API_KEY` — chave de configuração Web/API do mesmo projeto Firebase. Não é a chave privada da conta de serviço.
 
-O `wrangler.toml` define o ambiente PayPal Sandbox e os endereços de retorno. As novas compras usam apenas o checkout único Pro; a configuração de plano mensal é legada e não é oferecida a novos compradores. A opção `keep_vars = true` preserva variáveis definidas no painel durante um deploy pelo Git. Os segredos cifrados também são preservados pelos deploys.
+O `wrangler.toml` define o ambiente PayPal Sandbox e os endereços de retorno. As novas compras usam uma única assinatura Pro de USD 5 por mês. Antes de iniciar o checkout, o Worker valida junto do PayPal que o plano está ativo e que cobra exatamente USD 5 a cada mês. A opção `keep_vars = true` preserva variáveis definidas no painel durante um deploy pelo Git. Os segredos cifrados também são preservados pelos deploys.
 
 ### Configurar o webhook PayPal
 
@@ -106,7 +107,7 @@ A conta de serviço tem de pertencer ao mesmo projeto indicado em `FIREBASE_PROJ
 
 Depois de ligar **Settings → Builds → Git repository** ao repositório `nexauren1/Animations-2D-` com a branch `main`, cada push validado na `main` deve disparar o deploy do Worker. Confirma primeiro `https://animations2d.nexaurenstore.workers.dev/health` (esperado: JSON com `ok: true`). Depois testa pagamentos apenas com contas Sandbox e confirma os documentos no Firestore.
 
-O checkout usa exclusivamente o Worker Cloudflare. O workflow antigo de deploy PayPal por Firebase Functions foi retirado para evitar tentativas de deploy incompatíveis com esta arquitetura. As novas compras usam uma única licença Pro permanente por USD 5, sem subscrição nem renovação automática. O Worker continua configurado para PayPal Sandbox; não aceites pagamentos reais até o proprietário da conta configurar credenciais Live, webhook Live e validar uma compra de ponta a ponta. Os webhooks mensais antigos permanecem no código apenas para preservar o tratamento de licenças legadas.
+O checkout usa exclusivamente o Worker Cloudflare. O workflow antigo de deploy PayPal por Firebase Functions foi retirado para evitar tentativas de deploy incompatíveis com esta arquitetura. As novas compras usam exclusivamente a assinatura Pro de USD 5 por mês, com renovação automática até ao cancelamento no PayPal. O Worker continua configurado para PayPal Sandbox; não aceites pagamentos reais até o proprietário da conta configurar credenciais Live, webhook Live e validar uma assinatura de ponta a ponta.
 
 ## Desenvolvimento
 

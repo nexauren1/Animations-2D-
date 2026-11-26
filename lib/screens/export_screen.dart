@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:archive/archive.dart';
+import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart' hide Text;
@@ -13,12 +15,14 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/project_model.dart';
 import '../services/pro_access_service.dart';
+import '../services/audio_timeline_service.dart';
 
 /// Exporta PNG, sequência PNG em ZIP, vídeo MP4 com H.264 via MediaCodec e GIF animado.
 class ExportScreen extends StatefulWidget {
-  const ExportScreen({required this.project, required this.frameIndex, super.key});
+  const ExportScreen({required this.project, required this.frameIndex, required this.audioClips, super.key});
   final ProjectModel project;
   final int frameIndex;
+  final List<AudioTimelineClip> audioClips;
 
   @override
   State<ExportScreen> createState() => _ExportScreenState();
@@ -226,9 +230,36 @@ class _ExportScreenState extends State<ExportScreen> {
             path.addRect(ui.Rect.fromPoints(mapped.first, mapped.last));
           } else if (stroke.kind == 'ellipse') {
             path.addOval(ui.Rect.fromPoints(mapped.first, mapped.last));
+          } else if (stroke.kind == 'triangle') {
+            final bounds = ui.Rect.fromPoints(mapped.first, mapped.last);
+            path
+              ..moveTo(bounds.center.dx, bounds.top)
+              ..lineTo(bounds.right, bounds.bottom)
+              ..lineTo(bounds.left, bounds.bottom)
+              ..close();
+          } else if (stroke.kind == 'pentagon' || stroke.kind == 'hexagon' || stroke.kind == 'star') {
+            final bounds = ui.Rect.fromPoints(mapped.first, mapped.last);
+            final sides = stroke.kind == 'pentagon' ? 5 : stroke.kind == 'hexagon' ? 6 : 10;
+            final center = bounds.center;
+            final radiusX = bounds.width / 2;
+            final radiusY = bounds.height / 2;
+            for (var index = 0; index < sides; index++) {
+              final angle = -math.pi / 2 + index * math.pi * 2 / sides;
+              final radius = stroke.kind == 'star' && index.isOdd ? .43 : 1.0;
+              final point = ui.Offset(
+                center.dx + math.cos(angle) * radiusX * radius,
+                center.dy + math.sin(angle) * radiusY * radius,
+              );
+              if (index == 0) {
+                path.moveTo(point.dx, point.dy);
+              } else {
+                path.lineTo(point.dx, point.dy);
+              }
+            }
+            path.close();
           } else {
             path.moveTo(mapped.first.dx, mapped.first.dy);
-            if (stroke.kind == 'line' || stroke.kind == 'ruler') {
+            if (stroke.kind == 'line' || stroke.kind == 'ruler' || stroke.kind == 'arrow') {
               path.lineTo(mapped.last.dx, mapped.last.dy);
             } else {
               for (final point in mapped.skip(1)) {
@@ -237,6 +268,27 @@ class _ExportScreenState extends State<ExportScreen> {
             }
           }
           drawStyledPath(path);
+          if (stroke.kind == 'arrow' && mapped.length > 1) {
+            final delta = mapped.last - mapped.first;
+            if (delta.distance > 0) {
+              final direction = delta / delta.distance;
+              final perpendicular = ui.Offset(-direction.dy, direction.dx);
+              final headLength = math.max(10.0, width * 3).toDouble();
+              final headWidth = headLength * .58;
+              final head = ui.Path()
+                ..moveTo(mapped.last.dx, mapped.last.dy)
+                ..lineTo(
+                  mapped.last.dx - direction.dx * headLength + perpendicular.dx * headWidth,
+                  mapped.last.dy - direction.dy * headLength + perpendicular.dy * headWidth,
+                )
+                ..lineTo(
+                  mapped.last.dx - direction.dx * headLength - perpendicular.dx * headWidth,
+                  mapped.last.dy - direction.dy * headLength - perpendicular.dy * headWidth,
+                )
+                ..close();
+              canvas.drawPath(head, ui.Paint()..color = baseColor.withOpacity(opacity));
+            }
+          }
           if (stroke.kind == 'ruler') {
             final delta = mapped.last - mapped.first;
             final length = delta.distance;
@@ -266,6 +318,84 @@ class _ExportScreenState extends State<ExportScreen> {
       _exportProgress = value.clamp(0, 1).toDouble();
       _exportStage = stage;
     });
+  }
+
+  Future<void> _mixAudioIntoVideo(File video) async {
+    final clips = <AudioTimelineClip>[];
+    for (final clip in widget.audioClips) {
+      if (clip.muted || clip.volume <= 0) continue;
+      final source = File(clip.path);
+      if (await source.exists() && await source.length() > 0) {
+        clips.add(clip);
+      }
+    }
+    if (clips.isEmpty) return;
+
+    // Imported clips are copied into the app's private project-audio folder,
+    // whose generated filenames are sanitized before they are stored.
+    String quote(String value) => '"$value"';
+    final arguments = <String>['-y', '-i', quote(video.path)];
+    for (final clip in clips) {
+      if (clip.loop) arguments.addAll(<String>['-stream_loop', '-1']);
+      arguments.addAll(<String>['-i', quote(clip.path)]);
+    }
+
+    final filters = <String>[];
+    for (var index = 0; index < clips.length; index++) {
+      final clip = clips[index];
+      final startSeconds = (clip.trimStartMs / 1000).toStringAsFixed(3);
+      final endSeconds = (clip.trimEndMs / 1000).toStringAsFixed(3);
+      final trim = clip.trimEndMs > clip.trimStartMs
+          ? 'atrim=start=$startSeconds:end=$endSeconds'
+          : 'atrim=start=$startSeconds';
+      final delayMs = (clip.startFrame * 1000 / _fps).round();
+      final volume = clip.volume.clamp(0.0, 1.0).toStringAsFixed(3);
+      filters.add(
+        '[${index + 1}:a]$trim,asetpts=PTS-STARTPTS,volume=$volume,adelay=$delayMs:all=1[a$index]',
+      );
+    }
+    final inputs = List<String>.generate(clips.length, (index) => '[a$index]').join();
+    filters.add(
+      '$inputs' 'amix=inputs=${clips.length}:duration=longest:dropout_transition=0:normalize=0,alimiter=limit=0.95[aout]',
+    );
+
+    final mixed = File('${video.path}.with_audio.mp4');
+    if (await mixed.exists()) await mixed.delete();
+    arguments.addAll(<String>[
+      '-filter_complex',
+      quote(filters.join(';')),
+      '-map',
+      '0:v:0',
+      '-map',
+      '[aout]',
+      '-c:v',
+      'copy',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '192k',
+      '-shortest',
+      '-movflags',
+      '+faststart',
+      quote(mixed.path),
+    ]);
+
+    final session = await FFmpegKit.execute(arguments.join(' '));
+    final returnCode = await session.getReturnCode();
+    if (!ReturnCode.isSuccess(returnCode)) {
+      final logs = await session.getLogs();
+      final details = logs
+          .map((entry) => entry.getMessage())
+          .where((message) => message.trim().isNotEmpty)
+          .toList();
+      final hint = details.isEmpty ? '' : ' ${details.last}';
+      throw StateError('Não foi possível misturar o áudio no MP4.$hint');
+    }
+    if (!await mixed.exists() || await mixed.length() == 0) {
+      throw StateError('A mistura de áudio não criou um MP4 válido.');
+    }
+    await video.delete();
+    await mixed.rename(video.path);
   }
 
   Future<void> _export() async {
@@ -369,6 +499,10 @@ class _ExportScreenState extends State<ExportScreen> {
           if (!await exported.exists() || await exported.length() == 0) {
             throw StateError('O codificador Android não criou um MP4 válido.');
           }
+          if (widget.audioClips.any((clip) => !clip.muted && clip.volume > 0)) {
+            _updateExportProgress(.78, 'A sincronizar e misturar o áudio…');
+            await _mixAudioIntoVideo(exported);
+          }
         } else {
           exported = File('${directory.path}/animpro_${time}.gif');
           final encoder = img.GifEncoder(
@@ -448,9 +582,11 @@ class _ExportScreenState extends State<ExportScreen> {
       }
     } catch (error) {
       if (mounted) {
-        final message = _format == 'MP4' && error is PlatformException
-            ? 'Falha ao codificar MP4 neste dispositivo. Tenta uma resolução menor e 12/24 FPS, ou exporta GIF.'
-            : 'Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.';
+        final message = error is StateError
+            ? error.message.toString()
+            : _format == 'MP4' && error is PlatformException
+                ? 'Falha ao codificar MP4 neste dispositivo. Tenta uma resolução menor e 12/24 FPS, ou exporta GIF.'
+                : 'Não foi possível exportar o ficheiro. Verifica o espaço disponível e tenta novamente.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message)),
         );

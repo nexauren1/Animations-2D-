@@ -1,0 +1,1430 @@
+{
+  "schemaVersion": 1,
+  "id": "city-pack",
+  "name": "Cidades e ruas",
+  "description": "Horizontes urbanos, lojas, passeios e telhados noturnos.",
+  "templates": [
+    {
+      "id": "modern-skyline",
+      "name": "Cidade moderna",
+      "description": "Edificios, janelas, rua e carros em perspetiva.",
+      "iconCodePoint": 57816,
+      "tint": 4285573590,
+      "fps": 12,
+      "tag": "URBANO",
+      "frames": [
+        {
+          "uid": "city-skyline",
+          "layers": [
+            {
+              "name": "Ceu e edificios",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 60.04,
+                      "y": 62.84
+                    },
+                    {
+                      "x": 75.12,
+                      "y": 72.2
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 68.36,
+                      "y": 57.64
+                    },
+                    {
+                      "x": 81.36,
+                      "y": 70.64
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 75.64,
+                      "y": 63.36
+                    },
+                    {
+                      "x": 89.68,
+                      "y": 72.72
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 62.64,
+                      "y": 71.68
+                    },
+                    {
+                      "x": 84.48,
+                      "y": 71.68
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 20.0,
+                      "y": 147.0
+                    },
+                    {
+                      "x": 83.0,
+                      "y": 330.0
+                    }
+                  ],
+                  "color": 4286090151,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 96.0,
+                      "y": 94.0
+                    },
+                    {
+                      "x": 170.0,
+                      "y": 330.0
+                    }
+                  ],
+                  "color": 4287336885,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 183.0,
+                      "y": 127.0
+                    },
+                    {
+                      "x": 240.0,
+                      "y": 330.0
+                    }
+                  ],
+                  "color": 4285631907,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 251.0,
+                      "y": 174.0
+                    },
+                    {
+                      "x": 308.0,
+                      "y": 330.0
+                    }
+                  ],
+                  "color": 4287336885,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 34.0,
+                      "y": 168.0
+                    },
+                    {
+                      "x": 52.0,
+                      "y": 190.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 34.0,
+                      "y": 205.0
+                    },
+                    {
+                      "x": 52.0,
+                      "y": 227.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 34.0,
+                      "y": 242.0
+                    },
+                    {
+                      "x": 52.0,
+                      "y": 264.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 34.0,
+                      "y": 279.0
+                    },
+                    {
+                      "x": 52.0,
+                      "y": 301.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 113.0,
+                      "y": 117.0
+                    },
+                    {
+                      "x": 133.0,
+                      "y": 139.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 113.0,
+                      "y": 152.0
+                    },
+                    {
+                      "x": 133.0,
+                      "y": 174.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 113.0,
+                      "y": 187.0
+                    },
+                    {
+                      "x": 133.0,
+                      "y": 209.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 113.0,
+                      "y": 222.0
+                    },
+                    {
+                      "x": 133.0,
+                      "y": 244.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 113.0,
+                      "y": 257.0
+                    },
+                    {
+                      "x": 133.0,
+                      "y": 279.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 198.0,
+                      "y": 150.0
+                    },
+                    {
+                      "x": 215.0,
+                      "y": 171.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 198.0,
+                      "y": 187.0
+                    },
+                    {
+                      "x": 215.0,
+                      "y": 208.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 198.0,
+                      "y": 224.0
+                    },
+                    {
+                      "x": 215.0,
+                      "y": 245.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 198.0,
+                      "y": 261.0
+                    },
+                    {
+                      "x": 215.0,
+                      "y": 282.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Rua e passeio",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 330.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 330.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 420.0
+                    },
+                    {
+                      "x": 105.0,
+                      "y": 330.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 320.0,
+                      "y": 420.0
+                    },
+                    {
+                      "x": 213.0,
+                      "y": 330.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 157.0,
+                      "y": 353.0
+                    },
+                    {
+                      "x": 162.0,
+                      "y": 385.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 150.0,
+                      "y": 402.0
+                    },
+                    {
+                      "x": 154.0,
+                      "y": 419.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Transito e luzes",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 87.0,
+                      "y": 348.0
+                    },
+                    {
+                      "x": 138.0,
+                      "y": 371.0
+                    }
+                  ],
+                  "color": 4294940797,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 96.0,
+                      "y": 365.0
+                    },
+                    {
+                      "x": 110.0,
+                      "y": 379.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 119.0,
+                      "y": 365.0
+                    },
+                    {
+                      "x": 133.0,
+                      "y": 379.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 205.0,
+                      "y": 378.0
+                    },
+                    {
+                      "x": 254.0,
+                      "y": 401.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 212.0,
+                      "y": 394.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 407.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 237.0,
+                      "y": 394.0
+                    },
+                    {
+                      "x": 249.0,
+                      "y": 407.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 248.0
+                    },
+                    {
+                      "x": 18.0,
+                      "y": 328.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 7.0,
+                      "y": 233.0
+                    },
+                    {
+                      "x": 29.0,
+                      "y": 254.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "street-shop",
+      "name": "Rua comercial",
+      "description": "Lojas, passeio, candeeiro e fachadas para uma cena urbana.",
+      "iconCodePoint": 59530,
+      "tint": 4292781678,
+      "fps": 12,
+      "tag": "URBANO",
+      "frames": [
+        {
+          "uid": "city-street",
+          "layers": [
+            {
+              "name": "Fachadas",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 12.0,
+                      "y": 69.0
+                    },
+                    {
+                      "x": 112.0,
+                      "y": 312.0
+                    }
+                  ],
+                  "color": 4287599016,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 122.0,
+                      "y": 39.0
+                    },
+                    {
+                      "x": 228.0,
+                      "y": 312.0
+                    }
+                  ],
+                  "color": 4289694585,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 237.0,
+                      "y": 93.0
+                    },
+                    {
+                      "x": 310.0,
+                      "y": 312.0
+                    }
+                  ],
+                  "color": 4286025124,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 12.0,
+                      "y": 116.0
+                    },
+                    {
+                      "x": 112.0,
+                      "y": 116.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 122.0,
+                      "y": 88.0
+                    },
+                    {
+                      "x": 228.0,
+                      "y": 88.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 237.0,
+                      "y": 140.0
+                    },
+                    {
+                      "x": 310.0,
+                      "y": 140.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lojas e janelas",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 27.0,
+                      "y": 151.0
+                    },
+                    {
+                      "x": 95.0,
+                      "y": 240.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 141.0,
+                      "y": 127.0
+                    },
+                    {
+                      "x": 209.0,
+                      "y": 211.0
+                    }
+                  ],
+                  "color": 4284720857,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 249.0,
+                      "y": 169.0
+                    },
+                    {
+                      "x": 296.0,
+                      "y": 241.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 170.0,
+                      "y": 127.0
+                    },
+                    {
+                      "x": 170.0,
+                      "y": 211.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 188.0,
+                      "y": 127.0
+                    },
+                    {
+                      "x": 188.0,
+                      "y": 211.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 145.0,
+                      "y": 238.0
+                    },
+                    {
+                      "x": 205.0,
+                      "y": 312.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 175.0,
+                      "y": 238.0
+                    },
+                    {
+                      "x": 175.0,
+                      "y": 312.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Rua e mobiliario",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 315.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 315.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 35.0,
+                      "y": 251.0
+                    },
+                    {
+                      "x": 35.0,
+                      "y": 385.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 21.0,
+                      "y": 234.0
+                    },
+                    {
+                      "x": 49.0,
+                      "y": 262.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 237.0,
+                      "y": 337.0
+                    },
+                    {
+                      "x": 295.0,
+                      "y": 352.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 244.0,
+                      "y": 352.0
+                    },
+                    {
+                      "x": 242.0,
+                      "y": 375.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 287.0,
+                      "y": 352.0
+                    },
+                    {
+                      "x": 290.0,
+                      "y": 375.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 72.0,
+                      "y": 420.0
+                    },
+                    {
+                      "x": 123.0,
+                      "y": 350.0
+                    },
+                    {
+                      "x": 194.0,
+                      "y": 350.0
+                    },
+                    {
+                      "x": 248.0,
+                      "y": 420.0
+                    }
+                  ],
+                  "color": 4289831072,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "night-rooftops",
+      "name": "Telhados da cidade a noite",
+      "description": "Predios, antenas, lua e luzes de janelas.",
+      "iconCodePoint": 58277,
+      "tint": 4287597536,
+      "fps": 12,
+      "tag": "URBANO",
+      "frames": [
+        {
+          "uid": "city-night",
+          "layers": [
+            {
+              "name": "Ceu e lua",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 236.0,
+                      "y": 38.0
+                    },
+                    {
+                      "x": 280.0,
+                      "y": 82.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 44.0,
+                      "y": 55.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 101.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 178.0,
+                      "y": 47.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 295.0,
+                      "y": 113.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 137.0,
+                      "y": 151.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Predios",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 10.0,
+                      "y": 174.0
+                    },
+                    {
+                      "x": 77.0,
+                      "y": 354.0
+                    }
+                  ],
+                  "color": 4283851132,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 89.0,
+                      "y": 123.0
+                    },
+                    {
+                      "x": 160.0,
+                      "y": 354.0
+                    }
+                  ],
+                  "color": 4283127924,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 170.0,
+                      "y": 192.0
+                    },
+                    {
+                      "x": 235.0,
+                      "y": 354.0
+                    }
+                  ],
+                  "color": 4283851132,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 246.0,
+                      "y": 153.0
+                    },
+                    {
+                      "x": 311.0,
+                      "y": 354.0
+                    }
+                  ],
+                  "color": 4283127924,
+                  "width": 4,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 24.0,
+                      "y": 192.0
+                    },
+                    {
+                      "x": 39.0,
+                      "y": 211.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 24.0,
+                      "y": 227.0
+                    },
+                    {
+                      "x": 39.0,
+                      "y": 246.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 24.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 39.0,
+                      "y": 281.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 24.0,
+                      "y": 297.0
+                    },
+                    {
+                      "x": 39.0,
+                      "y": 316.0
+                    }
+                  ],
+                  "color": 4284270548,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 103.0,
+                      "y": 144.0
+                    },
+                    {
+                      "x": 120.0,
+                      "y": 164.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 103.0,
+                      "y": 176.0
+                    },
+                    {
+                      "x": 120.0,
+                      "y": 196.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 103.0,
+                      "y": 208.0
+                    },
+                    {
+                      "x": 120.0,
+                      "y": 228.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 103.0,
+                      "y": 240.0
+                    },
+                    {
+                      "x": 120.0,
+                      "y": 260.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 103.0,
+                      "y": 272.0
+                    },
+                    {
+                      "x": 120.0,
+                      "y": 292.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 264.0,
+                      "y": 173.0
+                    },
+                    {
+                      "x": 286.0,
+                      "y": 193.0
+                    }
+                  ],
+                  "color": 4294940797,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 264.0,
+                      "y": 209.0
+                    },
+                    {
+                      "x": 286.0,
+                      "y": 229.0
+                    }
+                  ],
+                  "color": 4294940797,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 264.0,
+                      "y": 245.0
+                    },
+                    {
+                      "x": 286.0,
+                      "y": 265.0
+                    }
+                  ],
+                  "color": 4294940797,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 264.0,
+                      "y": 281.0
+                    },
+                    {
+                      "x": 286.0,
+                      "y": 301.0
+                    }
+                  ],
+                  "color": 4294940797,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Telhados e antenas",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 355.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 48.0,
+                      "y": 174.0
+                    },
+                    {
+                      "x": 48.0,
+                      "y": 134.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 40.0,
+                      "y": 135.0
+                    },
+                    {
+                      "x": 48.0,
+                      "y": 119.0
+                    },
+                    {
+                      "x": 56.0,
+                      "y": 135.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 205.0,
+                      "y": 192.0
+                    },
+                    {
+                      "x": 205.0,
+                      "y": 149.0
+                    }
+                  ],
+                  "color": 4288447452,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 195.0,
+                      "y": 159.0
+                    },
+                    {
+                      "x": 215.0,
+                      "y": 159.0
+                    }
+                  ],
+                  "color": 4288447452,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 398.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 398.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
