@@ -1,0 +1,1530 @@
+{
+  "schemaVersion": 1,
+  "id": "sky-pack",
+  "name": "Ceus e clima",
+  "description": "Cenarios de dia, por do sol e noite estrelada.",
+  "templates": [
+    {
+      "id": "blue-sky",
+      "name": "Ceu de dia",
+      "description": "Sol, nuvens e colinas suaves em camadas editaveis.",
+      "iconCodePoint": 58655,
+      "tint": 4284856808,
+      "fps": 12,
+      "tag": "FUNDOS",
+      "frames": [
+        {
+          "uid": "sky-day",
+          "layers": [
+            {
+              "name": "Ceu e luz",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 246.0,
+                      "y": 36.0
+                    },
+                    {
+                      "x": 290.0,
+                      "y": 80.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 296.0,
+                      "y": 58.0
+                    },
+                    {
+                      "x": 308.0,
+                      "y": 58.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 287.7989898732233,
+                      "y": 77.79898987322332
+                    },
+                    {
+                      "x": 296.2842712474619,
+                      "y": 86.2842712474619
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 268.0,
+                      "y": 86.0
+                    },
+                    {
+                      "x": 268.0,
+                      "y": 98.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 248.20101012677668,
+                      "y": 77.79898987322333
+                    },
+                    {
+                      "x": 239.7157287525381,
+                      "y": 86.2842712474619
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 240.0,
+                      "y": 58.0
+                    },
+                    {
+                      "x": 228.0,
+                      "y": 58.00000000000001
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 248.20101012677668,
+                      "y": 38.20101012677667
+                    },
+                    {
+                      "x": 239.7157287525381,
+                      "y": 29.7157287525381
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 268.0,
+                      "y": 30.0
+                    },
+                    {
+                      "x": 268.0,
+                      "y": 18.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 287.7989898732233,
+                      "y": 38.201010126776666
+                    },
+                    {
+                      "x": 296.2842712474619,
+                      "y": 29.71572875253809
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 2.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 62.0,
+                      "y": 97.0
+                    },
+                    {
+                      "x": 91.0,
+                      "y": 115.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 78.0,
+                      "y": 87.0
+                    },
+                    {
+                      "x": 103.0,
+                      "y": 112.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 92.0,
+                      "y": 98.0
+                    },
+                    {
+                      "x": 119.0,
+                      "y": 116.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 67.0,
+                      "y": 114.0
+                    },
+                    {
+                      "x": 109.0,
+                      "y": 114.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 193.44,
+                      "y": 136.24
+                    },
+                    {
+                      "x": 214.32,
+                      "y": 149.2
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 204.96,
+                      "y": 129.04
+                    },
+                    {
+                      "x": 222.96,
+                      "y": 147.04
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 215.04,
+                      "y": 136.96
+                    },
+                    {
+                      "x": 234.48,
+                      "y": 149.92
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 197.04,
+                      "y": 148.48
+                    },
+                    {
+                      "x": 227.28,
+                      "y": 148.48
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Montanhas",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 276.0
+                    },
+                    {
+                      "x": 42.0,
+                      "y": 228.0
+                    },
+                    {
+                      "x": 83.0,
+                      "y": 267.0
+                    },
+                    {
+                      "x": 132.0,
+                      "y": 197.0
+                    },
+                    {
+                      "x": 174.0,
+                      "y": 254.0
+                    },
+                    {
+                      "x": 221.0,
+                      "y": 212.0
+                    },
+                    {
+                      "x": 276.0,
+                      "y": 271.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 235.0
+                    }
+                  ],
+                  "color": 4286424762,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 58.0,
+                      "y": 276.0
+                    },
+                    {
+                      "x": 105.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 166.0,
+                      "y": 266.0
+                    },
+                    {
+                      "x": 214.0,
+                      "y": 300.0
+                    },
+                    {
+                      "x": 269.0,
+                      "y": 271.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 294.0
+                    }
+                  ],
+                  "color": 4284721019,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Primeiro plano",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 350.0
+                    },
+                    {
+                      "x": 52.0,
+                      "y": 331.0
+                    },
+                    {
+                      "x": 98.0,
+                      "y": 349.0
+                    },
+                    {
+                      "x": 149.0,
+                      "y": 334.0
+                    },
+                    {
+                      "x": 201.0,
+                      "y": 354.0
+                    },
+                    {
+                      "x": 260.0,
+                      "y": 329.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 350.0
+                    }
+                  ],
+                  "color": 4284721019,
+                  "width": 5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 36.0,
+                      "y": 329.32
+                    },
+                    {
+                      "x": 36.0,
+                      "y": 385.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 36.0,
+                      "y": 298.0
+                    },
+                    {
+                      "x": 14.25,
+                      "y": 327.58
+                    },
+                    {
+                      "x": 25.560000000000002,
+                      "y": 325.84
+                    },
+                    {
+                      "x": 6.419999999999998,
+                      "y": 350.2
+                    },
+                    {
+                      "x": 22.08,
+                      "y": 346.72
+                    },
+                    {
+                      "x": 1.1999999999999957,
+                      "y": 374.56
+                    },
+                    {
+                      "x": 36.0,
+                      "y": 367.6
+                    },
+                    {
+                      "x": 70.80000000000001,
+                      "y": 374.56
+                    },
+                    {
+                      "x": 49.92,
+                      "y": 346.72
+                    },
+                    {
+                      "x": 65.58,
+                      "y": 350.2
+                    },
+                    {
+                      "x": 46.44,
+                      "y": 325.84
+                    },
+                    {
+                      "x": 57.75,
+                      "y": 327.58
+                    },
+                    {
+                      "x": 36.0,
+                      "y": 298.0
+                    }
+                  ],
+                  "color": 4284721019,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 284.0,
+                      "y": 326.48
+                    },
+                    {
+                      "x": 284.0,
+                      "y": 386.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 284.0,
+                      "y": 293.0
+                    },
+                    {
+                      "x": 260.75,
+                      "y": 324.62
+                    },
+                    {
+                      "x": 272.84,
+                      "y": 322.76
+                    },
+                    {
+                      "x": 252.38,
+                      "y": 348.8
+                    },
+                    {
+                      "x": 269.12,
+                      "y": 345.08
+                    },
+                    {
+                      "x": 246.8,
+                      "y": 374.84
+                    },
+                    {
+                      "x": 284.0,
+                      "y": 367.4
+                    },
+                    {
+                      "x": 321.2,
+                      "y": 374.84
+                    },
+                    {
+                      "x": 298.88,
+                      "y": 345.08
+                    },
+                    {
+                      "x": 315.62,
+                      "y": 348.8
+                    },
+                    {
+                      "x": 295.16,
+                      "y": 322.76
+                    },
+                    {
+                      "x": 307.25,
+                      "y": 324.62
+                    },
+                    {
+                      "x": 284.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284721019,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 145.0,
+                      "y": 383.0
+                    },
+                    {
+                      "x": 155.0,
+                      "y": 360.0
+                    },
+                    {
+                      "x": 165.0,
+                      "y": 383.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 190.0,
+                      "y": 365.0
+                    }
+                  ],
+                  "color": 4294940797,
+                  "width": 5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sunset-horizon",
+      "name": "Por do sol",
+      "description": "Sol baixo, montanhas e reflexos para uma cena cinematografica.",
+      "iconCodePoint": 58276,
+      "tint": 4294941301,
+      "fps": 12,
+      "tag": "FUNDOS",
+      "frames": [
+        {
+          "uid": "sky-sunset",
+          "layers": [
+            {
+              "name": "Ceu e sol",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 115.0,
+                      "y": 145.0
+                    },
+                    {
+                      "x": 207.0,
+                      "y": 237.0
+                    }
+                  ],
+                  "color": 4294940797,
+                  "width": 5,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 237.12,
+                      "y": 93.52
+                    },
+                    {
+                      "x": 253.36,
+                      "y": 103.6
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 246.08,
+                      "y": 87.92
+                    },
+                    {
+                      "x": 260.08,
+                      "y": 101.92
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 253.92,
+                      "y": 94.08
+                    },
+                    {
+                      "x": 269.04,
+                      "y": 104.16
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 239.92,
+                      "y": 103.04
+                    },
+                    {
+                      "x": 263.44,
+                      "y": 103.04
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2.8,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 75.0
+                    },
+                    {
+                      "x": 70.0,
+                      "y": 83.0
+                    },
+                    {
+                      "x": 126.0,
+                      "y": 76.0
+                    },
+                    {
+                      "x": 194.0,
+                      "y": 89.0
+                    },
+                    {
+                      "x": 260.0,
+                      "y": 78.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 84.0
+                    }
+                  ],
+                  "color": 4288447452,
+                  "width": 2,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Montanhas",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 265.0
+                    },
+                    {
+                      "x": 47.0,
+                      "y": 194.0
+                    },
+                    {
+                      "x": 83.0,
+                      "y": 231.0
+                    },
+                    {
+                      "x": 145.0,
+                      "y": 155.0
+                    },
+                    {
+                      "x": 188.0,
+                      "y": 224.0
+                    },
+                    {
+                      "x": 231.0,
+                      "y": 183.0
+                    },
+                    {
+                      "x": 276.0,
+                      "y": 242.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 211.0
+                    }
+                  ],
+                  "color": 4285554054,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 52.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 106.0,
+                      "y": 303.0
+                    },
+                    {
+                      "x": 164.0,
+                      "y": 269.0
+                    },
+                    {
+                      "x": 222.0,
+                      "y": 298.0
+                    },
+                    {
+                      "x": 276.0,
+                      "y": 276.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 294.0
+                    }
+                  ],
+                  "color": 4290017127,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Agua e margem",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 323.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 323.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 75.0,
+                      "y": 337.0
+                    },
+                    {
+                      "x": 240.0,
+                      "y": 337.0
+                    }
+                  ],
+                  "color": 4294951565,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 96.0,
+                      "y": 342.0
+                    },
+                    {
+                      "x": 231.0,
+                      "y": 342.0
+                    }
+                  ],
+                  "color": 4294951565,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 117.0,
+                      "y": 337.0
+                    },
+                    {
+                      "x": 222.0,
+                      "y": 337.0
+                    }
+                  ],
+                  "color": 4294951565,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 138.0,
+                      "y": 342.0
+                    },
+                    {
+                      "x": 213.0,
+                      "y": 342.0
+                    }
+                  ],
+                  "color": 4294951565,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 159.0,
+                      "y": 337.0
+                    },
+                    {
+                      "x": 204.0,
+                      "y": 337.0
+                    }
+                  ],
+                  "color": 4294951565,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 180.0,
+                      "y": 342.0
+                    },
+                    {
+                      "x": 195.0,
+                      "y": 342.0
+                    }
+                  ],
+                  "color": 4294951565,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 201.0,
+                      "y": 337.0
+                    },
+                    {
+                      "x": 186.0,
+                      "y": 337.0
+                    }
+                  ],
+                  "color": 4294951565,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 375.0
+                    },
+                    {
+                      "x": 78.0,
+                      "y": 359.0
+                    },
+                    {
+                      "x": 148.0,
+                      "y": 379.0
+                    },
+                    {
+                      "x": 214.0,
+                      "y": 357.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 374.0
+                    }
+                  ],
+                  "color": 4284721019,
+                  "width": 5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "starry-night",
+      "name": "Ceu estrelado",
+      "description": "Lua, estrelas e silhuetas para cenas noturnas.",
+      "iconCodePoint": 58277,
+      "tint": 4288516584,
+      "fps": 12,
+      "tag": "FUNDOS",
+      "frames": [
+        {
+          "uid": "sky-night",
+          "layers": [
+            {
+              "name": "Noite",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 53.0
+                    },
+                    {
+                      "x": 285.0,
+                      "y": 100.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 250.0,
+                      "y": 42.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 91.0
+                    }
+                  ],
+                  "color": 4280298053,
+                  "width": 4,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 42.0,
+                      "y": 59.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 88.0,
+                      "y": 89.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 142.0,
+                      "y": 45.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 188.0,
+                      "y": 116.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 288.0,
+                      "y": 145.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 178.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 207.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 116.0,
+                      "y": 228.0
+                    }
+                  ],
+                  "color": 4294953323,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 63.0,
+                      "y": 132.0
+                    },
+                    {
+                      "x": 73.0,
+                      "y": 132.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 162.0,
+                      "y": 80.0
+                    },
+                    {
+                      "x": 172.0,
+                      "y": 80.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 298.0,
+                      "y": 56.0
+                    },
+                    {
+                      "x": 308.0,
+                      "y": 56.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 194.0,
+                      "y": 180.0
+                    },
+                    {
+                      "x": 204.0,
+                      "y": 180.0
+                    }
+                  ],
+                  "color": 4294242791,
+                  "width": 2,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Montanhas",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 296.0
+                    },
+                    {
+                      "x": 51.0,
+                      "y": 240.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 286.0
+                    },
+                    {
+                      "x": 159.0,
+                      "y": 214.0
+                    },
+                    {
+                      "x": 216.0,
+                      "y": 283.0
+                    },
+                    {
+                      "x": 264.0,
+                      "y": 233.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 284.0
+                    }
+                  ],
+                  "color": 4285037468,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 329.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 313.0
+                    },
+                    {
+                      "x": 110.0,
+                      "y": 328.0
+                    },
+                    {
+                      "x": 171.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 231.0,
+                      "y": 332.0
+                    },
+                    {
+                      "x": 280.0,
+                      "y": 310.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4283130237,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Silhuetas",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 48.0,
+                      "y": 338.72
+                    },
+                    {
+                      "x": 48.0,
+                      "y": 404.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 48.0,
+                      "y": 302.0
+                    },
+                    {
+                      "x": 22.5,
+                      "y": 336.68
+                    },
+                    {
+                      "x": 35.76,
+                      "y": 334.64
+                    },
+                    {
+                      "x": 13.32,
+                      "y": 363.2
+                    },
+                    {
+                      "x": 31.68,
+                      "y": 359.12
+                    },
+                    {
+                      "x": 7.199999999999996,
+                      "y": 391.76
+                    },
+                    {
+                      "x": 48.0,
+                      "y": 383.6
+                    },
+                    {
+                      "x": 88.80000000000001,
+                      "y": 391.76
+                    },
+                    {
+                      "x": 64.32,
+                      "y": 359.12
+                    },
+                    {
+                      "x": 82.68,
+                      "y": 363.2
+                    },
+                    {
+                      "x": 60.24,
+                      "y": 334.64
+                    },
+                    {
+                      "x": 73.5,
+                      "y": 336.68
+                    },
+                    {
+                      "x": 48.0,
+                      "y": 302.0
+                    }
+                  ],
+                  "color": 4281420368,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 354.08
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 404.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 326.0
+                    },
+                    {
+                      "x": 82.5,
+                      "y": 352.52
+                    },
+                    {
+                      "x": 92.64,
+                      "y": 350.96
+                    },
+                    {
+                      "x": 75.47999999999999,
+                      "y": 372.8
+                    },
+                    {
+                      "x": 89.52,
+                      "y": 369.68
+                    },
+                    {
+                      "x": 70.8,
+                      "y": 394.64
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 388.4
+                    },
+                    {
+                      "x": 133.2,
+                      "y": 394.64
+                    },
+                    {
+                      "x": 114.48,
+                      "y": 369.68
+                    },
+                    {
+                      "x": 128.52,
+                      "y": 372.8
+                    },
+                    {
+                      "x": 111.36,
+                      "y": 350.96
+                    },
+                    {
+                      "x": 121.5,
+                      "y": 352.52
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 326.0
+                    }
+                  ],
+                  "color": 4281420368,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 280.0,
+                      "y": 334.88
+                    },
+                    {
+                      "x": 280.0,
+                      "y": 404.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 280.0,
+                      "y": 296.0
+                    },
+                    {
+                      "x": 253.0,
+                      "y": 332.72
+                    },
+                    {
+                      "x": 267.04,
+                      "y": 330.56
+                    },
+                    {
+                      "x": 243.28,
+                      "y": 360.8
+                    },
+                    {
+                      "x": 262.72,
+                      "y": 356.48
+                    },
+                    {
+                      "x": 236.8,
+                      "y": 391.04
+                    },
+                    {
+                      "x": 280.0,
+                      "y": 382.4
+                    },
+                    {
+                      "x": 323.2,
+                      "y": 391.04
+                    },
+                    {
+                      "x": 297.28,
+                      "y": 356.48
+                    },
+                    {
+                      "x": 316.72,
+                      "y": 360.8
+                    },
+                    {
+                      "x": 292.96,
+                      "y": 330.56
+                    },
+                    {
+                      "x": 307.0,
+                      "y": 332.72
+                    },
+                    {
+                      "x": 280.0,
+                      "y": 296.0
+                    }
+                  ],
+                  "color": 4281420368,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 0.0,
+                      "y": 397.0
+                    },
+                    {
+                      "x": 320.0,
+                      "y": 397.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

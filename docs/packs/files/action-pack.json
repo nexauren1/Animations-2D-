@@ -1,0 +1,3919 @@
+{
+  "schemaVersion": 1,
+  "id": "action-pack",
+  "name": "Personagens e acao",
+  "description": "Lutadores em camadas independentes, poses e sequencias de combate sem violencia grafica.",
+  "templates": [
+    {
+      "id": "sparring-sequence",
+      "name": "Treino de luta - sequencia",
+      "description": "Oito frames com aproximacao, soco, bloqueio, pontape e esquiva. Cada lutador tem a sua propria camada.",
+      "iconCodePoint": 59677,
+      "tint": 4294941047,
+      "fps": 12,
+      "tag": "ACAO",
+      "frames": [
+        {
+          "uid": "fight-01",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 110.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 86.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 80.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 117.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 122.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 88.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 115.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 216.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 232.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 208.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 202.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 239.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 244.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 210.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 237.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uid": "fight-02",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 90.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 106.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 98.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 98.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 116.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 129.0,
+                      "y": 306.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 84.0,
+                      "y": 310.0
+                    },
+                    {
+                      "x": 79.0,
+                      "y": 297.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 118.0,
+                      "y": 350.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 83.0,
+                      "y": 353.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 216.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 232.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 208.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 202.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 239.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 244.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 210.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 237.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uid": "fight-03",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 110.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 90.0,
+                      "y": 310.0
+                    },
+                    {
+                      "x": 80.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 124.0,
+                      "y": 298.0
+                    },
+                    {
+                      "x": 151.0,
+                      "y": 297.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 86.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 119.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 216.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 232.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 210.0,
+                      "y": 280.0
+                    },
+                    {
+                      "x": 202.0,
+                      "y": 272.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 239.0,
+                      "y": 282.0
+                    },
+                    {
+                      "x": 248.0,
+                      "y": 274.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 210.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 238.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uid": "fight-04",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 110.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 86.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 80.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 117.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 122.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 88.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 115.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 213.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 229.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 221.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 221.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 221.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 221.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 221.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 239.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 252.0,
+                      "y": 306.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 221.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 207.0,
+                      "y": 310.0
+                    },
+                    {
+                      "x": 202.0,
+                      "y": 297.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 221.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 241.0,
+                      "y": 350.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 221.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 206.0,
+                      "y": 353.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uid": "fight-05",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 90.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 106.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 98.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 98.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 297.0
+                    },
+                    {
+                      "x": 76.0,
+                      "y": 302.0
+                    },
+                    {
+                      "x": 66.0,
+                      "y": 291.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 297.0
+                    },
+                    {
+                      "x": 109.0,
+                      "y": 311.0
+                    },
+                    {
+                      "x": 120.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 72.0,
+                      "y": 347.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 98.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 114.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 216.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 232.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 206.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 196.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 240.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 248.0,
+                      "y": 295.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 208.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 269.0,
+                      "y": 303.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uid": "fight-06",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 86.0,
+                      "y": 249.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 265.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 265.0
+                    },
+                    {
+                      "x": 94.0,
+                      "y": 276.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 276.0
+                    },
+                    {
+                      "x": 94.0,
+                      "y": 312.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 286.0
+                    },
+                    {
+                      "x": 74.0,
+                      "y": 274.0
+                    },
+                    {
+                      "x": 67.0,
+                      "y": 259.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 286.0
+                    },
+                    {
+                      "x": 114.0,
+                      "y": 274.0
+                    },
+                    {
+                      "x": 122.0,
+                      "y": 259.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 312.0
+                    },
+                    {
+                      "x": 72.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 312.0
+                    },
+                    {
+                      "x": 116.0,
+                      "y": 294.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 218.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 234.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 226.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 226.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 226.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 226.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 226.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 210.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 204.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 226.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 241.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 246.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 226.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 212.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 226.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 239.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uid": "fight-07",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 110.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 86.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 80.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 117.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 122.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 88.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 115.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 216.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 232.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 297.0
+                    },
+                    {
+                      "x": 202.0,
+                      "y": 302.0
+                    },
+                    {
+                      "x": 192.0,
+                      "y": 291.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 297.0
+                    },
+                    {
+                      "x": 235.0,
+                      "y": 311.0
+                    },
+                    {
+                      "x": 246.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 198.0,
+                      "y": 347.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 240.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "uid": "fight-08",
+          "layers": [
+            {
+              "name": "Arena de treino",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 18.0,
+                      "y": 351.0
+                    },
+                    {
+                      "x": 302.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4284904845,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 105.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 351.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 29.0,
+                      "y": 305.0
+                    },
+                    {
+                      "x": 291.0,
+                      "y": 305.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 136.0,
+                      "y": 288.0
+                    },
+                    {
+                      "x": 184.0,
+                      "y": 336.0
+                    }
+                  ],
+                  "color": 4285167761,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 55.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 55.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 265.0,
+                      "y": 250.0
+                    },
+                    {
+                      "x": 265.0,
+                      "y": 300.0
+                    }
+                  ],
+                  "color": 4286747813,
+                  "width": 2,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador azul",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 94.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 110.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 86.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 80.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 117.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 122.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 88.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 102.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 115.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Lutador coral",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 216.0,
+                      "y": 262.0
+                    },
+                    {
+                      "x": 232.0,
+                      "y": 278.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 278.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 289.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 208.0,
+                      "y": 306.0
+                    },
+                    {
+                      "x": 202.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 299.0
+                    },
+                    {
+                      "x": 239.0,
+                      "y": 307.0
+                    },
+                    {
+                      "x": 244.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 210.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 224.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 237.0,
+                      "y": 355.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dojo-duel",
+      "name": "Duelo no dojo",
+      "description": "Sala de treino com dois personagens em pose de combate e elementos de fundo.",
+      "iconCodePoint": 59677,
+      "tint": 4294947164,
+      "fps": 12,
+      "tag": "ACAO",
+      "frames": [
+        {
+          "uid": "dojo-duel",
+          "layers": [
+            {
+              "name": "Dojo",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 22.0,
+                      "y": 40.0
+                    },
+                    {
+                      "x": 298.0,
+                      "y": 378.0
+                    }
+                  ],
+                  "color": 4290153837,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 22.0,
+                      "y": 110.0
+                    },
+                    {
+                      "x": 298.0,
+                      "y": 110.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 22.0,
+                      "y": 322.0
+                    },
+                    {
+                      "x": 298.0,
+                      "y": 322.0
+                    }
+                  ],
+                  "color": 4288312923,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 56.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 103.0,
+                      "y": 109.0
+                    }
+                  ],
+                  "color": 4287457116,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 217.0,
+                      "y": 60.0
+                    },
+                    {
+                      "x": 264.0,
+                      "y": 109.0
+                    }
+                  ],
+                  "color": 4287457116,
+                  "width": 3,
+                  "kind": "rectangle",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Piso",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 22.0,
+                      "y": 378.0
+                    },
+                    {
+                      "x": 298.0,
+                      "y": 378.0
+                    }
+                  ],
+                  "color": 4280956234,
+                  "width": 4,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 40.0,
+                      "y": 322.0
+                    },
+                    {
+                      "x": 40.0,
+                      "y": 378.0
+                    }
+                  ],
+                  "color": 4290153837,
+                  "width": 1.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 92.0,
+                      "y": 322.0
+                    },
+                    {
+                      "x": 92.0,
+                      "y": 378.0
+                    }
+                  ],
+                  "color": 4290153837,
+                  "width": 1.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 144.0,
+                      "y": 322.0
+                    },
+                    {
+                      "x": 144.0,
+                      "y": 378.0
+                    }
+                  ],
+                  "color": 4290153837,
+                  "width": 1.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 196.0,
+                      "y": 322.0
+                    },
+                    {
+                      "x": 196.0,
+                      "y": 378.0
+                    }
+                  ],
+                  "color": 4290153837,
+                  "width": 1.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 248.0,
+                      "y": 322.0
+                    },
+                    {
+                      "x": 248.0,
+                      "y": 378.0
+                    }
+                  ],
+                  "color": 4290153837,
+                  "width": 1.5,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Personagens",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 100.0,
+                      "y": 257.0
+                    },
+                    {
+                      "x": 116.0,
+                      "y": 273.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 108.0,
+                      "y": 273.0
+                    },
+                    {
+                      "x": 108.0,
+                      "y": 284.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 108.0,
+                      "y": 284.0
+                    },
+                    {
+                      "x": 108.0,
+                      "y": 320.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 108.0,
+                      "y": 294.0
+                    },
+                    {
+                      "x": 92.0,
+                      "y": 301.0
+                    },
+                    {
+                      "x": 86.0,
+                      "y": 288.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 108.0,
+                      "y": 294.0
+                    },
+                    {
+                      "x": 123.0,
+                      "y": 302.0
+                    },
+                    {
+                      "x": 128.0,
+                      "y": 288.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 108.0,
+                      "y": 320.0
+                    },
+                    {
+                      "x": 94.0,
+                      "y": 350.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 108.0,
+                      "y": 320.0
+                    },
+                    {
+                      "x": 121.0,
+                      "y": 350.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 212.0,
+                      "y": 257.0
+                    },
+                    {
+                      "x": 228.0,
+                      "y": 273.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 220.0,
+                      "y": 273.0
+                    },
+                    {
+                      "x": 220.0,
+                      "y": 284.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 220.0,
+                      "y": 284.0
+                    },
+                    {
+                      "x": 220.0,
+                      "y": 320.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 220.0,
+                      "y": 294.0
+                    },
+                    {
+                      "x": 204.0,
+                      "y": 301.0
+                    },
+                    {
+                      "x": 198.0,
+                      "y": 288.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 220.0,
+                      "y": 294.0
+                    },
+                    {
+                      "x": 235.0,
+                      "y": 302.0
+                    },
+                    {
+                      "x": 240.0,
+                      "y": 288.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 220.0,
+                      "y": 320.0
+                    },
+                    {
+                      "x": 206.0,
+                      "y": 350.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 220.0,
+                      "y": 320.0
+                    },
+                    {
+                      "x": 233.0,
+                      "y": 350.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hero-poses",
+      "name": "Poses de combate",
+      "description": "Poses para iniciar uma luta, uma esquiva ou uma defesa.",
+      "iconCodePoint": 59677,
+      "tint": 4287613429,
+      "fps": 12,
+      "tag": "PERSONAGENS",
+      "frames": [
+        {
+          "uid": "hero-poses",
+          "layers": [
+            {
+              "name": "Guia",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 25.0,
+                      "y": 372.0
+                    },
+                    {
+                      "x": 295.0,
+                      "y": 372.0
+                    }
+                  ],
+                  "color": 4284838538,
+                  "width": 3,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 46.0,
+                      "y": 300.0
+                    },
+                    {
+                      "x": 114.0,
+                      "y": 385.0
+                    }
+                  ],
+                  "color": 4284838538,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 205.0,
+                      "y": 300.0
+                    },
+                    {
+                      "x": 273.0,
+                      "y": 385.0
+                    }
+                  ],
+                  "color": 4284838538,
+                  "width": 2,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Personagem 1",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 74.0,
+                      "y": 277.0
+                    },
+                    {
+                      "x": 90.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 82.0,
+                      "y": 293.0
+                    },
+                    {
+                      "x": 82.0,
+                      "y": 304.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 82.0,
+                      "y": 304.0
+                    },
+                    {
+                      "x": 82.0,
+                      "y": 340.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 82.0,
+                      "y": 314.0
+                    },
+                    {
+                      "x": 70.0,
+                      "y": 325.0
+                    },
+                    {
+                      "x": 60.0,
+                      "y": 308.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 82.0,
+                      "y": 314.0
+                    },
+                    {
+                      "x": 104.0,
+                      "y": 313.0
+                    },
+                    {
+                      "x": 131.0,
+                      "y": 312.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 82.0,
+                      "y": 340.0
+                    },
+                    {
+                      "x": 66.0,
+                      "y": 370.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 82.0,
+                      "y": 340.0
+                    },
+                    {
+                      "x": 99.0,
+                      "y": 370.0
+                    }
+                  ],
+                  "color": 4284004322,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            },
+            {
+              "name": "Personagem 2",
+              "visible": true,
+              "strokes": [
+                {
+                  "points": [
+                    {
+                      "x": 230.0,
+                      "y": 277.0
+                    },
+                    {
+                      "x": 246.0,
+                      "y": 293.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "ellipse",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 293.0
+                    },
+                    {
+                      "x": 238.0,
+                      "y": 304.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 304.0
+                    },
+                    {
+                      "x": 238.0,
+                      "y": 340.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 4,
+                  "kind": "line",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 314.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 295.0
+                    },
+                    {
+                      "x": 216.0,
+                      "y": 287.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 314.0
+                    },
+                    {
+                      "x": 253.0,
+                      "y": 297.0
+                    },
+                    {
+                      "x": 262.0,
+                      "y": 289.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 340.0
+                    },
+                    {
+                      "x": 224.0,
+                      "y": 370.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                },
+                {
+                  "points": [
+                    {
+                      "x": 238.0,
+                      "y": 340.0
+                    },
+                    {
+                      "x": 252.0,
+                      "y": 370.0
+                    }
+                  ],
+                  "color": 4294940024,
+                  "width": 3.5,
+                  "kind": "pen",
+                  "brushStyle": "lapis"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
