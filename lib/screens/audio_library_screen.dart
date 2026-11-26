@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -33,6 +34,9 @@ class _AudioLibraryItem {
     required this.isPro,
     required this.license,
     required this.sourceUrl,
+    required this.sha256,
+    required this.sizeBytes,
+    required this.durationSeconds,
   });
 
   final String id;
@@ -44,14 +48,25 @@ class _AudioLibraryItem {
   final bool isPro;
   final String license;
   final String sourceUrl;
+  final String sha256;
+  final int sizeBytes;
+  final double durationSeconds;
 
   factory _AudioLibraryItem.fromJson(Map<String, dynamic> json) {
     final id = (json['id'] ?? '').toString();
     final file = (json['file'] ?? '').toString();
     final preview = (json['preview'] ?? file).toString();
+    final digest = (json['sha256'] ?? '').toString().toLowerCase();
+    final sizeBytes = (json['sizeBytes'] as num?)?.toInt() ?? 0;
+    final durationSeconds = (json['durationSeconds'] as num?)?.toDouble() ?? 0;
     if (!RegExp(r'^[a-zA-Z0-9_-]{1,80}$').hasMatch(id) ||
         !_safeRelativeAudioPath(file) ||
-        !_safeRelativeAudioPath(preview)) {
+        !_safeRelativeAudioPath(preview) ||
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(digest) ||
+        sizeBytes < 1 ||
+        sizeBytes > 35 * 1024 * 1024 ||
+        durationSeconds <= 0 ||
+        durationSeconds > 600) {
       throw const FormatException('Invalid audio library entry');
     }
     return _AudioLibraryItem(
@@ -64,6 +79,9 @@ class _AudioLibraryItem {
       isPro: json['pro'] == true,
       license: (json['license'] ?? '').toString(),
       sourceUrl: (json['sourceUrl'] ?? '').toString(),
+      sha256: digest,
+      sizeBytes: sizeBytes,
+      durationSeconds: durationSeconds,
     );
   }
 
@@ -98,6 +116,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
   bool _playing = false;
   String? _error;
   final Set<String> _downloading = <String>{};
+  final Set<String> _downloadedIds = <String>{};
 
   @override
   void initState() {
@@ -106,6 +125,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       if (mounted) setState(() => _playing = state == PlayerState.playing);
     });
     _loadCatalog();
+    _scanDownloads();
   }
 
   @override
@@ -114,28 +134,76 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
     super.dispose();
   }
 
+  List<_AudioLibraryItem> _parseCatalog(String source) {
+    final decoded = jsonDecode(source);
+    if (decoded is! List || decoded.length > 300) {
+      throw const FormatException('Formato do catálogo de áudio inválido.');
+    }
+    return decoded
+        .whereType<Map>()
+        .map((entry) => _AudioLibraryItem.fromJson(Map<String, dynamic>.from(entry)))
+        .toList(growable: false);
+  }
+
+  Future<File> _catalogCacheFile() async {
+    final root = await getApplicationSupportDirectory();
+    final directory = Directory('${root.path}/animpro_audio');
+    await directory.create(recursive: true);
+    return File('${directory.path}/catalog-cache.json');
+  }
+
+  Future<void> _scanDownloads() async {
+    try {
+      final root = await getApplicationDocumentsDirectory();
+      final directory = Directory('${root.path}/audio_library');
+      if (!await directory.exists()) return;
+      final files = await directory.list().whereType<File>().toList();
+      if (!mounted) return;
+      setState(() {
+        _downloadedIds
+          ..clear()
+          ..addAll(files.map((file) => file.uri.pathSegments.last.split('.').first));
+      });
+    } catch (_) {
+      // Download indicators are optional; the library remains usable.
+    }
+  }
+
   Future<void> _loadCatalog() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final response = await http.get(_catalogUri).timeout(const Duration(seconds: 15));
+      final response = await http.get(_catalogUri).timeout(const Duration(seconds: 18));
       if (response.statusCode != 200) {
         throw HttpException('Catálogo indisponível (HTTP ${response.statusCode}).');
       }
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! List) throw const FormatException('Invalid audio catalog');
-      final items = decoded
-          .whereType<Map>()
-          .map((entry) => _AudioLibraryItem.fromJson(Map<String, dynamic>.from(entry)))
-          .toList(growable: false);
+      final source = utf8.decode(response.bodyBytes);
+      final items = _parseCatalog(source);
+      final cache = await _catalogCacheFile();
+      await cache.writeAsString(source, flush: true);
       if (!mounted) return;
       setState(() {
         _items = items;
         _loading = false;
       });
     } catch (_) {
+      try {
+        final cache = await _catalogCacheFile();
+        if (await cache.exists()) {
+          final items = _parseCatalog(await cache.readAsString());
+          if (!mounted) return;
+          setState(() {
+            _items = items;
+            _loading = false;
+            _error = 'A mostrar o último catálogo guardado. Liga-te à internet para atualizar.';
+          });
+          return;
+        }
+      } catch (_) {
+        // Ignore a damaged cache and show the offline state below.
+      }
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -172,24 +240,41 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
     if (!mounted) return;
     setState(() => _downloading.add(item.id));
     try {
-      final response = await http.get(_urlFor(item.file)).timeout(const Duration(seconds: 45));
-      if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
-        throw HttpException('Não foi possível transferir o áudio.');
-      }
-      if (response.bodyBytes.length > 35 * 1024 * 1024) {
-        throw const FormatException('O ficheiro de áudio excede 35 MB.');
-      }
       final root = await getApplicationDocumentsDirectory();
       final directory = Directory('${root.path}/audio_library');
       await directory.create(recursive: true);
       final extension = item.file.split('.').last.toLowerCase();
       final output = File('${directory.path}/${item.id}.$extension');
-      await output.writeAsBytes(response.bodyBytes, flush: true);
+      var validLocalCopy = false;
+      if (await output.exists()) {
+        final localBytes = await output.readAsBytes();
+        validLocalCopy = localBytes.length == item.sizeBytes &&
+            sha256.convert(localBytes).toString() == item.sha256;
+        if (!validLocalCopy) await output.delete();
+      }
+      if (!validLocalCopy) {
+        final response = await http.get(_urlFor(item.file)).timeout(const Duration(seconds: 60));
+        if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
+          throw HttpException('Não foi possível transferir o áudio.');
+        }
+        if (response.bodyBytes.length > 35 * 1024 * 1024 ||
+            response.bodyBytes.length != item.sizeBytes) {
+          throw const FormatException('O tamanho do áudio não corresponde ao catálogo.');
+        }
+        if (sha256.convert(response.bodyBytes).toString() != item.sha256) {
+          throw const FormatException('A verificação de integridade do áudio falhou.');
+        }
+        final temporary = File('${output.path}.download');
+        await temporary.writeAsBytes(response.bodyBytes, flush: true);
+        if (await output.exists()) await output.delete();
+        await temporary.rename(output.path);
+      }
       if (!await output.exists() || await output.length() == 0) {
         throw StateError('O áudio transferido está vazio.');
       }
       await _player.stop();
       if (!mounted) return;
+      setState(() => _downloadedIds.add(item.id));
       Navigator.of(context).pop(AudioLibrarySelection(
         id: item.id,
         name: item.name,
@@ -200,7 +285,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(error is FormatException
-              ? 'Este áudio não pode ser transferido: o ficheiro é demasiado grande ou o catálogo está incorreto.'
+              ? error.message.toString()
               : 'O download falhou. Verifica a internet e tenta novamente.')),
         );
       }
@@ -329,7 +414,11 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
                                     child: Icon(item.isPro ? Icons.workspace_premium_rounded : Icons.graphic_eq_rounded, color: const Color(0xFFC0B5FF)),
                                   ),
                                   title: Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                                  subtitle: Text('${item.category} · ${item.description}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  subtitle: Text(
+                                    '${item.category} · ${item.description} · ${(item.sizeBytes / 1024).ceil()} KB · ${item.durationSeconds.toStringAsFixed(1)} s',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                   trailing: Wrap(
                                     spacing: 2,
                                     children: [
@@ -343,7 +432,9 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
                                         onPressed: _downloading.contains(item.id) ? null : () => _download(item),
                                         icon: _downloading.contains(item.id)
                                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                                            : const Icon(Icons.download_rounded),
+                                            : Icon(_downloadedIds.contains(item.id)
+                                                ? Icons.download_done_rounded
+                                                : Icons.download_rounded),
                                       ),
                                     ],
                                   ),
