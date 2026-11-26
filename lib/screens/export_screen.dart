@@ -284,7 +284,7 @@ class _ExportScreenState extends State<ExportScreen> {
 
     // Imported clips are copied into the app's private project-audio folder,
     // whose generated filenames are sanitized before they are stored.
-    String quote(String value) => "'${value.replaceAll("'", r"\\'")}''";
+    String quote(String value) => '"$value"';
     final arguments = <String>['-y', '-i', quote(video.path)];
     for (final clip in clips) {
       if (clip.loop) arguments.addAll(<String>['-stream_loop', '-1']);
