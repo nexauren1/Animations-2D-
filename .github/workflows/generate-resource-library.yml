@@ -6,6 +6,7 @@ on:
       - feat/online-scenes-and-audio-library
     paths:
       - ".github/scripts/generate_resource_library.py"
+      - ".gitignore"
       - ".github/workflows/generate-resource-library.yml"
   workflow_dispatch:
 
