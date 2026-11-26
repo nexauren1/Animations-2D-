@@ -185,6 +185,198 @@ class ResourcePackService {
     return File('${directory.path}/$id.json').exists();
   }
 
+  /// Loads template frames for an online preview without saving the pack.
+  /// This lets users inspect a scene before spending storage or data on download.
+  static Future<List<AnimationTemplate>> preview(DownloadableResourcePack pack) async {
+    if (!_validId(pack.id) ||
+        !_safePackPath(pack.path) ||
+        !RegExp(r'^[a-f0-9]{64}
+    if (!_validId(pack.id) ||
+        !_safePackPath(pack.path) ||
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(pack.sha256) ||
+        pack.sizeBytes < 1 ||
+        pack.sizeBytes > _maxPackBytes) {
+      throw const FormatException('Identificador ou endereço de pacote inválido.');
+    }
+
+    final uri = _packsBaseUri.resolve(pack.path);
+    if (uri.scheme != 'https' || uri.host != _packsBaseUri.host ||
+        !uri.path.startsWith(_packsBaseUri.path)) {
+      throw const FormatException('O pacote não pertence ao servidor oficial do AnimPro.');
+    }
+
+    final response = await http.get(uri).timeout(const Duration(seconds: 45));
+    if (response.statusCode != HttpStatus.ok || response.bodyBytes.isEmpty) {
+      throw HttpException('O servidor não conseguiu entregar este pacote.');
+    }
+    final bytes = response.bodyBytes;
+    if (bytes.length > _maxPackBytes || bytes.length != pack.sizeBytes) {
+      throw const FormatException('O tamanho do pacote não corresponde ao catálogo.');
+    }
+    final digest = sha256.convert(bytes).toString();
+    if (digest != pack.sha256) {
+      throw const FormatException('A verificação de integridade do pacote falhou.');
+    }
+
+    final decoded = _parsePack(utf8.decode(bytes));
+    if (decoded.id != pack.id) {
+      throw const FormatException('O pacote recebido não corresponde ao selecionado.');
+    }
+
+    final directory = await _directory();
+    final file = File('${directory.path}/${pack.id}.json');
+    final temporary = File('${file.path}.download');
+    await temporary.writeAsBytes(bytes, flush: true);
+    if (await file.exists()) await file.delete();
+    await temporary.rename(file.path);
+    return DownloadedResourcePack(
+      id: decoded.id,
+      title: decoded.title,
+      description: decoded.description,
+      templates: decoded.templates,
+      filePath: file.path,
+    );
+  }
+
+  static Future<List<DownloadedResourcePack>> loadDownloaded() async {
+    final directory = await _directory();
+    final files = await directory
+        .list()
+        .where((entity) =>
+            entity is File &&
+            entity.path.endsWith('.json') &&
+            !entity.path.endsWith('catalog-cache.json'))
+        .cast<File>()
+        .toList();
+    final packs = <DownloadedResourcePack>[];
+    for (final file in files) {
+      try {
+        final result = _parsePack(await file.readAsString());
+        packs.add(DownloadedResourcePack(
+          id: result.id,
+          title: result.title,
+          description: result.description,
+          templates: result.templates,
+          filePath: file.path,
+        ));
+      } catch (_) {
+        // Ignore a partially written or outdated local pack; users can download it again.
+      }
+    }
+    packs.sort((a, b) => a.title.compareTo(b.title));
+    return packs;
+  }
+
+  static Future<void> delete(String id) async {
+    if (!_validId(id)) return;
+    final directory = await _directory();
+    final file = File('${directory.path}/$id.json');
+    if (await file.exists()) await file.delete();
+  }
+
+  static _DecodedPack _parsePack(String source) {
+    if (source.length > _maxPackBytes) {
+      throw const FormatException('Pacote demasiado grande.');
+    }
+    final decoded = jsonDecode(source);
+    if (decoded is! Map) throw const FormatException('Formato de pacote inválido.');
+    final json = Map<String, dynamic>.from(decoded);
+    if (json['schemaVersion'] != 1 ||
+        json['id'] is! String ||
+        json['name'] is! String ||
+        json['templates'] is! List) {
+      throw const FormatException('Versão ou estrutura do pacote não suportada.');
+    }
+
+    final rawTemplates = json['templates'] as List<dynamic>;
+    if (rawTemplates.isEmpty || rawTemplates.length > 30) {
+      throw const FormatException('O pacote não contém uma quantidade válida de modelos.');
+    }
+    final templates = rawTemplates.map((raw) {
+      if (raw is! Map) throw const FormatException('Modelo inválido no pacote.');
+      final templateJson = Map<String, dynamic>.from(raw);
+      final rawFrames = templateJson['frames'];
+      if (rawFrames is! List || rawFrames.isEmpty || rawFrames.length > 500) {
+        throw const FormatException('Um modelo tem uma quantidade inválida de frames.');
+      }
+      final frames = rawFrames.map((rawFrame) {
+        if (rawFrame is! Map) throw const FormatException('Frame inválido no pacote.');
+        return FrameModel.fromJson(Map<String, dynamic>.from(rawFrame));
+      }).toList(growable: false);
+      final layerCount = frames.fold<int>(
+        0,
+        (total, frame) => total + frame.layers.length,
+      );
+      final strokeCount = frames.fold<int>(
+        0,
+        (total, frame) => total + frame.layers.fold<int>(
+          0,
+          (layerTotal, layer) => layerTotal + layer.strokes.length,
+        ),
+      );
+      if (layerCount > 500 || strokeCount > 12000) {
+        throw const FormatException('O modelo contém demasiados elementos vetoriais.');
+      }
+
+      return AnimationTemplate(
+        id: templateJson['id'] as String? ?? 'downloaded-template',
+        title: templateJson['name'] as String? ?? 'Projeto descarregado',
+        description: templateJson['description'] as String? ?? 'Modelo vetorial editável.',
+        iconCodePoint: (templateJson['iconCodePoint'] as num?)?.toInt() ?? 0xe3c9,
+        tint: (templateJson['tint'] as num?)?.toInt() ?? 0xFF9F8BFF,
+        fps: ((templateJson['fps'] as num?)?.toInt() ?? 12).clamp(1, 60).toInt(),
+        tag: templateJson['tag'] as String? ?? 'DESCARREGADO',
+        frames: () => frames,
+      );
+    }).toList(growable: false);
+
+    return _DecodedPack(
+      id: json['id'] as String,
+      title: json['name'] as String,
+      description: json['description'] as String? ?? '',
+      templates: templates,
+    );
+  }
+}
+
+class _DecodedPack {
+  const _DecodedPack({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.templates,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final List<AnimationTemplate> templates;
+}
+).hasMatch(pack.sha256)) {
+      throw const FormatException('Identificador ou endereço de pacote inválido.');
+    }
+    final uri = _packsBaseUri.resolve(pack.path);
+    if (uri.scheme != 'https' ||
+        uri.host != _packsBaseUri.host ||
+        !uri.path.startsWith(_packsBaseUri.path)) {
+      throw const FormatException('O pacote não pertence ao servidor oficial do AnimPro.');
+    }
+    final response = await http.get(uri).timeout(const Duration(seconds: 30));
+    if (response.statusCode != HttpStatus.ok || response.bodyBytes.isEmpty) {
+      throw HttpException('Não foi possível carregar a pré-visualização.');
+    }
+    if (response.bodyBytes.length != pack.sizeBytes ||
+        response.bodyBytes.length > _maxPackBytes ||
+        sha256.convert(response.bodyBytes).toString() != pack.sha256) {
+      throw const FormatException('A integridade do pacote não foi confirmada.');
+    }
+    final decoded = _parsePack(utf8.decode(response.bodyBytes));
+    if (decoded.id != pack.id) {
+      throw const FormatException('O pacote recebido não corresponde ao selecionado.');
+    }
+    return decoded.templates;
+  }
+
   static Future<DownloadedResourcePack> download(DownloadableResourcePack pack) async {
     if (!_validId(pack.id) ||
         !_safePackPath(pack.path) ||
