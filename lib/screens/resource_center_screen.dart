@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart' hide Text;
-import '../services/app_locale.dart';
 
 import '../services/resource_pack_service.dart';
 import 'audio_library_screen.dart';
