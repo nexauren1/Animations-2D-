@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
 
 import '../services/resource_pack_service.dart';
+import 'audio_library_screen.dart';
 import '../services/template_catalog.dart';
 
 /// Online-first library for downloadable, editable scene and character packs.
@@ -142,8 +143,19 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cenários e recursos online', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Biblioteca AnimPro', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [
+          IconButton(
+            tooltip: 'Abrir biblioteca de áudio',
+            onPressed: () {
+              Navigator.of(context).push<AudioLibrarySelection>(
+                MaterialPageRoute<AudioLibrarySelection>(
+                  builder: (_) => const AudioLibraryScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.library_music_rounded),
+          ),
           IconButton(
             tooltip: 'Atualizar catálogo',
             onPressed: _catalogLoading ? null : _refresh,
@@ -172,11 +184,11 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                 children: [
                   Icon(Icons.cloud_download_rounded, color: Color(0xFF8DE1DE), size: 31),
                   SizedBox(height: 12),
-                  Text('O teu estúdio, com cenários à medida.',
+                  Text('Cenários e sons, dentro do AnimPro.',
                       style: TextStyle(fontSize: 22, height: 1.12, fontWeight: FontWeight.w900)),
                   SizedBox(height: 8),
                   Text(
-                    'Céus, florestas, interiores, cidades, personagens e cenas de ação. Vê o catálogo online e descarrega apenas os pacotes que pretendes usar.',
+                    'Céus, florestas, interiores, cidades, personagens e cenas de ação. Entra nas bibliotecas de cenários e de áudio sem sair da aplicação. Os ficheiros completos só são descarregados quando escolhes usá-los.',
                     style: TextStyle(color: Colors.white70, height: 1.35),
                   ),
                 ],
