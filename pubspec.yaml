@@ -19,6 +19,7 @@ dependencies:
   image: 4.10.0
   file_picker: ^13.1.0
   audioplayers: ^6.8.1
+  ffmpeg_kit_flutter_new_audio: ^2.5.8
   shared_preferences: ^2.3.2
   firebase_core: ^4.15.0
   firebase_auth: ^6.7.0
