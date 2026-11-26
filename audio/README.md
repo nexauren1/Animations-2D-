@@ -1,5 +1,7 @@
 # AnimPro — Online sound library
 
+The starter collection is generated from original procedural sound designs by `.github/scripts/generate_resource_library.py`. The generated WAV assets and public manifest are written to `docs/audio/` during the GitHub Pages build, so audio is not bundled into the Android APK.
+
 This folder is the source of the public audio catalogue served by GitHub Pages. The Android app reads `audio/catalog.json` online, so publishing a new sound and updating the catalogue does not require a new APK.
 
 ## Where to find sound effects
@@ -72,4 +74,4 @@ Never invent a licence or attribution. Keep a simple asset register with the sou
 5. Commit the audio and catalogue together.
 6. Wait for GitHub Pages to publish, then open AnimPro > Audio Library > Refresh.
 
-The app can then preview the sound, download it on demand, and let the user place it on a chosen frame. New catalogue entries do not require a new APK.
+The app validates the declared size and SHA-256 before downloading, previews online, and saves a sound locally only after the user chooses it. The user can then place it at any frame in one of the six audio lanes. New catalogue entries do not require a new APK.
