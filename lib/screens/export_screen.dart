@@ -236,6 +236,26 @@ class _ExportScreenState extends State<ExportScreen> {
               ..lineTo(bounds.right, bounds.bottom)
               ..lineTo(bounds.left, bounds.bottom)
               ..close();
+          } else if (stroke.kind == 'pentagon' || stroke.kind == 'hexagon' || stroke.kind == 'star') {
+            final bounds = ui.Rect.fromPoints(mapped.first, mapped.last);
+            final sides = stroke.kind == 'pentagon' ? 5 : stroke.kind == 'hexagon' ? 6 : 10;
+            final center = bounds.center;
+            final radiusX = bounds.width / 2;
+            final radiusY = bounds.height / 2;
+            for (var index = 0; index < sides; index++) {
+              final angle = -math.pi / 2 + index * math.pi * 2 / sides;
+              final radius = stroke.kind == 'star' && index.isOdd ? .43 : 1.0;
+              final point = ui.Offset(
+                center.dx + math.cos(angle) * radiusX * radius,
+                center.dy + math.sin(angle) * radiusY * radius,
+              );
+              if (index == 0) {
+                path.moveTo(point.dx, point.dy);
+              } else {
+                path.lineTo(point.dx, point.dy);
+              }
+            }
+            path.close();
           } else {
             path.moveTo(mapped.first.dx, mapped.first.dy);
             if (stroke.kind == 'line' || stroke.kind == 'ruler' || stroke.kind == 'arrow') {
