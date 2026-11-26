@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart' hide Text;
+import '../services/app_locale.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -157,7 +158,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       final root = await getApplicationDocumentsDirectory();
       final directory = Directory('${root.path}/audio_library');
       if (!await directory.exists()) return;
-      final files = await directory.list().whereType<File>().toList();
+      final files = await directory.list().where((entity) => entity is File).cast<File>().toList();
       if (!mounted) return;
       setState(() {
         _downloadedIds
