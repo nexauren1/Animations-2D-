@@ -77,7 +77,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
         ]..sort((a, b) => a.title.compareTo(b.title));
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"\${downloaded.title}" foi descarregado e está disponível offline.')),
+        SnackBar(content: Text('"${downloaded.title}" foi descarregado e está disponível offline.')),
       );
     } catch (error) {
       if (!mounted) return;
@@ -94,7 +94,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Remover pacote?'),
-        content: Text('"\${pack.title}" será removido do armazenamento deste dispositivo. Os projetos que já criaste não serão alterados.'),
+        content: Text('"${pack.title}" será removido do armazenamento deste dispositivo. Os projetos que já criaste não serão alterados.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -136,7 +136,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
     final query = _search.trim().toLowerCase();
     final visible = _available.where((pack) {
       final matchesCategory = _category == 'Todos' || pack.category == _category;
-      final searchable = '\${pack.title} \${pack.description} \${pack.tags.join(' ')}'.toLowerCase();
+      final searchable = '${pack.title} ${pack.description} ${pack.tags.join(' ')}'.toLowerCase();
       return matchesCategory && (query.isEmpty || searchable.contains(query));
     }).toList(growable: false);
 
@@ -225,7 +225,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                 if (_catalogLoading)
                   const SizedBox(height: 15, width: 15, child: CircularProgressIndicator(strokeWidth: 2))
                 else
-                  Text('\${visible.length} pacotes',
+                  Text('${visible.length} pacotes',
                       style: TextStyle(color: Colors.white.withOpacity(.52), fontSize: 11)),
               ],
             ),
@@ -269,7 +269,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                   child: Text('Conteúdo instalado',
                       style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
                 ),
-                Text('\${_downloaded.length} pacote(s)',
+                Text('${_downloaded.length} pacote(s)',
                     style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 12)),
               ],
             ),
@@ -353,7 +353,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                     style: TextStyle(color: Colors.white.withOpacity(.63), fontSize: 12, height: 1.3)),
                 const SizedBox(height: 6),
                 Text(
-                  '\${pack.category} · \${pack.templateCount} modelos\${pack.tags.isEmpty ? '' : ' · \${pack.tags.take(2).join(', ')}'}',
+                  '${pack.category} · ${pack.templateCount} modelos${pack.tags.isEmpty ? '' : ' · ${pack.tags.take(2).join(', ')}'}',
                   style: TextStyle(color: Colors.white.withOpacity(.47), fontSize: 10),
                 ),
                 const SizedBox(height: 8),
@@ -449,7 +449,7 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                         Text(template.title,
                             maxLines: 1, overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w800)),
-                        Text('\${template.createFrames().length} frames · \${template.fps} FPS',
+                        Text('${template.createFrames().length} frames · ${template.fps} FPS',
                             style: TextStyle(color: Colors.white.withOpacity(.48), fontSize: 10)),
                       ],
                     ),
