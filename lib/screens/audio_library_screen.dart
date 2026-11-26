@@ -118,6 +118,7 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
   String? _error;
   final Set<String> _downloading = <String>{};
   final Set<String> _downloadedIds = <String>{};
+  int _usedAudioBytes = 0;
 
   @override
   void initState() {
@@ -159,11 +160,16 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
       final directory = Directory('${root.path}/audio_library');
       if (!await directory.exists()) return;
       final files = await directory.list().where((entity) => entity is File).cast<File>().toList();
+      var totalBytes = 0;
+      for (final file in files) {
+        totalBytes += await file.length();
+      }
       if (!mounted) return;
       setState(() {
         _downloadedIds
           ..clear()
           ..addAll(files.map((file) => file.uri.pathSegments.last.split('.').first));
+        _usedAudioBytes = totalBytes;
       });
     } catch (_) {
       // Download indicators are optional; the library remains usable.
@@ -214,6 +220,39 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
   }
 
   Uri _urlFor(String relativePath) => _audioBaseUri.resolve(relativePath);
+
+  Future<void> _removeDownloaded(_AudioLibraryItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remover áudio descarregado?'),
+        content: Text(
+          '"${item.name}" será removido do armazenamento deste telefone. Os projetos que já utilizam este som não serão apagados.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final root = await getApplicationDocumentsDirectory();
+    final extension = item.file.split('.').last.toLowerCase();
+    final file = File('${root.path}/audio_library/${item.id}.$extension');
+    if (await file.exists()) await file.delete();
+    await _scanDownloads();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Áudio removido do armazenamento local.')),
+      );
+    }
+  }
 
   Future<void> _togglePreview(_AudioLibraryItem item) async {
     try {
@@ -347,6 +386,25 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(17, 2, 17, 8),
+            child: Row(
+              children: [
+                const Icon(Icons.offline_pin_rounded, size: 16, color: Color(0xFF8DE1DE)),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    '${_downloadedIds.length} sons guardados · ${(_usedAudioBytes / (1024 * 1024)).toStringAsFixed(2)} MB',
+                    style: const TextStyle(color: Colors.white60, fontSize: 11),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loading ? null : _scanDownloads,
+                  child: const Text('Atualizar'),
+                ),
+              ],
+            ),
+          ),
           if (categories.length > 1)
             SizedBox(
               height: 48,
@@ -453,6 +511,12 @@ class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
                                                 ? Icons.download_done_rounded
                                                 : Icons.download_rounded),
                                       ),
+                                      if (_downloadedIds.contains(item.id))
+                                        IconButton(
+                                          tooltip: 'Remover cópia local',
+                                          onPressed: () => _removeDownloaded(item),
+                                          icon: const Icon(Icons.delete_outline_rounded),
+                                        ),
                                     ],
                                   ),
                                 ),
