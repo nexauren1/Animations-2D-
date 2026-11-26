@@ -2278,15 +2278,15 @@ class _AnimationPreviewScreenState extends State<_AnimationPreviewScreen> {
         final player = _audioPlayers.putIfAbsent(clip.id, AudioPlayer.new);
         await player.stop();
         await player.setReleaseMode(clip.loop ? ReleaseMode.loop : ReleaseMode.stop);
-        _audioPositionSubscriptions.putIfAbsent(
-          clip.id,
-          () => player.onPositionChanged.listen((position) {
-            if (clip.trimEndMs > clip.trimStartMs &&
-                position.inMilliseconds >= clip.trimEndMs) {
-              unawaited(player.stop());
-            }
-          }),
-        );
+        final previousSubscription = _audioPositionSubscriptions.remove(clip.id);
+        await previousSubscription?.cancel();
+        _audioPositionSubscriptions[clip.id] =
+            player.onPositionChanged.listen((position) {
+          if (clip.trimEndMs > clip.trimStartMs &&
+              position.inMilliseconds >= clip.trimEndMs) {
+            unawaited(player.stop());
+          }
+        });
         await player.play(
           DeviceFileSource(clip.path),
           volume: clip.volume.clamp(0.0, 1.0).toDouble(),
