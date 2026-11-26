@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart' hide Text;
 import '../services/app_locale.dart';
 
 import '../services/resource_pack_service.dart';
 import 'audio_library_screen.dart';
+import 'template_gallery_screen.dart';
 import '../services/template_catalog.dart';
 
 /// Online-first library for downloadable, editable scene and character packs.
@@ -19,6 +22,8 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
   bool _loading = true;
   bool _catalogLoading = true;
   String? _downloading;
+  String? _previewing;
+  int _usedBytes = 0;
   String? _error;
   String _category = 'Todos';
   String _search = '';
@@ -50,10 +55,20 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
     } catch (_) {
       error ??= 'Não foi possível ler os pacotes guardados neste telefone.';
     }
+    var usedBytes = 0;
+    for (final pack in downloaded) {
+      try {
+        final file = File(pack.filePath);
+        if (await file.exists()) usedBytes += await file.length();
+      } catch (_) {
+        // Storage information should never prevent a library from opening.
+      }
+    }
     if (!mounted) return;
     setState(() {
       _available = available;
       _downloaded = downloaded;
+      _usedBytes = usedBytes;
       _loading = false;
       _catalogLoading = false;
       _error = error;
@@ -87,6 +102,103 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
           : 'Não foi possível concluir o download. Verifica a ligação e tenta novamente.');
     } finally {
       if (mounted) setState(() => _downloading = null);
+    }
+  }
+
+  Future<void> _preview(DownloadableResourcePack pack) async {
+    setState(() {
+      _previewing = pack.id;
+      _error = null;
+    });
+    try {
+      final templates = await ResourcePackService.preview(pack);
+      if (!mounted) return;
+      final selected = await showModalBottomSheet<AnimationTemplate>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: const Color(0xFF171A28),
+        showDragHandle: true,
+        builder: (sheetContext) => SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * .86,
+            ),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
+              children: [
+                Text(pack.title,
+                    style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                Text(
+                  'Pré-visualização online · ${pack.sizeLabel} · ${templates.length} modelos',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                for (final template in templates)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF202337),
+                      borderRadius: BorderRadius.circular(17),
+                      border: Border.all(color: Colors.white.withOpacity(.08)),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: 180,
+                          child: TemplateAnimationPreview(template: template),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(template.title,
+                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                              const SizedBox(height: 4),
+                              Text(template.description,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              const SizedBox(height: 9),
+                              Row(
+                                children: [
+                                  Text(
+                                    '${template.createFrames().length} frames · ${template.fps} FPS',
+                                    style: const TextStyle(color: Color(0xFF8DE1DE), fontSize: 11),
+                                  ),
+                                  const Spacer(),
+                                  FilledButton.tonalIcon(
+                                    onPressed: () => Navigator.of(sheetContext).pop(template),
+                                    icon: const Icon(Icons.edit_rounded, size: 16),
+                                    label: const Text('Usar modelo'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Fechar pré-visualização'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (selected != null && mounted) _useTemplate(selected);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error is FormatException
+          ? error.message
+          : 'Não foi possível obter a pré-visualização. Verifica a ligação e tenta novamente.');
+    } finally {
+      if (mounted) setState(() => _previewing = null);
     }
   }
 
@@ -281,8 +393,10 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                   child: Text('Conteúdo instalado',
                       style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
                 ),
-                Text('${_downloaded.length} pacote(s)',
-                    style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 12)),
+                Text(
+                  '${_downloaded.length} pacotes · ${(_usedBytes / (1024 * 1024)).toStringAsFixed(2)} MB',
+                  style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 11),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -392,14 +506,31 @@ class _ResourceCenterScreenState extends State<ResourceCenterScreen> {
                     ],
                   )
                 else
-                  OutlinedButton.icon(
-                    onPressed: _downloading == null ? () => _download(pack) : null,
-                    icon: const Icon(Icons.download_rounded, size: 17),
-                    label: const Text('Descarregar'),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      foregroundColor: const Color(0xFFB5A8FF),
-                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _previewing == null ? () => _preview(pack) : null,
+                        icon: _previewing == pack.id
+                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.visibility_rounded, size: 16),
+                        label: const Text('Pré-visualizar'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: const Color(0xFF8DE1DE),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _downloading == null ? () => _download(pack) : null,
+                        icon: const Icon(Icons.download_rounded, size: 17),
+                        label: const Text('Descarregar'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: const Color(0xFFB5A8FF),
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),
