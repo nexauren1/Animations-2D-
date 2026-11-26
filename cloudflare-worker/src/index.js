@@ -351,60 +351,88 @@ function entitlementIsActive(entitlement) {
 async function startCheckout(request, env) {
   const uid = await firebaseUserId(request, env);
   const body = await request.json().catch(() => null);
-  // New sales use one simple, non-recurring lifetime purchase only.
-  // Legacy monthly entitlements/webhooks remain readable so existing users
-  // are not unexpectedly stripped of access.
-  if (!body || body.plan !== "lifetime") {
-    throw new HttpError(400, "O AnimPro Pro está disponível apenas como compra única.");
+  if (!body || body.plan !== "monthly") {
+    throw new HttpError(400, "O AnimPro Pro está disponível apenas por assinatura mensal.");
   }
 
   const existingEntitlement = await getDoc(env, "proEntitlements", uid);
   if (entitlementIsActive(existingEntitlement)) {
-    throw new HttpError(409, "A tua licença Pro já está ativa. Não precisas de comprar novamente.");
+    throw new HttpError(409, "A tua assinatura Pro já está ativa. Não precisas de comprar novamente.");
+  }
+
+  const planId = String(env.PAYPAL_MONTHLY_PLAN_ID || "").trim();
+  if (!planId) {
+    throw new HttpError(503, "O plano mensal do PayPal ainda não está configurado.");
   }
 
   const token = await paypalAccessToken(env);
+  const plan = await paypalRequest(
+    env,
+    token,
+    "GET",
+    "/v1/billing/plans/" + encodeURIComponent(planId),
+  );
+  const monthlyCycle = (plan.billing_cycles || []).find((cycle) =>
+    cycle.tenure_type === "REGULAR"
+  );
+  const frequency = monthlyCycle && monthlyCycle.frequency || {};
+  const fixedPrice = monthlyCycle &&
+    monthlyCycle.pricing_scheme &&
+    monthlyCycle.pricing_scheme.fixed_price;
+  if (
+    plan.id !== planId ||
+    plan.status !== "ACTIVE" ||
+    frequency.interval_unit !== "MONTH" ||
+    Number(frequency.interval_count || 0) !== 1 ||
+    !paymentAmountMatches(fixedPrice, 5)
+  ) {
+    console.error("Configured PayPal plan is not an active USD 5 monthly plan", planId);
+    throw new HttpError(
+      503,
+      "O plano PayPal configurado não corresponde a US$ 5 por mês. Atualiza o plano antes de receber pagamentos.",
+    );
+  }
+
   const returnUrl = env.PAYPAL_RETURN_URL ||
     "https://nexauren1.github.io/Animations-2D-/payment-return.html";
   const cancelUrl = env.PAYPAL_CANCEL_URL ||
     "https://nexauren1.github.io/Animations-2D-/payment-return.html?cancelled=1";
-
-  const order = await paypalRequest(
+  const subscription = await paypalRequest(
     env,
     token,
     "POST",
-    "/v2/checkout/orders",
+    "/v1/billing/subscriptions",
     {
-      intent: "CAPTURE",
-      purchase_units: [{
-        reference_id: "animpro-pro-lifetime",
-        custom_id: uid,
-        description: "AnimPro Pro — licença permanente",
-        amount: { currency_code: "USD", value: "5.00" },
-      }],
+      plan_id: planId,
+      custom_id: uid,
       application_context: {
         brand_name: "AnimPro",
-        user_action: "PAY_NOW",
         shipping_preference: "NO_SHIPPING",
-        return_url: returnUrl + "?plan=lifetime",
+        user_action: "SUBSCRIBE_NOW",
+        return_url: returnUrl + "?plan=monthly",
         cancel_url: cancelUrl,
       },
     },
-    "animpro-life-" + uid + "-" + Date.now(),
+    "animpro-monthly-" + uid + "-" + Date.now(),
   );
-  if (!order.id) throw new HttpError(502, "O PayPal não devolveu o ID da ordem.");
-  await setDoc(env, "paypalOrders", order.id, {
+  if (!subscription.id) {
+    throw new HttpError(502, "O PayPal não devolveu o ID da assinatura.");
+  }
+
+  await setDoc(env, "paypalSubscriptions", subscription.id, {
     uid: uid,
-    plan: "lifetime",
-    status: "pending",
-    amount: "5.00",
-    currency: "USD",
+    plan: "monthly",
+    planId: planId,
+    status: subscription.status || "APPROVAL_PENDING",
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-  return json({ plan: "lifetime", orderId: order.id, approvalUrl: approvalUrl(order) });
+  return json({
+    plan: "monthly",
+    subscriptionId: subscription.id,
+    approvalUrl: approvalUrl(subscription),
+  });
 }
-
 async function grantLifetime(env, uid, orderId, captureId) {
   await setDoc(env, "proEntitlements", uid, {
     active: true,
