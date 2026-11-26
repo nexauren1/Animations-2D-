@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, fix/audio-monthly-pro-and-editor-tools]
   workflow_dispatch:
 
 permissions:
