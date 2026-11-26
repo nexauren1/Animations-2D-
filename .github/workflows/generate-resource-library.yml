@@ -1,0 +1,83 @@
+name: Generate AnimPro online resource library
+
+on:
+  push:
+    branches:
+      - feat/online-scenes-and-audio-library
+    paths:
+      - ".github/scripts/generate_resource_library.py"
+      - ".github/workflows/generate-resource-library.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: animpro-resource-library-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate generator syntax
+        run: python -m py_compile .github/scripts/generate_resource_library.py
+
+      - name: Generate vector scene packs and original audio
+        run: python .github/scripts/generate_resource_library.py
+
+      - name: Verify catalogues and generated files
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          docs = Path("docs")
+          pack_catalog = json.loads((docs / "packs/catalog.json").read_text())
+          audio_catalog = json.loads((docs / "audio/catalog.json").read_text())
+
+          assert pack_catalog["schemaVersion"] == 1
+          assert len(pack_catalog["packs"]) >= 8
+          assert len(audio_catalog) >= 8
+
+          for item in pack_catalog["packs"]:
+              path = docs / "packs" / item["path"]
+              data = path.read_bytes()
+              assert len(data) == item["sizeBytes"], item["id"]
+              assert hashlib.sha256(data).hexdigest() == item["sha256"], item["id"]
+
+          for item in audio_catalog:
+              path = docs / "audio" / item["file"]
+              data = path.read_bytes()
+              assert len(data) == item["sizeBytes"], item["id"]
+              assert hashlib.sha256(data).hexdigest() == item["sha256"], item["id"]
+              assert data[:4] == b"RIFF" and data[8:12] == b"WAVE", item["id"]
+
+          print(f"Verified {len(pack_catalog['packs'])} scene packs and {len(audio_catalog)} sounds.")
+          PY
+
+      - name: Commit generated content when changed
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/packs docs/audio audio/catalog.json
+          if git diff --cached --quiet; then
+            echo "Generated library is already up to date."
+            exit 0
+          fi
+          git commit -m "Generate online scene packs and AnimPro original audio"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
