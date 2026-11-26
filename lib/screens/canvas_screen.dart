@@ -1596,7 +1596,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
         children: [
           _buildLayerSelector(compact: compactLayout),
           Padding(
-            padding: EdgeInsets.fromLTRB( compactLayout ? 8 : 14, compactLayout ? 0 : 4, compactLayout ? 8 : 14, compactLayout ? 2 : 8),
+            padding: EdgeInsets.fromLTRB(compactLayout ? 8 : 14, compactLayout ? 0 : 4, compactLayout ? 8 : 14, compactLayout ? 1 : 8),
             child: Row(
               children: [
                 InkWell(
@@ -1909,9 +1909,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color, size: 21),
-          const SizedBox(height: 3),
-          Text(label, style: TextStyle(color: color, fontSize: 9.5)),
+          Icon(icon, color: color, size: compact ? 17 : 21),
+          SizedBox(height: compact ? 1 : 3),
+          Text(label, style: TextStyle(color: color, fontSize: compact ? 7.5 : 9.5)),
         ]),
       ),
     );
