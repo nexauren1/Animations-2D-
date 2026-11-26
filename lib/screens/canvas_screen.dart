@@ -1552,6 +1552,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Short landscape phones have very little vertical space. Compress the chrome
+    // so the drawing surface, not the toolbars, gets the available height.
+    final compactLayout = MediaQuery.sizeOf(context).height < 420;
     final draft = _draftPoints == null
         ? null
         : StrokeModel(
@@ -1564,6 +1567,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: compactLayout ? 46 : kToolbarHeight,
         leading: IconButton(
           tooltip: 'Voltar aos projetos',
           onPressed: () async {
@@ -1590,9 +1594,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
       ),
       body: Column(
         children: [
-          _buildLayerSelector(),
+          _buildLayerSelector(compact: compactLayout),
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+            padding: EdgeInsets.fromLTRB( compactLayout ? 8 : 14, compactLayout ? 0 : 4, compactLayout ? 8 : 14, compactLayout ? 2 : 8),
             child: Row(
               children: [
                 InkWell(
@@ -1612,21 +1616,22 @@ class _CanvasScreenState extends State<CanvasScreen> {
                   ),
                 ),
                 const Spacer(),
-                _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid,
+                _tinyToggle(icon: Icons.grid_4x4_rounded, label: 'Grelha', selected: _showGrid, compact: compactLayout,
                   onTap: () => setState(() => _showGrid = !_showGrid),
                   onLongPress: _openGridSettings),
                 const SizedBox(width: 5),
-                _tinyToggle(icon: Icons.straighten_rounded, label: 'Réguas', selected: _showRulers,
+                _tinyToggle(icon: Icons.straighten_rounded, label: 'Réguas', selected: _showRulers, compact: compactLayout,
                   onTap: () => setState(() => _showRulers = !_showRulers),
                   onLongPress: _openGridSettings),
                 const SizedBox(width: 5),
-                _tinyToggle(icon: Icons.flip_rounded, label: 'Simetria', selected: _mirrorDrawing,
+                _tinyToggle(icon: Icons.flip_rounded, label: 'Simetria', selected: _mirrorDrawing, compact: compactLayout,
                   onTap: () => setState(() => _mirrorDrawing = !_mirrorDrawing)),
                 const SizedBox(width: 5),
                 _tinyToggle(
                   icon: Icons.layers_outlined,
                   label: 'Onion',
                   selected: _onionSkin,
+                  compact: compactLayout,
                   onTap: () => setState(() => _onionSkin = !_onionSkin),
                   onLongPress: _openOnionSettings,
                 ),
@@ -1635,7 +1640,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 9),
+              padding: EdgeInsets.fromLTRB(compactLayout ? 7 : 12, 0, compactLayout ? 7 : 12, compactLayout ? 3 : 9),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -1672,10 +1677,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
               ),
             ),
           ),
-          _buildToolBar(),
+          _buildToolBar(compact: compactLayout),
         ],
       ),
-      bottomNavigationBar: _buildBottomBar(),
+      bottomNavigationBar: _buildBottomBar(compact: compactLayout),
     );
   }
 
@@ -1685,13 +1690,14 @@ class _CanvasScreenState extends State<CanvasScreen> {
     required bool selected,
     required VoidCallback onTap,
     VoidCallback? onLongPress,
+    bool compact = false,
   }) {
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(9),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 8, vertical: compact ? 4 : 7),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF373052) : const Color(0xFF202332),
           borderRadius: BorderRadius.circular(9),
@@ -1700,20 +1706,20 @@ class _CanvasScreenState extends State<CanvasScreen> {
         child: Row(children: [
           Icon(icon, size: 14, color: selected ? const Color(0xFFC4BAFF) : Colors.white60),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: selected ? const Color(0xFFC4BAFF) : Colors.white60)),
+          Text(label, style: TextStyle(fontSize: compact ? 8 : 10, color: selected ? const Color(0xFFC4BAFF) : Colors.white60)),
         ]),
       ),
     );
   }
 
-  Widget _buildLayerSelector() {
+  Widget _buildLayerSelector({bool compact = false}) {
     const icons = <IconData>[
       Icons.gesture_rounded,
       Icons.palette_outlined,
       Icons.wallpaper_rounded,
     ];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 7, 8, 4),
+      padding: EdgeInsets.fromLTRB(compact ? 8 : 12, compact ? 2 : 7, compact ? 5 : 8, compact ? 1 : 4),
       child: Row(
         children: [
           Expanded(
@@ -1741,7 +1747,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                             onTap: () => _changeLayer(index),
                             onLongPress: () => _renameLayer(index),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 7),
+                              padding: EdgeInsets.symmetric(vertical: compact ? 5 : 8, horizontal: 7),
                               child: Row(
                                 children: [
                                   Icon(
@@ -1810,7 +1816,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildToolBar() {
+  Widget _buildToolBar({bool compact = false}) {
     final tools = <({IconData icon, String label, _DrawingTool tool})>[
       (icon: Icons.edit_rounded, label: 'Caneta', tool: _DrawingTool.pen),
       (icon: Icons.auto_fix_normal_rounded, label: 'Borracha', tool: _DrawingTool.eraser),
@@ -1825,8 +1831,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
       (icon: Icons.straighten_rounded, label: 'Régua', tool: _DrawingTool.ruler),
     ];
     return Container(
-      height: 74,
-      margin: const EdgeInsets.fromLTRB(10, 0, 10, 7),
+      height: compact ? 56 : 74,
+      margin: EdgeInsets.fromLTRB(compact ? 6 : 10, 0, compact ? 6 : 10, compact ? 3 : 7),
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(color: const Color(0xFF1B1E2C), borderRadius: BorderRadius.circular(15),
         border: Border.all(color: const Color(0xFF303447))),
@@ -1876,28 +1882,28 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar({bool compact = false}) {
     return SafeArea(
       top: false,
       child: Container(
-        height: 63,
+        height: compact ? 46 : 63,
         padding: const EdgeInsets.symmetric(horizontal: 7),
         decoration: const BoxDecoration(color: Color(0xFF11131F), border: Border(top: BorderSide(color: Color(0xFF292D40)))),
         child: Row(children: [
-          _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings),
-          _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects),
-          _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline),
-          _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging),
-          _bottomItem(icon: Icons.library_music_rounded, label: 'Áudios', color: const Color(0xFF50D3E4), onPressed: _openAudioTimeline),
-          _bottomItem(icon: Icons.record_voice_over_rounded, label: 'Lábios', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync),
-          _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets),
-          _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport),
+          _bottomItem(icon: Icons.palette_outlined, label: 'Pincéis', color: const Color(0xFF9D91FF), onPressed: _openBrushSettings, compact: compact),
+          _bottomItem(icon: Icons.auto_awesome_rounded, label: 'Efeitos', color: const Color(0xFF65D6E8), onPressed: _openEffects, compact: compact),
+          _bottomItem(icon: Icons.view_timeline_rounded, label: 'Timeline', color: const Color(0xFF9D91FF), onPressed: _openTimeline, compact: compact),
+          _bottomItem(icon: Icons.hub_rounded, label: 'Rigging', color: const Color(0xFF39D8E9), onPressed: _openRigging, compact: compact),
+          _bottomItem(icon: Icons.library_music_rounded, label: 'Áudios', color: const Color(0xFF50D3E4), onPressed: _openAudioTimeline, compact: compact),
+          _bottomItem(icon: Icons.record_voice_over_rounded, label: 'Lábios', color: const Color(0xFF50D3E4), onPressed: _openAudioLipSync, compact: compact),
+          _bottomItem(icon: Icons.folder_open_rounded, label: 'Assets', onPressed: _openAssets, compact: compact),
+          _bottomItem(icon: Icons.ios_share_rounded, label: 'Exportar', onPressed: _openExport, compact: compact),
         ]),
       ),
     );
   }
 
-  Widget _bottomItem({required IconData icon, required String label, required VoidCallback onPressed, Color color = Colors.white70}) {
+  Widget _bottomItem({required IconData icon, required String label, required VoidCallback onPressed, Color color = Colors.white70, bool compact = false}) {
     return Expanded(
       child: InkWell(
         onTap: onPressed,
